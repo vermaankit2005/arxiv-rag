@@ -10,3 +10,10 @@ data/processed/
 experiments/**/output/
 .idea/
 *.stackdump
+
+# Only README.md ships. Everything below is working material, kept locally.
+docs/
+data/
+experiments/
+*.md
+!README.md
