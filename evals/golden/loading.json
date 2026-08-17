@@ -27,7 +27,7 @@
       {
         "text": "Provided proper attribution is provided, Google hereby grants permission to reproduce the tables and figures in this paper solely for use in journalistic or scholarly works.",
         "order": 0,
-        "section": "Introduction"
+        "section": ""
       },
       {
         "text": "In this work we propose the Transformer, a model architecture eschewing recurrence and instead relying entirely on an attention mechanism to draw global dependencies between input and output.",
@@ -104,7 +104,7 @@
       {
         "text": "We introduce a new language representation model called BERT, which stands for Bidirectional Encoder Representations from Transformers.",
         "order": 0,
-        "section": "Introduction"
+        "section": ""
       },
       {
         "text": "BERT is the first fine-tuning based representation model that achieves state-of-the-art performance on a large suite of sentence-level and token-level tasks, outperforming many task-specific architectures.",
@@ -183,7 +183,7 @@
       {
         "text": "Our experiments show that DPO can fine-tune LMs to align with human preferences as well as or better than existing methods.",
         "order": 0,
-        "section": "Introduction"
+        "section": ""
       },
       {
         "text": "This `instruction-tuning' procedure enables LLMs to generalize to instructions outside of the instruction-tuning set and generally increase their usability .",
@@ -258,7 +258,7 @@
       {
         "text": "Large pre-trained language models have been shown to store factual knowledge in their parameters, and achieve state-of-the-art results when fine-tuned on downstream NLP tasks.",
         "order": 0,
-        "section": "Introduction"
+        "section": ""
       },
       {
         "text": "In contrast, we explore a setting where both parametric and non-parametric memory components are pre-trained and pre-loaded with extensive knowledge.",
@@ -332,7 +332,7 @@
       {
         "text": "Reduced-precision data formats are crucial for cost-effective serving of large language models (LLMs).",
         "order": 0,
-        "section": "Introduction"
+        "section": ""
       },
       {
         "text": "In the moderate-bit (M) formats, however, SMX6 and MSFP14 begin to diverge, making them less effective for LLM serving scenarios, while MXFP6 remains close to the baseline.",
@@ -414,7 +414,7 @@
       {
         "text": "As large language models (LLMs) continue to scale, the memory footprint of Key-Value (KV) caches during inference has become a significant bottleneck.",
         "order": 0,
-        "section": "Introduction"
+        "section": ""
       },
       {
         "text": "Model-level approaches redesign architectures to improve reuse , while system-level methods focus on memory and scheduling .",
@@ -481,7 +481,7 @@
       {
         "text": "The Muon optimizer shows clear benefits versus alternatives when pretraining neural networks.",
         "order": 0,
-        "section": "Introduction"
+        "section": ""
       },
       {
         "text": "However, Muon is less commonly used for fine-tuning (FT), particularly PEFT (Parameter-Efficient Fine-Tuning, which reduces compute resource requirements).",
@@ -534,12 +534,12 @@
       {
         "text": "An agent skill is a folder containing a SKILL.md file with instructions for a language-model agent, optionally accompanied by scripts and reference files.",
         "order": 0,
-        "section": "High-Level Overview"
+        "section": ""
       },
       {
         "text": "The dataset retains every file occurrence with its repository, path, and content hash.",
         "order": 1,
-        "section": "High-Level Overview"
+        "section": ""
       },
       {
         "text": "A property of skills makes them different from ordinary configuration files.",
@@ -625,7 +625,7 @@
       {
         "text": "Large Language Models (LLMs) have demonstrated remarkable capabilities across various domains, including software development, education, and technical assistance.",
         "order": 0,
-        "section": "Introduction"
+        "section": ""
       },
       {
         "text": "Given these persistent challenges, it is natural to ask whether recent advances in AI, such as Large Language Models (LLMs), could provide a solution.",
@@ -703,7 +703,7 @@
       {
         "text": "The first is prefill which processes the entire input prompt and produces the first output token and the second is decode which generates the rest of output tokens, one-at-a-time.",
         "order": 0,
-        "section": "Introduction"
+        "section": ""
       },
       {
         "text": "This way, prefill-prioritizing schedulers have better throughput because computing prefills first allows subsequent decodes to operate at high batch sizes.",
@@ -785,7 +785,7 @@
       {
         "text": "Humans, on the other hand, understand free-form gestures by synthesizing the gesture, context, experience, and common sense.",
         "order": 0,
-        "section": "Introduction"
+        "section": ""
       },
       {
         "text": "Describing nuanced finger states and movements is crucial for accurately understanding hand gestures.",
@@ -844,7 +844,7 @@
       {
         "text": "Large language models (LLMs) are powerful AI tools that can generate and comprehend natural language text and other complex information.",
         "order": 0,
-        "section": "Introduction"
+        "section": ""
       },
       {
         "text": "These research directions are reasonable, given that most LLMs are black-boxes that we cannot easily inspect, interpret or explain.",
