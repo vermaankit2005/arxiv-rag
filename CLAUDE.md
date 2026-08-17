@@ -18,8 +18,9 @@ slow, or wrong — say so, and make me justify it. Predicted need is not need.
   `experiments/` and a record in `docs/decisions/`.
 - Tests encode invariants a user would care about, or a bug that actually
   happened. Nothing else. No coverage targets.
-- Prefer a file to a database, a function to a class, a script to a framework,
-  and a constant to a setting.
+- Prefer a file to a database, a script to a framework, and a constant to a
+  setting. Classes are fine where they carry state or read more clearly than
+  a pile of functions.
 
 ## Reference repo
 

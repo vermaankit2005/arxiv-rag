@@ -37,6 +37,9 @@ Before a database, queue, cache, vector store, framework, abstraction layer, or
 config system: point at something broken, slow, or wrong *in the running
 program*. Not predicted by a document. Actually hit.
 
-Prefer a file to a database, a function to a class, a script to a framework, and
-a constant to a setting — until the simple version measurably hurts. When it
-does, write down the number that convinced us.
+Prefer a file to a database, a script to a framework, and a constant to a
+setting — until the simple version measurably hurts. When it does, write down
+the number that convinced us.
+
+Classes are not on that list. Write a class where it carries state or reads
+more clearly than a pile of loose functions; write a function where it does not.

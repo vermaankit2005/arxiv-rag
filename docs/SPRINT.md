@@ -101,11 +101,11 @@ Known gap: nothing above 38 pages. Add one if speed or memory ends up deciding.
 ## Deliverables
 
 1. `data/papers.json` — the 12 papers and why each is in the set. ✅ done
-2. `data/golden/loading.json` — sections and probe sentences from LaTeX source.
-3. `experiments/01_loading/` — survey, golden, and benchmark scripts with results.
-4. `docs/decisions/01-loading.md` — the numbers and the decision.
-5. `src/arxiv_rag/loading.py` — the winner, behind one function.
-6. `tests/test_loading.py` — the invariants below.
+2. `evals/golden/loading.json` — sections and probe sentences from LaTeX source. ✅ done
+3. `experiments/01_loading/` — survey, golden, and benchmark scripts with results. ✅ done
+4. `docs/decisions/01-loading.md` — the numbers and the decision. ✅ done
+5. `src/arxiv_rag/loader.py` — the winner, behind one clear entry point.
+6. `tests/test_loader.py` — the invariants below.
 
 ## Tests — the invariants
 
@@ -129,8 +129,12 @@ locations, the decision is recorded with its numbers, and the invariants pass.
 - ✅ **Step A** — survey 40 papers, pick the 12. Found arXiv HTML; question changed.
 - ✅ **Step B** — golden set built from LaTeX source: 12/12 papers, 309 sections,
   96 probes. Four bugs found and fixed while checking it.
-- ⬜ **Step C** — run the three sources against it and score them.
-- ⬜ **Step D** — implement the winner, write the invariants, record the decision.
+- ✅ **Step C** — scored arXiv HTML against the key: coverage 12/12, probes
+  96/96, reading order 1.00, section fidelity 0.99, junk 0.44 per 1k words.
+  Twelve probes turned out not to be body prose; the rules that let them in
+  were fixed and the key rebuilt. B and C were not run — see the decision.
+- ⬜ **Step D** — implement the winner in `src/arxiv_rag/loader.py` and write
+  the invariants. ✅ decision recorded in `docs/decisions/01-loading.md`.
 
 ## Open question for the end of the sprint
 

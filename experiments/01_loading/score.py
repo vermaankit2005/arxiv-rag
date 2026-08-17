@@ -48,7 +48,7 @@ import load_html
 from shape import Loaded
 
 ROOT = Path(__file__).resolve().parents[2]
-GOLDEN = ROOT / "data" / "golden" / "loading.json"
+GOLDEN = ROOT / "evals" / "golden" / "loading.json"
 OUT = Path(__file__).resolve().parent / "scores.json"
 
 MATCH_THRESHOLD = 0.90      # share of probe tokens that must line up, in order

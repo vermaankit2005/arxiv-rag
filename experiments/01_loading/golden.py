@@ -34,7 +34,7 @@ import httpx
 
 ROOT = Path(__file__).resolve().parents[2]
 PAPERS = ROOT / "data" / "papers.json"
-OUT = ROOT / "data" / "golden" / "loading.json"
+OUT = ROOT / "evals" / "golden" / "loading.json"
 SRC_DIR = ROOT / "data" / "raw" / "source"
 
 PROBES_PER_PAPER = 8

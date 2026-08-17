@@ -51,8 +51,18 @@ Every request ends in exactly one of these:
 ## The citation contract
 
 - Every factual claim carries at least one citation.
-- A citation resolves to an indexed paper **and a stored location** (page /
-  section) — not just a title.
+- A citation resolves to an indexed paper **and a link to the exact paragraph**
+  it came from — not just a title, and not just a page number:
+
+  ```
+  https://arxiv.org/html/2005.11401v4#S2.p3
+  ```
+
+  The reader clicks the claim and lands on the sentence, on arXiv's own site.
+  Each passage also carries its section path, so a citation can be shown as
+  "Methods › Retriever: DPR" without following the link.
+- Where a paper has no such anchor, the citation falls back to a coarser
+  location and **says so**. It never pretends to a precision it does not have.
 - The cited passage must actually support the claim; this is checked before the
   answer is shown.
 - `answered` and `partial` require at least one valid citation.
