@@ -1,0 +1,111 @@
+[
+  {
+    "arxiv_id": "1706.03762v7",
+    "title": "Attention Is All You Need",
+    "track": "foundational",
+    "producer": "pdftex",
+    "layout": "1col",
+    "pages": 15,
+    "why": "The anchor. Everyone can check the extraction against a paper they know by heart."
+  },
+  {
+    "arxiv_id": "1810.04805v2",
+    "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+    "track": "foundational",
+    "producer": "pdftex",
+    "layout": "2col",
+    "pages": 16,
+    "why": "The only two-column foundational paper, and table-dense (16 tables). Covers ACL layout."
+  },
+  {
+    "arxiv_id": "2305.18290v3",
+    "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+    "track": "foundational",
+    "producer": "pdftex",
+    "layout": "1col",
+    "pages": 27,
+    "why": "Equation stress test: math-font ratio 0.229, with appendix proofs."
+  },
+  {
+    "arxiv_id": "2005.11401v4",
+    "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "track": "foundational",
+    "producer": "pdftex",
+    "layout": "1col",
+    "pages": 19,
+    "why": "The product's own subject. Mixed maths and tables, nothing extreme."
+  },
+
+  {
+    "arxiv_id": "2510.14557v1",
+    "title": "MX+: Pushing the Limits of Microscaling Formats for Efficient LLM Inference",
+    "track": "recent",
+    "producer": "arxiv-genpdf",
+    "layout": "2col",
+    "pages": 15,
+    "why": "Table stress test: 32 tables in the first 8 pages, the most in the survey."
+  },
+  {
+    "arxiv_id": "2509.24832v2",
+    "title": "SemShareKV: Efficient KVCache Sharing for Semantically Similar Prompts",
+    "track": "recent",
+    "producer": "arxiv-genpdf",
+    "layout": "2col",
+    "pages": 14,
+    "why": "Hardest layout case found: a 7pt column gutter, narrow enough that two of our own detectors misread it. Full-width figures interleaved with two-column text."
+  },
+  {
+    "arxiv_id": "2608.14492v1",
+    "title": "Approximate Muon with low-rank adapters",
+    "track": "recent",
+    "producer": "arxiv-genpdf",
+    "layout": "1col",
+    "pages": 19,
+    "why": "Maths tail: math-font ratio 0.311, the highest in the survey."
+  },
+  {
+    "arxiv_id": "2608.10906v1",
+    "title": "GitSkills: A Dataset of Agent Skills on GitHub",
+    "track": "recent",
+    "producer": "arxiv-genpdf",
+    "layout": "1col",
+    "pages": 3,
+    "why": "Shortest paper in the survey. Short papers expose off-by-one page handling."
+  },
+  {
+    "arxiv_id": "2601.02404v1",
+    "title": "PCEval: A Benchmark for Evaluating Physical Computing Capability",
+    "track": "recent",
+    "producer": "arxiv-genpdf",
+    "layout": "1col",
+    "pages": 37,
+    "why": "Long-document case for the dominant producer. Speed and peak-memory measurement."
+  },
+  {
+    "arxiv_id": "2403.02310v3",
+    "title": "Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve",
+    "track": "recent",
+    "producer": "pdftex",
+    "layout": "2col",
+    "pages": 18,
+    "why": "Two-column layout confirmed by eye, so it doubles as ground truth for the layout detector. 18 tables."
+  },
+  {
+    "arxiv_id": "2310.12821v5",
+    "title": "GestureGPT: Toward Zero-Shot Free-Form Hand Gesture Understanding with Large Language Model Agents",
+    "track": "recent",
+    "producer": "pdftex",
+    "layout": "1col",
+    "pages": 38,
+    "why": "Junk stress test: ACM journal template with a running header and a running footer on every page. Both must be stripped or they become fake claims."
+  },
+  {
+    "arxiv_id": "2311.03033v1",
+    "title": "Beyond Words: A Mathematical Framework for Interpreting Large Language Models",
+    "track": "recent",
+    "producer": "ghostscript",
+    "layout": "1col",
+    "pages": 18,
+    "why": "The only Ghostscript-produced paper stratum (5% of the population). Ghostscript rewrites often damage font and space information."
+  }
+]
