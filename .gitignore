@@ -17,3 +17,4 @@ data/
 experiments/
 *.md
 !README.md
+!tests/data/

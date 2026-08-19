@@ -2,8 +2,8 @@ from pathlib import Path
 
 import httpx
 
-from renderer import Reader
-from shape import Loaded
+from loader.renderer import Reader
+from loader.shape import Loaded
 from util.log import get_logger
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -11,7 +11,8 @@ HTML_DIR = ROOT / "data" / "raw" / "html"
 
 log = get_logger(__name__)
 
-# Fetch HTML from arXiv, caching it locally. The cache is a simple text file, empty if arXiv has no HTML for the paper.
+# Fetch HTML from arXiv, caching it locally. The cache is a simple text file,
+# empty if arXiv has no HTML for the paper.
 def _fetch_html(arxiv_id: str, client: httpx.Client) -> str | None:
     """Download the LaTeXML page. Returns None when arXiv published none."""
 
@@ -34,7 +35,7 @@ def _fetch_html(arxiv_id: str, client: httpx.Client) -> str | None:
 def load(arxiv_id: str, client: httpx.Client) -> Loaded:
     html = _fetch_html(arxiv_id, client)
     if html is None:
-        log.warning(f"arXiv {arxiv_id} has no HTML published")
+        log.warning("arXiv %s has no HTML published", arxiv_id)
         return Loaded(arxiv_id, [], [], note="no arXiv HTML published")
     reader = Reader()
     reader.feed(html)

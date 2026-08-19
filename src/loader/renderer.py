@@ -40,7 +40,6 @@ class Reader(HTMLParser):
         self.pending: list[Passage] = []  # notes, emitted after their host
         self.id_stack: list[tuple[int, str]] = []  # (depth, id) of open elements
         self.in_tag_span = False  # <span class="ltx_tag">2 </span>
-        self.in_bibliography = False
 
     # -- helpers ---------------------------------------------------------
     @staticmethod
@@ -76,11 +75,11 @@ class Reader(HTMLParser):
             self.id_stack.append((self.depth, attrs["id"]))
 
         css = self.classes(attrs)
+        # The bibliography and appendices are sections too, so their headings
+        # land on the stack like any other. Their *entries* never reach here:
+        # LaTeXML writes them as <li class="ltx_bibitem">, which is neither
+        # ltx_para nor p.ltx_p, so nothing captures them.
         if tag == "section" or "ltx_bibliography" in css or "ltx_appendix" in css:
-            # The bibliography is a section too; mark it so its paragraphs are
-            # labelled rather than mistaken for prose.
-            if "ltx_bibliography" in css:
-                self.in_bibliography = True
             self.open_sections.append(self.depth)
             self.section_stack.append("")
 
@@ -133,8 +132,6 @@ class Reader(HTMLParser):
         if self.open_sections and self.depth == self.open_sections[-1]:
             self.open_sections.pop()
             self.section_stack.pop()
-            if not any(s == "References" for s in self.section_stack):
-                self.in_bibliography = self.in_bibliography and bool(self.section_stack)
 
         self.depth -= 1
 
