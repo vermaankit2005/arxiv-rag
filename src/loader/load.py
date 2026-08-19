@@ -11,6 +11,7 @@ HTML_DIR = ROOT / "data" / "raw" / "html"
 
 log = get_logger(__name__)
 
+
 # Fetch HTML from arXiv, caching it locally. The cache is a simple text file,
 # empty if arXiv has no HTML for the paper.
 def _fetch_html(arxiv_id: str, client: httpx.Client) -> str | None:
@@ -23,10 +24,15 @@ def _fetch_html(arxiv_id: str, client: httpx.Client) -> str | None:
         text = cached.read_text(encoding="utf-8", errors="ignore")
         return None if text == "" else text
 
-    r = client.get(f"https://arxiv.org/html/{arxiv_id}", timeout=60.0)
+    try:
+        r = client.get(f"https://arxiv.org/html/{arxiv_id}", timeout=60.0)
+    except httpx.RequestError as e:
+        log.error("Error fetching arXiv %s: %s", arxiv_id, e)
+        return None
 
     # arXiv answers with a "no HTML for this paper" stub, not a 404.
     missing = r.status_code != 200 or "ltx_page_main" not in r.text
+
     cached.write_text("" if missing else r.text, encoding="utf-8")
     return None if missing else r.text
 
