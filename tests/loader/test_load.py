@@ -2,11 +2,13 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import httpx
-import pytest
+import pytest  # pyright: ignore[reportMissingImports]
 
 from loader.load import _fetch_html, load
 
-FIXTURE = Path(__file__).parents[1] / "data" / "test_html.html"
+HTML_DIR = Path(__file__).parents[2] / "data" / "raw" / "html"
+FIXTURE = HTML_DIR / "1706.03762v7.html"
+HTML_FILES = sorted(HTML_DIR.glob("*.html"))
 
 # What arXiv actually sends back. A real page carries ltx_page_main; a paper
 # with no HTML gets a 200 and a stub, never a 404, so the status code alone
@@ -82,6 +84,42 @@ def test_loading_the_same_paper_twice_gives_the_same_result():
         second = load("test_html", Mock())
 
     assert first == second
+
+
+@pytest.mark.parametrize("html_path", HTML_FILES)
+def test_every_cached_html_has_basic_correctness(html_path: Path):
+    html = html_path.read_text(encoding="utf-8")
+
+    with patch("loader.load._fetch_html", return_value=html):
+        loaded = load(html_path.stem, Mock())
+        loaded_again = load(html_path.stem, Mock())
+
+    assert loaded == loaded_again
+
+    actual_orders = [passage.order for passage in loaded.passages]
+    expected_orders = list(range(len(loaded.passages)))
+    assert actual_orders == expected_orders
+
+    images_linked_to_captions = []
+    for passage in loaded.passages:
+        assert passage.location, (
+            f"{html_path.name}: passage {passage.order} has no location: "
+            f"{passage.text[:60]}"
+        )
+
+        anchor = passage.location.lstrip("#")
+        assert f'id="{anchor}"' in html, (
+            f"{html_path.name}: passage {passage.order} points at "
+            f"{passage.location}, which is not an id in the page"
+        )
+
+        if passage.kind == "figure_caption":
+            images_linked_to_captions.extend(passage.images)
+
+    assert images_linked_to_captions == loaded.images
+    for image in loaded.images:
+        anchor = image.location.lstrip("#")
+        assert f'id="{anchor}"' in html
 
 
 def load_fixture():
