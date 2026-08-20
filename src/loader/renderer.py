@@ -1,6 +1,6 @@
 """Pull the paper out of one arXiv HTML page.
 
-The page is read once, top to bottom, the way a person reads it. Three small
+The page is read once, top to bottom, the way a person reads it. Four small
 piles of state do all the work:
 
 * `sections` -- the headings we are currently inside. The innermost one names a
@@ -9,6 +9,8 @@ piles of state do all the work:
   single buffer, because a footnote sits *inside* a paragraph and has to come
   out as its own passage. Spliced in where it sits, it would cut a sentence in
   half.
+* `figures` -- the images collected inside the current figure, ready to attach
+  to its caption passage.
 * `skip_until` -- while inside <math> and friends, how deep we were when we
   closed our eyes.
 
@@ -46,10 +48,19 @@ class Section:
 
 
 @dataclass
+class FigureContext:
+    """A figure or table whose caption and media belong together."""
+
+    depth: int
+    kind: str
+    images: list[FigureImage] = field(default_factory=list)
+
+
+@dataclass
 class Capture:
     """Text being collected right now, and where it will point."""
 
-    kind: str             # "title", "para", "note", "caption" or "table"
+    kind: str
     depth: int
     node_id: str = ""
     parts: list[str] = field(default_factory=list)
@@ -80,6 +91,7 @@ class Reader(HTMLParser):
         self.depth = 0
         self.skip_until: int | None = None
         self.sections: list[Section] = []
+        self.figures: list[FigureContext] = []
         self.captures: list[Capture] = []
         self.open_ids: list[tuple[int, str]] = []
         self.in_tag_span = False          # <span class="ltx_tag">2 </span>
@@ -154,19 +166,24 @@ class Reader(HTMLParser):
             self.open_ids.append((self.depth, attrs["id"]))
 
         css = set((attrs.get("class") or "").split())
-        if tag == "img" and "ltx_graphics" in css:
-            # LaTeXML's ltx_graphics images are paper figures. Page logos and
-            # banner icons lack that class, and the "Refer to caption" alt text
-            # adds no information, so only the URL and real anchor are recorded.
-            src = attrs.get("src")
+        if tag == "figure" and ({"ltx_figure", "ltx_table"} & css):
+            figure_kind = "figure" if "ltx_figure" in css else "table"
+            self.figures.append(FigureContext(self.depth, figure_kind))
+
+        if tag in {"img", "object"} and "ltx_graphics" in css:
+            # LaTeXML uses <img> for raster figures and <object> for SVGs.
+            # Page logos and banner icons lack ltx_graphics. Their alt text adds
+            # no information, so retain only the URL and real anchor.
+            source = attrs.get("src") or attrs.get("data")
             node_id = attrs.get("id") or self.nearest_id
-            if src and node_id:
-                self.images.append(
-                    FigureImage(
-                        url=urljoin("https://arxiv.org/html/", src),
-                        location=f"#{node_id}",
-                    )
+            if source and node_id:
+                image = FigureImage(
+                    url=urljoin("https://arxiv.org/html/", source),
+                    location=f"#{node_id}",
                 )
+                self.images.append(image)
+                if self.figures:
+                    self.figures[-1].images.append(image)
 
         # The bibliography and appendices are sections too, so their headings
         # land on the pile like any other. Their *entries* never reach here:
@@ -196,7 +213,12 @@ class Reader(HTMLParser):
             return
 
         if not self.capturing and tag == "figcaption" and "ltx_caption" in css:
-            self.start_capture("caption", node_id)
+            caption_kind = (
+                "table_caption"
+                if self.figures and self.figures[-1].kind == "table"
+                else "figure_caption"
+            )
+            self.start_capture(caption_kind, node_id)
             return
 
         # Footnotes and author "thanks" notes are prose the paper really
@@ -245,6 +267,7 @@ class Reader(HTMLParser):
         self.close_capture()
         self.in_tag_span = False
         self.close_ids()
+        self.close_figure()
         self.close_section()
         self.depth -= 1
 
@@ -261,6 +284,10 @@ class Reader(HTMLParser):
     def close_ids(self) -> None:
         while self.open_ids and self.depth <= self.open_ids[-1][0]:
             self.open_ids.pop()
+
+    def close_figure(self) -> None:
+        if self.figures and self.depth == self.figures[-1].depth:
+            self.figures.pop()
 
     def close_section(self) -> None:
         if self.sections and self.depth == self.sections[-1].depth:
@@ -288,12 +315,22 @@ class Reader(HTMLParser):
         if capture.kind == "note" and not capture.node_id:
             return
 
+        if capture.kind == "title":
+            return
+        passage_kind = "prose" if capture.kind == "para" else capture.kind
+        linked_images = (
+            list(self.figures[-1].images)
+            if passage_kind == "figure_caption" and self.figures
+            else []
+        )
         passage = Passage(
             order=0,
             text=capture.text,
             section=self.section_title,
             section_path=[s.title for s in self.sections if s.title],
             location=f"#{capture.node_id}" if capture.node_id else "",
+            kind=passage_kind,
+            images=linked_images,
         )
 
         # A note is still inside its host paragraph, which has not been emitted

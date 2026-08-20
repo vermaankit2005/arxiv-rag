@@ -8,8 +8,9 @@ papers. Every claim it makes points at the passage it came from.
 ## What exists
 
 `src/loader/` reads arXiv HTML and returns citable prose, figure/table captions
-and serialized data tables with their section path and anchor. Figure images are
-separate URL-and-anchor records. A citation resolves to a link like
+and serialized data tables with their section path and anchor. Figure captions
+carry their image URL-and-anchor records, which are also available as a flat
+image list. A citation resolves to a link like
 `https://arxiv.org/html/2005.11401v4#S4.SS1.p1` — the exact passage, not a page.
 
 The source was chosen by measurement, not preference: 40 papers surveyed, 39 have

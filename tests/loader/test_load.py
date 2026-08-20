@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import httpx
-import pytest  # pyright: ignore[reportMissingImports]
+import pytest
 
 from loader.load import _fetch_html, load
 
@@ -104,29 +104,27 @@ def test_figure_two_caption_is_one_complete_citable_passage():
     assert 'id="S3.F2"' in mock_html
 
 
-def test_every_figure_and_table_caption_becomes_a_passage():
-    """All nine captions carry context needed to understand their figure or table."""
+def test_every_figure_and_table_caption_becomes_a_typed_passage():
+    """All nine captions retain the type retrieval needs to present them."""
     loaded, _ = load_fixture()
-    caption_locations = {
-        "#S3.F1",
-        "#S3.F2",
-        "#S4.T1",
-        "#S6.T2",
-        "#S6.T3",
-        "#S6.T4",
-        "#Sx1.F3",
-        "#Sx1.F4",
-        "#Sx1.F5",
+    expected_kinds = {
+        "#S3.F1": "figure_caption",
+        "#S3.F2": "figure_caption",
+        "#S4.T1": "table_caption",
+        "#S6.T2": "table_caption",
+        "#S6.T3": "table_caption",
+        "#S6.T4": "table_caption",
+        "#Sx1.F3": "figure_caption",
+        "#Sx1.F4": "figure_caption",
+        "#Sx1.F5": "figure_caption",
     }
-    captions = [
-        passage
+    captions = {
+        passage.location: passage.kind
         for passage in loaded.passages
-        if passage.location in caption_locations
-        and passage.text.startswith(("Figure ", "Table "))
-    ]
+        if passage.location in expected_kinds
+    }
 
-    assert len(captions) == 9
-    assert {passage.location for passage in captions} == caption_locations
+    assert captions == expected_kinds
 
 
 def test_table_two_keeps_its_header_with_the_big_transformer_score():
@@ -134,6 +132,7 @@ def test_table_two_keeps_its_header_with_the_big_transformer_score():
     loaded, _ = load_fixture()
     table = next(passage for passage in loaded.passages if passage.location == "#S6.T2.2")
 
+    assert table.kind == "table"
     assert "Model | BLEU" in table.text
     assert "Transformer (big) | 28.4 | 41.8" in table.text
 
@@ -157,19 +156,60 @@ def test_math_in_a_data_table_uses_alttext_exactly_once():
 
 
 def test_only_real_figure_images_are_recorded_with_urls_and_anchors():
-    """The three PNG figures matter; arXiv logos and banner icons do not."""
+    """Raster and SVG figures matter; arXiv logos and banner icons do not."""
     loaded, mock_html = load_fixture()
     expected_urls = {
         "https://arxiv.org/html/1706.03762v7/Figures/ModalNet-21.png",
         "https://arxiv.org/html/1706.03762v7/Figures/ModalNet-19.png",
         "https://arxiv.org/html/1706.03762v7/Figures/ModalNet-20.png",
+        "https://arxiv.org/html/1706.03762v7/making_more_difficult5_new.svg",
+        "https://arxiv.org/html/1706.03762v7/anaphora_resolution_new.svg",
+        "https://arxiv.org/html/1706.03762v7/anaphora_resolution2_new.svg",
+        "https://arxiv.org/html/1706.03762v7/attending_to_head_new.svg",
+        "https://arxiv.org/html/1706.03762v7/attending_to_head2_new.svg",
     }
 
     assert {image.url for image in loaded.images} == expected_urls
-    assert len(loaded.images) == 3
+    assert len(loaded.images) == 8
     for image in loaded.images:
         assert image.location.startswith("#")
         assert f'id="{image.location.lstrip("#")}"' in mock_html
+
+
+def test_every_figure_image_is_linked_to_its_caption_passage():
+    """A retrieved caption must carry every image the interface should show."""
+    loaded, _ = load_fixture()
+    figure_captions = [
+        passage for passage in loaded.passages if passage.kind == "figure_caption"
+    ]
+    expected_locations = {
+        "#S3.F1": ["#S3.F1.g1"],
+        "#S3.F2": ["#S3.F2.g1", "#S3.F2.g2"],
+        "#Sx1.F3": ["#Sx1.F3.g1"],
+        "#Sx1.F4": ["#Sx1.F4.g1", "#Sx1.F4.g2"],
+        "#Sx1.F5": ["#Sx1.F5.g1", "#Sx1.F5.g2"],
+    }
+    actual_locations = {
+        passage.location: [image.location for image in passage.images]
+        for passage in figure_captions
+    }
+    linked_images = [image for passage in figure_captions for image in passage.images]
+
+    assert actual_locations == expected_locations
+    assert linked_images == loaded.images
+    assert all(
+        not passage.images
+        for passage in loaded.passages
+        if passage.kind != "figure_caption"
+    )
+
+
+def test_prose_and_notes_retain_their_passage_kinds():
+    loaded, _ = load_fixture()
+    kinds_by_location = {passage.location: passage.kind for passage in loaded.passages}
+
+    assert kinds_by_location["#S3.p1"] == "prose"
+    assert kinds_by_location["#footnote1"] == "note"
 
 
 def test_caption_is_emitted_beside_its_figure_in_document_order():
