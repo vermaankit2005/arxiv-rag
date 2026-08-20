@@ -1,0 +1,989 @@
+[
+  {
+    "arxiv_id": "1706.03762v7",
+    "sections": [
+      "Attention Is All You Need",
+      "Abstract",
+      "Introduction",
+      "Background",
+      "Model Architecture",
+      "Encoder and Decoder Stacks",
+      "Encoder:",
+      "Decoder:",
+      "Attention",
+      "Scaled Dot-Product Attention",
+      "Multi-Head Attention",
+      "Applications of Attention in our Model",
+      "Position-wise Feed-Forward Networks",
+      "Embeddings and Softmax",
+      "Positional Encoding",
+      "Why Self-Attention",
+      "Training",
+      "Training Data and Batching",
+      "Hardware and Schedule",
+      "Optimizer",
+      "Regularization",
+      "Residual Dropout",
+      "Label Smoothing",
+      "Results",
+      "Machine Translation",
+      "Model Variations",
+      "English Constituency Parsing",
+      "Conclusion",
+      "Acknowledgements",
+      "References",
+      "Attention Visualizations"
+    ],
+    "probes": [
+      {
+        "text": "Provided proper attribution is provided, Google hereby grants permission to reproduce the tables and figures in this paper solely for use in journalistic or scholarly works.",
+        "order": 0,
+        "section": ""
+      },
+      {
+        "text": "We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.",
+        "order": 1,
+        "section": "Abstract"
+      },
+      {
+        "text": "In this work we propose the Transformer, a model architecture eschewing recurrence and instead relying entirely on an attention mechanism to draw global dependencies between input and output.",
+        "order": 2,
+        "section": "Introduction"
+      },
+      {
+        "text": "End-to-end memory networks are based on a recurrent attention mechanism instead of sequence-aligned recurrence and have been shown to perform well on simple-language question answering and language modeling tasks [34].",
+        "order": 3,
+        "section": "Background"
+      },
+      {
+        "text": "We employ a residual connection [11] around each of the two sub-layers, followed by layer normalization [1].",
+        "order": 4,
+        "section": "Encoder and Decoder Stacks"
+      },
+      {
+        "text": "Due to the reduced dimension of each head, the total computational cost is similar to that of single-head attention with full dimensionality.",
+        "order": 5,
+        "section": "Multi-Head Attention"
+      },
+      {
+        "text": "In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation, similar to [30].",
+        "order": 6,
+        "section": "Embeddings and Softmax"
+      },
+      {
+        "text": "This hurts perplexity, as the model learns to be more unsure, but improves accuracy and BLEU score.",
+        "order": 7,
+        "section": "Regularization"
+      }
+    ]
+  },
+  {
+    "arxiv_id": "1810.04805v2",
+    "sections": [
+      "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+      "Abstract",
+      "Introduction",
+      "Related Work",
+      "Unsupervised Feature-based Approaches",
+      "Unsupervised Fine-tuning Approaches",
+      "Transfer Learning from Supervised Data",
+      "BERT",
+      "Model Architecture",
+      "Input/Output Representations",
+      "Pre-training BERT",
+      "Task #1: Masked LM",
+      "Task #2: Next Sentence Prediction (NSP)",
+      "Fine-tuning BERT",
+      "Experiments",
+      "GLUE",
+      "SQuAD v1.1",
+      "SQuAD v2.0",
+      "SWAG",
+      "Ablation Studies",
+      "Effect of Pre-training Tasks",
+      "Effect of Model Size",
+      "Feature-based Approach with BERT",
+      "Conclusion",
+      "References",
+      "Additional Details for BERT",
+      "Illustration of the Pre-training Tasks",
+      "Masked LM and the Masking Procedure",
+      "Next Sentence Prediction",
+      "Pre-training Procedure",
+      "Fine-tuning Procedure",
+      "Comparison of BERT, ELMo ,and OpenAI GPT",
+      "Illustrations of Fine-tuning on Different Tasks",
+      "Detailed Experimental Setup",
+      "Detailed Descriptions for the GLUE Benchmark Experiments.",
+      "MNLI",
+      "QQP",
+      "QNLI",
+      "SST-2",
+      "CoLA",
+      "STS-B",
+      "MRPC",
+      "RTE",
+      "WNLI",
+      "Additional Ablation Studies",
+      "Effect of Number of Training Steps",
+      "Ablation for Different Masking Procedures"
+    ],
+    "probes": [
+      {
+        "text": "BERT is designed to pre-train deep bidirectional representations from unlabeled text by jointly conditioning on both left and right context in all layers.",
+        "order": 0,
+        "section": "Abstract"
+      },
+      {
+        "text": "The contextual representation of each token is the concatenation of the left-to-right and right-to-left representations.",
+        "order": 1,
+        "section": "Unsupervised Feature-based Approaches"
+      },
+      {
+        "text": "Critically, however, the BERT Transformer uses bidirectional self-attention, while the GPT Transformer uses constrained self-attention where every token can only attend to context to its left.",
+        "order": 2,
+        "section": "Model Architecture"
+      },
+      {
+        "text": "Many important downstream tasks such as Question Answering (QA) and Natural Language Inference (NLI) are based on understanding the relationship between two sentences, which is not directly captured by language modeling.",
+        "order": 3,
+        "section": "Task #2: Next Sentence Prediction (NSP)"
+      },
+      {
+        "text": "We use a batch size of 32 and fine-tune for 3 epochs over the data for all GLUE tasks.",
+        "order": 4,
+        "section": "GLUE"
+      },
+      {
+        "text": "The LTR model performs worse than the MLM model on all tasks, with large drops on MRPC and SQuAD.",
+        "order": 5,
+        "section": "Effect of Pre-training Tasks"
+      },
+      {
+        "text": "These contextual embeddings are used as input to a randomly initialized two-layer 768-dimensional BiLSTM before the classification layer.",
+        "order": 6,
+        "section": "Feature-based Approach with BERT"
+      },
+      {
+        "text": "We also observed that large data sets (e.g., 100k+ labeled training examples) were far less sensitive to hyperparameter choice than small data sets.",
+        "order": 7,
+        "section": "Fine-tuning Procedure"
+      }
+    ]
+  },
+  {
+    "arxiv_id": "2305.18290v3",
+    "sections": [
+      "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+      "Abstract",
+      "Introduction",
+      "Related Work",
+      "Preliminaries",
+      "Direct Preference Optimization",
+      "Theoretical Analysis of DPO",
+      "Your Language Model Is Secretly a Reward Model",
+      ".",
+      "Proof Sketch.",
+      "Instability of Actor-Critic Algorithms",
+      "Experiments",
+      "How well can DPO optimize the RLHF objective?",
+      "Can DPO scale to real preference datasets?",
+      "Generalization to a new input distribution",
+      "Validating GPT-4 judgments with human judgments",
+      "Discussion",
+      "Acknowledgements",
+      "References",
+      "Author Contributions",
+      "Mathematical Derivations",
+      "Deriving the Optimum of the KL-Constrained Reward Maximization Objective",
+      "Deriving the DPO Objective Under the Bradley-Terry Model",
+      "Deriving the DPO Objective Under the Plackett-Luce Model",
+      "Deriving the Gradient of the DPO Objective",
+      "Proof of Lemma 1 and 2",
+      "Proof.",
+      "Proof of Theorem 1",
+      "DPO Implementation Details and Hyperparameters",
+      "Further Details on the Experimental Set-Up",
+      "IMDb Sentiment Experiment and Baseline Details",
+      "GPT-4 prompts for computing summarization and dialogue win rates",
+      "Unlikelihood baseline",
+      "Additional Empirical Results",
+      "Performance of Best of N baseline for Various N",
+      "Sample Responses and GPT-4 Judgments",
+      "Human study details",
+      "Participants."
+    ],
+    "probes": [
+      {
+        "text": "While large-scale unsupervised language models (LMs) learn broad world knowledge and some reasoning skills, achieving precise control of their behavior is difficult due to the completely unsupervised nature of their training.",
+        "order": 0,
+        "section": "Abstract"
+      },
+      {
+        "text": "Our main contribution is Direct Preference Optimization (DPO), a simple RL-free algorithm for training language models from preferences.",
+        "order": 1,
+        "section": "Introduction"
+      },
+      {
+        "text": "This ‘instruction-tuning’ procedure enables LLMs to generalize to instructions outside of the instruction-tuning set and generally increase their usability [13].",
+        "order": 2,
+        "section": "Related Work"
+      },
+      {
+        "text": "It usually includes three phases: 1) supervised fine-tuning (SFT); 2) preference sampling and reward learning and 3) RL optimization.",
+        "order": 3,
+        "section": "Preliminaries"
+      },
+      {
+        "text": "Two reward functions from the same equivalence class induce the same optimal policy under the constrained RL problem.",
+        "order": 4,
+        "section": "Your Language Model Is Secretly a Reward Model"
+      },
+      {
+        "text": "We conduct a human study to verify the reliability of GPT-4’s judgments, using the results of the TL;DR summarization experiment and two different GPT-4 prompts.",
+        "order": 5,
+        "section": "Validating GPT-4 judgments with human judgments"
+      },
+      {
+        "text": "We have introduced DPO, a simple training paradigm for training language models from preferences without reinforcement learning.",
+        "order": 6,
+        "section": "Discussion"
+      },
+      {
+        "text": "The prompts are prefixes from the IMDB dataset of length 2-8 tokens.",
+        "order": 7,
+        "section": "IMDb Sentiment Experiment and Baseline Details"
+      }
+    ]
+  },
+  {
+    "arxiv_id": "2005.11401v4",
+    "sections": [
+      "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+      "Abstract",
+      "Introduction",
+      "Methods",
+      "Models",
+      "RAG-Sequence Model",
+      "RAG-Token Model",
+      "Retriever: DPR",
+      "Generator: BART",
+      "Training",
+      "Decoding",
+      "RAG-Token",
+      "RAG-Sequence",
+      "Experiments",
+      "Open-domain Question Answering",
+      "Abstractive Question Answering",
+      "Jeopardy Question Generation",
+      "Fact Verification",
+      "Results",
+      "Additional Results",
+      "Generation Diversity",
+      "Retrieval Ablations",
+      "Index hot-swapping",
+      "Effect of Retrieving more documents",
+      "Related Work",
+      "Single-Task Retrieval",
+      "General-Purpose Architectures for NLP",
+      "Learned Retrieval",
+      "Memory-based Architectures",
+      "Retrieve-and-Edit approaches",
+      "Discussion",
+      "Broader Impact",
+      "Acknowledgments",
+      "References",
+      "Implementation Details",
+      "Human Evaluation",
+      "Training setup Details",
+      "Further Details on Open-Domain QA",
+      "CuratedTrec preprocessing",
+      "TriviaQA Evaluation setups",
+      "Further Details on FEVER",
+      "Null Document Probabilities",
+      "Parameters",
+      "Retrieval Collapse",
+      "Number of instances per dataset"
+    ],
+    "probes": [
+      {
+        "text": "Large pre-trained language models have been shown to store factual knowledge in their parameters, and achieve state-of-the-art results when fine-tuned on downstream NLP tasks.",
+        "order": 0,
+        "section": "Abstract"
+      },
+      {
+        "text": "We use the splits from SearchQA [10], with 100K train, 14K dev, and 27K test examples.",
+        "order": 1,
+        "section": "Jeopardy Question Generation"
+      },
+      {
+        "text": "Q-BLEU is a variant of BLEU with a higher weight for matching entities and has higher correlation with human judgment for question generation than standard metrics.",
+        "order": 2,
+        "section": "Jeopardy Question Generation"
+      },
+      {
+        "text": "For FEVER, BM25 performs best, perhaps since FEVER claims are heavily entity-centric and thus well-suited for word overlap-based retrieval.",
+        "order": 3,
+        "section": "Retrieval Ablations"
+      },
+      {
+        "text": "There is significant work on learning to retrieve documents in information retrieval, more recently with pre-trained, neural language models [44, 26] similar to ours.",
+        "order": 4,
+        "section": "Learned Retrieval"
+      },
+      {
+        "text": "With these advantages also come potential downsides: Wikipedia, or any potential external knowledge source, will probably never be entirely factual and completely devoid of bias.",
+        "order": 5,
+        "section": "Broader Impact"
+      },
+      {
+        "text": "We train all RAG models and BART baselines using Fairseq [45].",
+        "order": 6,
+        "section": "Implementation Details"
+      },
+      {
+        "text": "We experimented with adding \"Null document\" mechanism to RAG, similar to REALM [20] in order to model cases where no useful information could be retrieved for a given input.",
+        "order": 7,
+        "section": "Null Document Probabilities"
+      }
+    ]
+  },
+  {
+    "arxiv_id": "2510.14557v1",
+    "sections": [
+      "MX+: Pushing the Limits of Microscaling Formats for Efficient Large Language Model ServingConference: 58th IEEE/ACM International Symposium on Microarchitecture; October 18–22, 2025; Seoul, Republic of Korea58th IEEE/ACM International Symposium on Microarchitecture (MICRO ’25), October 18–22, 2025, Seoul, Republic of KoreaDOI: 10.1145/3725843.3756118ISBN: 979-8-4007-1573-0/25/10CCS: Computer systems organization Neural networksCCS: Computer systems organization Single instruction, multiple dataCCS: Hardware Arithmetic and datapath circuits",
+      "Abstract.",
+      "Keywords:",
+      "Introduction",
+      "Preliminaries: Industry-Driven Block-Based Data Formats",
+      "Serving LLMs with Block-Based Data Formats",
+      "Model Performance with BFP Variants",
+      "Analysis on Low-Bit MX Format",
+      "MX+: Enhancing the MX Formats",
+      "MX+ Design",
+      "Data Layout of MX+",
+      "Potential Use of Reserved Bits",
+      "Software Integration of MX+ on GPUs",
+      "Challenges of Handling BM on GPUs",
+      "Using Underutilized Tensor Cores",
+      "Architectural Support for MX+",
+      "GPU Integration Overview",
+      "Tensor Core Integration",
+      "Evaluation",
+      "Experimental Methodology",
+      "Language Model Performance",
+      "Performance of MX+ Software Integration",
+      "MX+ Hardware Integration",
+      "Analysis and Discussion",
+      "Comparison with Other Schemes",
+      "Broader Applicability of MX+",
+      "Addressing Multiple Outliers in a Block",
+      "Related Work",
+      "Conclusion",
+      "Acknowledgements.",
+      "References"
+    ],
+    "probes": [
+      {
+        "text": "Reduced-precision data formats are crucial for cost-effective serving of large language models (LLMs).",
+        "order": 0,
+        "section": "Abstract."
+      },
+      {
+        "text": "To understand the underlying reasons for the reduction in model performance with the low-bit MX format, we conduct a further analysis on MXFP4.",
+        "order": 1,
+        "section": "Analysis on Low-Bit MX Format"
+      },
+      {
+        "text": "Figure 6 illustrates an example of binary encoding for MXFP4 and MXFP4+ using the sampled block presented in Figure 4.",
+        "order": 2,
+        "section": "Data Layout of MX+"
+      },
+      {
+        "text": "In detail, each thread first loads matrix fragments and the BM index, then checks if it holds the BM element using its thread ID.",
+        "order": 3,
+        "section": "Challenges of Handling BM on GPUs"
+      },
+      {
+        "text": "We assess model performance when using MX+ for both activations and weights, and compare each against its counterpart (i.e., MXFP4, MXFP6, and MXFP8).",
+        "order": 4,
+        "section": "Language Model Performance"
+      },
+      {
+        "text": "Table 5 shows the area and power of the additional components for MX+ per Tensor Core.",
+        "order": 5,
+        "section": "MX+ Hardware Integration"
+      },
+      {
+        "text": "We also perform quantization-aware (QA) fine-tuning and evaluate the effectiveness of MXFP4+ on the fine-tuned models.",
+        "order": 6,
+        "section": "Broader Applicability of MX+"
+      },
+      {
+        "text": "Table 12 shows the accuracy results for channel-wise reordering, denoted as Reorder.",
+        "order": 7,
+        "section": "Addressing Multiple Outliers in a Block"
+      }
+    ]
+  },
+  {
+    "arxiv_id": "2509.24832v2",
+    "sections": [
+      "SemShareKV: Efficient KVCache Sharing for Semantically Similar Prompts via Token-Level LSH Matching",
+      "Abstract",
+      "Introduction",
+      "Related Work",
+      "Conventional KVCache Compression",
+      "KVCache Sharing",
+      "KVCache Reusing",
+      "Observations and Insights",
+      "Insights 1 HD tokens stay consistent across layers.",
+      "Insights 2 Deeper layers focuses on fewer tokens",
+      "Insights 3 Deeper layers have more redundant information.",
+      "Methodology",
+      "Relevant Concepts",
+      "Model Overview",
+      "KVCache Sharing Challenge",
+      "Use Relative Position Encoding to Facilitate Fuzzy Token Match",
+      "Impact from Position Encoding in KVCache",
+      "Recomputation Strategy",
+      "Retention Strategy",
+      "Evaluation and Results",
+      "Experiments Setup",
+      "Benchmarking Evaluation",
+      "Efficiency Evaluation",
+      "Impact of Prompt Similarity on Performance.",
+      "Ablation Study",
+      "Conclusion",
+      "Limitations",
+      "References",
+      "Formula and Inference",
+      "Rotary Position Encoding",
+      "Locality-Sensitive Hashing (LSH)",
+      "LSH-Distance Based Similarity Score",
+      "Key-Value Deviation",
+      "Token Recomputation",
+      "Token Retention",
+      "Data Preparation",
+      "Benchmark Datasets",
+      "Eliminination and Replacement Dataset",
+      "Extra Experimental Results",
+      "Implementation and Hyperparameters",
+      "Artifact Use and Compliance with Intended Purpose"
+    ],
+    "probes": [
+      {
+        "text": "As large language models (LLMs) continue to scale, the memory footprint of Key-Value (KV) caches during inference has become a significant bottleneck.",
+        "order": 0,
+        "section": "Abstract"
+      },
+      {
+        "text": "To address long-context processing, many works propose optimizing inference by retaining only informative tokens.",
+        "order": 1,
+        "section": "Conventional KVCache Compression"
+      },
+      {
+        "text": "The design of SemShareKV, illustrated in Figure 1, is based on three key insights from Section 3.",
+        "order": 2,
+        "section": "Model Overview"
+      },
+      {
+        "text": "To address this, we introduce positional encoding into the E cache to enhance fuzzy token matching.",
+        "order": 3,
+        "section": "Use Relative Position Encoding to Facilitate Fuzzy Token Match"
+      },
+      {
+        "text": "Similar to token recomputation, we categorize the layers into two groups: the first and the subsequent layers.",
+        "order": 4,
+        "section": "Retention Strategy"
+      },
+      {
+        "text": "We then applied SemShareKV to reuse the cache from the modified reference prompt for the target prompt.",
+        "order": 5,
+        "section": "Ablation Study"
+      },
+      {
+        "text": "To study the impact of prompt similarity on LLM performance when applying SemShareKV, we designed two ablation studies.",
+        "order": 6,
+        "section": "Extra Experimental Results"
+      },
+      {
+        "text": "The generated data serves the purpose of advancing research in semantic similarity and does not extend beyond the intended scope of the original datasets.",
+        "order": 7,
+        "section": "Artifact Use and Compliance with Intended Purpose"
+      }
+    ]
+  },
+  {
+    "arxiv_id": "2608.14492v1",
+    "sections": [
+      "Approximate Muon with low-rank adapters",
+      "Abstract",
+      "Introduction",
+      "Related Work",
+      "Muon and spectral steepest descent",
+      "Muon for fine-tuning and optimizer mismatch",
+      "Geometry-aware and Muon-based LoRA optimizers",
+      "Low-rank optimization beyond LoRA fine-tuning",
+      "Background",
+      "Muon",
+      "LoRA",
+      "Method",
+      "Low-rank gradients",
+      "Efficient, matmul-only computation",
+      "Algorithm",
+      "Experiments",
+      "Experiment details",
+      "Muon-based LoRA is strongest on the Muon-pretrained model",
+      "Benefits of Muon pretraining remain with ReLoRA",
+      "Efficiency gain from the matmul-only implementation",
+      "Conclusion",
+      "References",
+      "Other algorithmic details",
+      "Match AdamW RMS",
+      "Split weight decay",
+      "Invariance to parameterization",
+      "Without transporting momentum buffers",
+      "With momentum transport",
+      "Alternative stable algorithm",
+      "Comparison of Muon-based LoRA optimizers",
+      "Optimality of the sMuon step",
+      ".",
+      "Proof.",
+      "Learning rate curves"
+    ],
+    "probes": [
+      {
+        "text": "The Muon optimizer shows clear benefits versus alternatives when pretraining neural networks.",
+        "order": 0,
+        "section": "Abstract"
+      },
+      {
+        "text": "In this paper, we linearize the low-rank Muon objective to find the optimal descent step within the available parameter space.",
+        "order": 1,
+        "section": "Introduction"
+      },
+      {
+        "text": "This solution effectively orthogonalizes the full layer’s gradient and projects it onto the appropriate low-rank subspace.",
+        "order": 2,
+        "section": "Introduction"
+      },
+      {
+        "text": "The most closely related works are 8 and 7; these both attempt to approximate a low-rank solution to the spectral-regularized gradient descent problem.",
+        "order": 3,
+        "section": "Geometry-aware and Muon-based LoRA optimizers"
+      },
+      {
+        "text": "Unfortunately, we could not find implementations for LoRA-Muon or Riemannion, so we implemented these ourselves.",
+        "order": 4,
+        "section": "Experiment details"
+      },
+      {
+        "text": "The ReLoRA experiment (Table 3) removes optimizer mismatch entirely by training from scratch.",
+        "order": 5,
+        "section": "Benefits of Muon pretraining remain with ReLoRA"
+      },
+      {
+        "text": "Every Muon-based method achieves lower validation loss than LoRA+AdamW.",
+        "order": 6,
+        "section": "Benefits of Muon pretraining remain with ReLoRA"
+      },
+      {
+        "text": "Inspired by 26, we adopt a learning rate adjustment.",
+        "order": 7,
+        "section": "Match AdamW RMS"
+      }
+    ]
+  },
+  {
+    "arxiv_id": "2608.10906v1",
+    "sections": [
+      "GitSkills: A Dataset of Agent Skills on GitHub",
+      "Abstract",
+      "High-Level Overview",
+      "Internal Structure",
+      "Potential Research Questions",
+      "How to Access",
+      "References",
+      "Dataset Construction"
+    ],
+    "probes": [
+      {
+        "text": "An agent skill is a folder containing a SKILL.md file with instructions for a language-model agent, optionally accompanied by scripts and reference files.",
+        "order": 0,
+        "section": "Abstract"
+      },
+      {
+        "text": "The model decides at run time whether to load a skill by comparing the task with the skill description.",
+        "order": 1,
+        "section": "High-Level Overview"
+      },
+      {
+        "text": "No compiler or type checker verifies that the agent selected the appropriate skill.",
+        "order": 2,
+        "section": "High-Level Overview"
+      },
+      {
+        "text": "The dataset covers the early adoption of the format, while conventions and tooling are still developing.",
+        "order": 3,
+        "section": "High-Level Overview"
+      },
+      {
+        "text": "Table I summarizes the dataset tables.",
+        "order": 4,
+        "section": "Internal Structure"
+      },
+      {
+        "text": "Folder contents and commit history are collected for only one copy of each distinct skill.",
+        "order": 5,
+        "section": "Internal Structure"
+      },
+      {
+        "text": "Agent skills influence how coding agents operate within software projects, so their content, structure, reuse, and maintenance are empirical questions the dataset can answer at population scale.",
+        "order": 6,
+        "section": "Potential Research Questions"
+      },
+      {
+        "text": "Commit author accounts are replaced by keyed one-way codes, identical for the same account throughout, so authorship can be traced without identifying anyone.",
+        "order": 7,
+        "section": "How to Access"
+      }
+    ]
+  },
+  {
+    "arxiv_id": "2601.02404v1",
+    "sections": [
+      "PCEval: A Benchmark for Evaluating Physical Computing Capabilities of Large Language Models",
+      "Abstract",
+      "Introduction",
+      "Related Work",
+      "AI for Programming.",
+      "AI for Hardware and Physical Systems.",
+      "PCEval Benchmark",
+      "The Interviews and Problem Definition",
+      "Dataset Structure",
+      "Task Definitions",
+      "Project Design",
+      "Evaluation",
+      "Experimental Results",
+      "Setup",
+      "Analysis of Model Performance and Task Characteristics",
+      "Circuit Gen. vs. Code Gen.",
+      "Sensitivity to Complexity.",
+      "Dominant Failure Causes in D, C \\rightarrow P.",
+      "Exploratory Mitigation Strategies",
+      "Educational Usability and Pedagogical Implications",
+      "Limitations",
+      "Conclusions",
+      "References",
+      "Interviews with Computer Science Educators",
+      "Key Interview Question Areas",
+      "Thematic Summary of Interview Responses with Excerpts",
+      "Educational Validation through Expert Focus Groups",
+      "Participants and Procedure",
+      "Key Findings from Educators",
+      "Findings from Pre-service Teachers",
+      "Implications",
+      "Evaluation Metric Details",
+      "Simulator",
+      "Circuit Validation",
+      "Code Quality Validation",
+      "Additional Results: Self-Improvement and Chain-of-Thought",
+      "PCEval Benchmark Projects",
+      "Prompt Details",
+      "Additional Experiments on ESP32",
+      "System Specifications for Evaluation",
+      "More Qualitative Results",
+      "Visualizing the Impact of Project Complexity Metrics on LLM Performance",
+      "Circuit Generation Tasks",
+      "Code Generation Tasks",
+      "Summary",
+      "Visualizing the Impact of Project Level on LLM Performance",
+      "Analysis of Outlier Projects",
+      "Bar LED Basic (Level 1)",
+      "4 Digit 7 Segment Display (Level 3)"
+    ],
+    "probes": [
+      {
+        "text": "Large Language Models (LLMs) have demonstrated remarkable capabilities across various domains, including software development, education, and technical assistance.",
+        "order": 0,
+        "section": "Abstract"
+      },
+      {
+        "text": "Early LLM benchmarks focused on algorithmic tasks in Python, later extended to broader domains like data science and web/mobile applications (6; 5; 12; 20; 34).",
+        "order": 1,
+        "section": "AI for Programming."
+      },
+      {
+        "text": "While these works advanced functional correctness in software, they do not address the challenges of hardware interaction or physical implementation.",
+        "order": 2,
+        "section": "AI for Programming."
+      },
+      {
+        "text": "The PCEval benchmark comprises 50 projects designed to reflect authentic educational scenarios in physical computing, covering commonly utilized components such as LEDs, sensors, and displays.",
+        "order": 3,
+        "section": "Project Design"
+      },
+      {
+        "text": "These findings confirm that while functional correctness is a prerequisite, true educational utility also requires readability, process guidance, and layout simplicity.",
+        "order": 4,
+        "section": "Educational Validation through Expert Focus Groups"
+      },
+      {
+        "text": "Table 10 represents the test results of ESP32 code and circuit generated by six open and closed source LLMs.",
+        "order": 5,
+        "section": "Additional Experiments on ESP32"
+      },
+      {
+        "text": "The critical limiting factor appears to be the structural complexity of the artifact being generated rather than the complexity of the artifact being interpreted.",
+        "order": 6,
+        "section": "Summary"
+      },
+      {
+        "text": "The “4 Digit 7 Segment Display” project (Figure 9) represents Level 3 complexity but achieves near-zero performance across all models.",
+        "order": 7,
+        "section": "4 Digit 7 Segment Display (Level 3)"
+      }
+    ]
+  },
+  {
+    "arxiv_id": "2403.02310v3",
+    "sections": [
+      "Taming Throughput-Latency Tradeoff in LLM Inference with Sarathi-Serve",
+      "Abstract",
+      "Introduction",
+      "Background",
+      "The Transformer Architecture",
+      "LLM Inference Process",
+      "Multi-GPU LLM Inference",
+      "Performance Metrics",
+      "Scheduling Policies for LLM Inference",
+      "Motivation",
+      "Cost Analysis of Prefill and Decode",
+      "Throughput-Latency Trade-off",
+      "Pipeline Bubbles waste GPU Cycles",
+      "Sarathi-Serve: Design and Implementation",
+      "Chunked-prefills",
+      "Stall-free batching",
+      "Determining Token Budget",
+      "Implementation",
+      "Evaluation",
+      "Capacity Evaluation",
+      "Throughput-Latency Tradeoff",
+      "Making Pipeline Parallel Viable",
+      "Ablation Study",
+      "Overhead of chunked-prefills",
+      "Impact of individual techniques",
+      "Related Work",
+      "Conclusion",
+      "Acknowledgement",
+      "References",
+      "Artifact Appendix",
+      "Scope",
+      "Contents",
+      "Hosting",
+      "Requirements"
+    ],
+    "probes": [
+      {
+        "text": "Each LLM serving request goes through two phases.",
+        "order": 0,
+        "section": "Abstract"
+      },
+      {
+        "text": "Prefill iterations have high latency but saturate GPU compute due to parallel processing of the input prompt.",
+        "order": 1,
+        "section": "Abstract"
+      },
+      {
+        "text": "With ever-increasing growth in model sizes, it becomes necessary to scale LLMs to multi-GPU or even multi-node deployments [59, 22].",
+        "order": 2,
+        "section": "Multi-GPU LLM Inference"
+      },
+      {
+        "text": "Takeaway-3: The interleaving of prefills and decodes involves a trade-off between throughput and latency for current LLM inference schedulers.",
+        "order": 3,
+        "section": "Throughput-Latency Trade-off"
+      },
+      {
+        "text": "State-of-the-art systems today use prefill-prioritizing schedules that trade TBT latency for high throughput.",
+        "order": 4,
+        "section": "Throughput-Latency Trade-off"
+      },
+      {
+        "text": "The openchat_sharegpt4 trace contains user-shared conversations with ChatGPT-4 [6].",
+        "order": 5,
+        "section": "Evaluation"
+      },
+      {
+        "text": "We now show that Sarathi-Serve makes it feasible to efficiently serve LLM inference across commodity networks with efficient pipeline parallelism.",
+        "order": 6,
+        "section": "Making Pipeline Parallel Viable"
+      },
+      {
+        "text": "For these experiments, we run Falcon-180B over two nodes, each with four A100 GPUs, connected over 100 Gbps Ethernet.",
+        "order": 7,
+        "section": "Making Pipeline Parallel Viable"
+      }
+    ]
+  },
+  {
+    "arxiv_id": "2310.12821v5",
+    "sections": [
+      "GestureGPT: Toward Zero-Shot Free-Form Hand Gesture Understanding with Large Language Model AgentsDOI: 10.1145/3698145Journal: PACMHCIVolume: 8ISS54512CCS: Human-centered computing Gestural inputCCS: Human-centered computing User interface management systems",
+      "Abstract.",
+      "Keywords:",
+      "Introduction",
+      "Background and Related Work",
+      "LLM as Autonomous Agent",
+      "Natural Free-form Gesture Understanding",
+      "Gesture Understanding with Context Information",
+      "Method",
+      "Gesture Description Agent",
+      "Rule-Based Gesture Description Generation",
+      "Gesture Summary Description Generation",
+      "Gesture Inference Agent",
+      "Context Management Agent",
+      "Context Library Operations",
+      "Evaluation",
+      "Experiment 1: Augmented Reality-Based Smart Home IoT Control",
+      "Experiment Setting and Procedure",
+      "Results Analysis",
+      "Experiment 2: Online Video Streaming on PC",
+      "Result Analysis: Gesture Description Quality Assessment",
+      "Pilot Study: Human Performance in Gesture Understanding",
+      "Discussion",
+      "Integration and Utilization of Top-N Predictions",
+      "Language Input (LLM) vs. Visual Input (LMM) for Agents",
+      "Single Agent vs. Multi Agent",
+      "Context Selection in Complex Systems",
+      "LLM Common Sense Bias",
+      "System Scalability",
+      "Limitation and Future Work",
+      "Handling Left-Handed Gestures, Multiple Hands, and Non-Interactive Gestures in Frame",
+      "System Delay and Applicability",
+      "Conclusion",
+      "Acknowledgments",
+      "Gesture Description Rules",
+      "Rules Calculation Method",
+      "Training for Threshold and Evaluation for Gesture Description Rules",
+      "Training Process",
+      "Test Performance",
+      "Pseudocode for description rules",
+      "Gesture State Matrix Details",
+      "Channel 1: Hand Pose",
+      "Channel 2: Hand Movement",
+      "Detailed Experiment Setting",
+      "System Cost for LLM Use",
+      "Data Samples and Prompts Utilized in GestureGPT",
+      "References"
+    ],
+    "probes": [
+      {
+        "text": "Existing gesture interfaces only work with a fixed set of gestures defined either by interface designers or by users themselves, which introduces learning or demonstration efforts that diminish their naturalness.",
+        "order": 0,
+        "section": "Abstract."
+      },
+      {
+        "text": "Humans, on the other hand, understand free-form gestures by synthesizing the gesture, context, experience, and common sense.",
+        "order": 1,
+        "section": "Abstract."
+      },
+      {
+        "text": "The conflicts in different system designs further exacerbate user adaptation challenges across platforms.",
+        "order": 2,
+        "section": "Natural Free-form Gesture Understanding"
+      },
+      {
+        "text": "For pose description, we developed a prompt structured into three parts shown in Figure 6: Introduction, Procedure and Examples.",
+        "order": 3,
+        "section": "Rule-Based Gesture Description Generation"
+      },
+      {
+        "text": "Although the end-to-end LMM approach exhibits shorter delays, it presents several disadvantages: it is cumbersome to adjust and train, lacks task transferability, and falls short in terms of scalability and generality.",
+        "order": 4,
+        "section": "Language Input (LLM) vs. Visual Input (LMM) for Agents"
+      },
+      {
+        "text": "The overall time cost of the framework is primarily driven by LLM-related processes, accounting for up to 90% of the total time expenditure.",
+        "order": 5,
+        "section": "System Delay and Applicability"
+      },
+      {
+        "text": "HaGRID contains images of 18 kinds of gestures (call, dislike, fist, four, like, mute, ok, one, palm, peace, peace inv., rock, stop, stop inv., three, three 2, two up, two up inv.).",
+        "order": 6,
+        "section": "Training for Threshold and Evaluation for Gesture Description Rules"
+      },
+      {
+        "text": "Only those with error rate above 15% are shown.",
+        "order": 7,
+        "section": "Test Performance"
+      }
+    ]
+  },
+  {
+    "arxiv_id": "2311.03033v1",
+    "sections": [
+      "Beyond Words: A Mathematical Framework for Interpreting Large Language Models",
+      "Abstract",
+      "Introduction",
+      "The mathematical framework",
+      "Hex examples",
+      "Simple arithmetic problem",
+      "Sketching a unicorn",
+      "LLM concepts with Hex",
+      "Hallucination and misalignment",
+      "Evaluating the output of an LLM",
+      "Chain-of-Thought",
+      ".",
+      "Proof.",
+      "Self-verification",
+      "Prompt programming",
+      "Discussion",
+      "Acknowledgements",
+      "References"
+    ],
+    "probes": [
+      {
+        "text": "Large language models (LLMs) are powerful AI tools that can generate and comprehend natural language text and other complex information.",
+        "order": 0,
+        "section": "Abstract"
+      },
+      {
+        "text": "However, the field lacks a mathematical framework to systematically describe, compare and improve LLMs.",
+        "order": 1,
+        "section": "Abstract"
+      },
+      {
+        "text": "LLMs are abstract execution machines that use natural language as an interface.",
+        "order": 2,
+        "section": "The mathematical framework"
+      },
+      {
+        "text": "Given an input prompt that captures the user’s intention, an LLM produces an output answer in the form of text that is presented to the user.",
+        "order": 3,
+        "section": "The mathematical framework"
+      },
+      {
+        "text": "Unlike the arithmetic example, this problem has multiple solutions and the relation that makes the Hex diagram commute depends on the scenario.",
+        "order": 4,
+        "section": "Sketching a unicorn"
+      },
+      {
+        "text": "For example, different human evaluations may have different standards for how much the figure resembles an unicorn.",
+        "order": 5,
+        "section": "Sketching a unicorn"
+      },
+      {
+        "text": "Others may care more about the clarity of the code.",
+        "order": 6,
+        "section": "Sketching a unicorn"
+      },
+      {
+        "text": "The following is an example of using the Python API to write a zero-shot prompt for adding two numbers.",
+        "order": 7,
+        "section": "Prompt programming"
+      }
+    ]
+  }
+]

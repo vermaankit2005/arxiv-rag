@@ -18,3 +18,5 @@ experiments/
 *.md
 !README.md
 !tests/data/
+# The evals' answer key ships with the evals that read it.
+!evals/data/
