@@ -29,6 +29,10 @@ SKIP_TAGS = {"script", "style", "math", "svg", "head"}
 HEADINGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 # Footnote-like prose: real content, but nested inside another paragraph.
 NOTE_CLASSES = {"ltx_note_content", "ltx_role_thanks", "ltx_role_footnote"}
+# Scaffolding LaTeXML writes around a footnote -- its number twice over, and a
+# label saying what kind of note it is ("footnotemark: "). The author wrote none
+# of it. See handle_starttag.
+LABELS = {"ltx_note_mark", "ltx_tag_note", "ltx_note_type"}
 VOID_TAGS = {"br", "img", "hr", "meta", "link", "input", "source", "col"}
 
 
@@ -143,9 +147,18 @@ class Reader(HTMLParser):
             self.start_capture("para", node_id)
             return
 
-        # <span class="ltx_tag">2 </span> holds the heading's number, which the
-        # title text should not repeat.
-        if self.capturing == "title" and "ltx_tag" in css:
+        # Labels and numbering, not prose. A heading carries its number in
+        # ltx_tag ("2 Background"). A footnote carries its number three times
+        # over -- the superscript where it is referenced, the superscript
+        # repeated at the start of the note, and again as ltx_tag_note -- plus
+        # a "footnotemark: " label. A \footnotemark points at a footnote that
+        # lives elsewhere and has no words of its own, so skipping the label
+        # leaves it empty and it is never emitted.
+        #
+        # Only the footnote flavours of ltx_tag are skipped. ltx_tag_figure and
+        # ltx_tag_table hold "Figure 1:" and "Table 2:", which are worth
+        # keeping -- they say what the passage is.
+        if LABELS & css or ("ltx_tag" in css and self.capturing == "title"):
             self.in_tag_span = True
 
     def handle_data(self, data: str) -> None:

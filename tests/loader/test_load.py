@@ -6,7 +6,7 @@ import pytest
 
 from loader.load import _fetch_html, load
 
-FIXTURE = Path(__file__).parent / "data" / "test_html.html"
+FIXTURE = Path(__file__).parents[1] / "data" / "test_html.html"
 
 # What arXiv actually sends back. A real page carries ltx_page_main; a paper
 # with no HTML gets a 200 and a stub, never a 404, so the status code alone
@@ -40,7 +40,7 @@ def test_load_html_returns_loaded_when_fetch_returns_html():
 
         assert loaded.arxiv_id == "test_html"
         assert len(loaded.sections) == 31
-        assert len(loaded.passages) == 80
+        assert len(loaded.passages) == 71
 
 
 def test_load_html_returns_empty_loded_when_fetch_returns_none():
