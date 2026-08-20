@@ -21,8 +21,9 @@ paper.
 import re
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
+from urllib.parse import urljoin
 
-from loader.shape import Passage
+from loader.shape import FigureImage, Passage
 
 # Subtrees whose text is never prose a reader wants quoted.
 SKIP_TAGS = {"script", "style", "math", "svg", "head"}
@@ -48,26 +49,32 @@ class Section:
 class Capture:
     """Text being collected right now, and where it will point."""
 
-    kind: str             # "title", "para" or "note"
+    kind: str             # "title", "para", "note", "caption" or "table"
     depth: int
     node_id: str = ""
     parts: list[str] = field(default_factory=list)
+    rows: list[list[str]] = field(default_factory=list)
+    cell_depth: int | None = None
+    cell_parts: list[str] = field(default_factory=list)
 
     @property
     def text(self) -> str:
+        if self.kind == "table":
+            return "\n".join(" | ".join(row) for row in self.rows if any(row))
         return re.sub(r"\s+", " ", "".join(self.parts)).strip()
 
 
 class Reader(HTMLParser):
-    """Walk the page once, emitting one passage per paragraph.
+    """Walk the page once, emitting prose, captions, tables and image records.
 
-    Read `passages` and `pending` when the feed is done.
+    Read `passages`, `images` and `pending` when the feed is done.
     """
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.titles: list[str] = []       # every heading, in order
         self.passages: list[Passage] = []
+        self.images: list[FigureImage] = []
         self.pending: list[Passage] = []  # notes, emitted after their host
 
         self.depth = 0
@@ -95,9 +102,40 @@ class Reader(HTMLParser):
     def start_capture(self, kind: str, node_id: str = "") -> None:
         self.captures.append(Capture(kind, self.depth, node_id))
 
+    def append_text(self, text: str) -> None:
+        if not self.captures:
+            return
+        capture = self.captures[-1]
+        if capture.kind == "table":
+            if capture.cell_depth is not None:
+                capture.cell_parts.append(text)
+        else:
+            capture.parts.append(text)
+
+    def start_table_row(self) -> None:
+        self.captures[-1].rows.append([])
+
+    def start_table_cell(self) -> None:
+        capture = self.captures[-1]
+        if not capture.rows:
+            capture.rows.append([])
+        capture.cell_depth = self.depth
+        capture.cell_parts.clear()
+
+    def close_table_cell(self) -> None:
+        if not self.captures:
+            return
+        capture = self.captures[-1]
+        if capture.kind != "table" or self.depth != capture.cell_depth:
+            return
+        text = re.sub(r"\s+", " ", "".join(capture.cell_parts)).strip()
+        capture.rows[-1].append(text)
+        capture.cell_depth = None
+        capture.cell_parts.clear()
+
     # -- reading ---------------------------------------------------------
-    def handle_starttag(self, tag: str, attrs_list: list[tuple[str, str | None]]) -> None:
-        attrs = {k: (v or "") for k, v in attrs_list}
+    def handle_starttag(self, tag: str, attrs) -> None:
+        attrs = {key: (value or "") for key, value in attrs}
         if tag not in VOID_TAGS:
             self.depth += 1
         if self.skip_until is not None:
@@ -105,8 +143,7 @@ class Reader(HTMLParser):
 
         if tag == "math":
             # Keep one plain-text copy of the formula, then skip the markup.
-            if self.captures:
-                self.captures[-1].parts.append(f" {attrs.get('alttext', '')} ")
+            self.append_text(f" {attrs.get('alttext', '')} ")
             self.skip_until = self.depth
             return
         if tag in SKIP_TAGS:
@@ -117,6 +154,19 @@ class Reader(HTMLParser):
             self.open_ids.append((self.depth, attrs["id"]))
 
         css = set((attrs.get("class") or "").split())
+        if tag == "img" and "ltx_graphics" in css:
+            # LaTeXML's ltx_graphics images are paper figures. Page logos and
+            # banner icons lack that class, and the "Refer to caption" alt text
+            # adds no information, so only the URL and real anchor are recorded.
+            src = attrs.get("src")
+            node_id = attrs.get("id") or self.nearest_id
+            if src and node_id:
+                self.images.append(
+                    FigureImage(
+                        url=urljoin("https://arxiv.org/html/", src),
+                        location=f"#{node_id}",
+                    )
+                )
 
         # The bibliography and appendices are sections too, so their headings
         # land on the pile like any other. Their *entries* never reach here:
@@ -130,6 +180,24 @@ class Reader(HTMLParser):
             return
 
         node_id = attrs.get("id") or self.nearest_id
+
+        # LaTeXML also uses <table> for displayed equations. Only ltx_tabular is
+        # a data table; math in its cells is kept once through the alttext rule
+        # above, while ltx_eqn_table remains on the existing equation path.
+        if not self.capturing and tag == "table" and "ltx_tabular" in css:
+            self.start_capture("table", node_id)
+            return
+
+        if self.capturing == "table":
+            if tag == "tr":
+                self.start_table_row()
+            elif tag in {"td", "th"}:
+                self.start_table_cell()
+            return
+
+        if not self.capturing and tag == "figcaption" and "ltx_caption" in css:
+            self.start_capture("caption", node_id)
+            return
 
         # Footnotes and author "thanks" notes are prose the paper really
         # contains -- the contribution note on page 1 of Attention Is All You
@@ -163,7 +231,7 @@ class Reader(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         if self.skip_until is None and self.captures and not self.in_tag_span:
-            self.captures[-1].parts.append(data)
+            self.append_text(data)
 
     def handle_endtag(self, tag: str) -> None:
         if self.skip_until is not None:
@@ -173,6 +241,7 @@ class Reader(HTMLParser):
             self.depth -= 1
             return
 
+        self.close_table_cell()
         self.close_capture()
         self.in_tag_span = False
         self.close_ids()

@@ -3,19 +3,19 @@
 An evidence-grounded reading assistant for language-centric GenAI research
 papers. Every claim it makes points at the passage it came from.
 
-**Status: sprint 1 — document loading.** Nothing works end to end yet.
+**Status: sprint 1 — final loader evaluation.** Nothing works end to end yet.
 
 ## What exists
 
-`src/loader/` reads a paper from arXiv's HTML and returns its passages, each
-carrying the section it sits in and a paragraph anchor. A citation resolves to a
-clickable link like `https://arxiv.org/html/2005.11401v4#S4.SS1.p1` — the exact
-paragraph, not a page number.
+`src/loader/` reads arXiv HTML and returns citable prose, figure/table captions
+and serialized data tables with their section path and anchor. Figure images are
+separate URL-and-anchor records. A citation resolves to a link like
+`https://arxiv.org/html/2005.11401v4#S4.SS1.p1` — the exact passage, not a page.
 
-The source was chosen by measurement, not preference: 40 papers surveyed, 39 of
-them have arXiv HTML, and the loader was scored against an answer key built from
-the LaTeX source — deliberately a third source, so it favours neither the HTML
-nor the PDF.
+The source was chosen by measurement, not preference: 40 papers surveyed, 39 have
+arXiv HTML, and the source decision used a 12-paper answer key built from LaTeX.
+The current loader finds all 120 sampled passages and all 1,211 emitted passage
+anchors resolve; whole-document word retention is the remaining Sprint 1 check.
 
 ## How this is built
 

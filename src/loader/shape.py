@@ -27,6 +27,13 @@ class Passage:
     section_path: list[str] = field(default_factory=list)
     location: str = ""
 
+@dataclass
+class FigureImage:
+    """A figure image that can be opened without treating it as prose."""
+
+    url: str
+    location: str
+
 
 @dataclass
 class Loaded:
@@ -34,3 +41,7 @@ class Loaded:
     sections: list[str]               # headings in document order
     passages: list[Passage]
     note: str = ""
+    # Images have their own list because passages are citable prose. Keeping the
+    # contracts separate avoids empty-text passages while still exposing each URL
+    # and clickable anchor. Downloading image bytes remains out of scope.
+    images: list[FigureImage] = field(default_factory=list)

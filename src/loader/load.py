@@ -48,7 +48,7 @@ def load(arxiv_id: str, client: httpx.Client) -> Loaded:
     reader.passages.extend(reader.pending)
     for i, passage in enumerate(reader.passages):
         passage.order = i
-    return Loaded(arxiv_id, reader.titles, reader.passages)
+    return Loaded(arxiv_id, reader.titles, reader.passages, images=reader.images)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import httpx
-import pytest
+import pytest  # pyright: ignore[reportMissingImports]
 
 from loader.load import _fetch_html, load
 
@@ -40,7 +40,8 @@ def test_load_html_returns_loaded_when_fetch_returns_html():
 
         assert loaded.arxiv_id == "test_html"
         assert len(loaded.sections) == 31
-        assert len(loaded.passages) == 71
+        # 71 prose passages + 9 captions + 4 serialised data tables.
+        assert len(loaded.passages) == 84
 
 
 def test_load_html_returns_empty_loded_when_fetch_returns_none():
@@ -81,6 +82,108 @@ def test_loading_the_same_paper_twice_gives_the_same_result():
         second = load("test_html", Mock())
 
     assert first == second
+
+
+def load_fixture():
+    mock_html = FIXTURE.read_text(encoding="utf-8")
+    with patch("loader.load._fetch_html", return_value=mock_html):
+        return load("test_html", Mock()), mock_html
+
+
+def test_figure_two_caption_is_one_complete_citable_passage():
+    """The sentence that explains Figure 2 used to be absent from every passage."""
+    loaded, mock_html = load_fixture()
+    expected = (
+        "Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention "
+        "consists of several attention layers running in parallel."
+    )
+    matches = [passage for passage in loaded.passages if passage.text == expected]
+
+    assert len(matches) == 1
+    assert matches[0].location == "#S3.F2"
+    assert 'id="S3.F2"' in mock_html
+
+
+def test_every_figure_and_table_caption_becomes_a_passage():
+    """All nine captions carry context needed to understand their figure or table."""
+    loaded, _ = load_fixture()
+    caption_locations = {
+        "#S3.F1",
+        "#S3.F2",
+        "#S4.T1",
+        "#S6.T2",
+        "#S6.T3",
+        "#S6.T4",
+        "#Sx1.F3",
+        "#Sx1.F4",
+        "#Sx1.F5",
+    }
+    captions = [
+        passage
+        for passage in loaded.passages
+        if passage.location in caption_locations
+        and passage.text.startswith(("Figure ", "Table "))
+    ]
+
+    assert len(captions) == 9
+    assert {passage.location for passage in captions} == caption_locations
+
+
+def test_table_two_keeps_its_header_with_the_big_transformer_score():
+    """A score without its BLEU header cannot answer what the big Transformer achieved."""
+    loaded, _ = load_fixture()
+    table = next(passage for passage in loaded.passages if passage.location == "#S6.T2.2")
+
+    assert "Model | BLEU" in table.text
+    assert "Transformer (big) | 28.4 | 41.8" in table.text
+
+
+def test_equation_layout_tables_do_not_become_data_table_passages():
+    """LaTeXML uses table markup for equations, which must not create duplicate passages."""
+    loaded, _ = load_fixture()
+    equation_locations = {"#S3.E1", "#S3.EGx1", "#S3.E2", "#S3.EGx2", "#S5.E3"}
+
+    assert equation_locations.isdisjoint(
+        passage.location for passage in loaded.passages
+    )
+
+
+def test_math_in_a_data_table_uses_alttext_exactly_once():
+    """MathML repeats a formula visually; only its readable alttext belongs in a cell."""
+    loaded, _ = load_fixture()
+    table = next(passage for passage in loaded.passages if passage.location == "#S4.T1.2")
+
+    assert table.text.count(r"O(n^{2}\cdot d)") == 1
+
+
+def test_only_real_figure_images_are_recorded_with_urls_and_anchors():
+    """The three PNG figures matter; arXiv logos and banner icons do not."""
+    loaded, mock_html = load_fixture()
+    expected_urls = {
+        "https://arxiv.org/html/1706.03762v7/Figures/ModalNet-21.png",
+        "https://arxiv.org/html/1706.03762v7/Figures/ModalNet-19.png",
+        "https://arxiv.org/html/1706.03762v7/Figures/ModalNet-20.png",
+    }
+
+    assert {image.url for image in loaded.images} == expected_urls
+    assert len(loaded.images) == 3
+    for image in loaded.images:
+        assert image.location.startswith("#")
+        assert f'id="{image.location.lstrip("#")}"' in mock_html
+
+
+def test_caption_is_emitted_beside_its_figure_in_document_order():
+    """Captions appended after parsing would lose the reading order around a figure."""
+    loaded, _ = load_fixture()
+    caption = next(passage for passage in loaded.passages if passage.location == "#S3.F2")
+    following_paragraph = next(
+        passage
+        for passage in loaded.passages
+        if passage.location == "#S3.SS2.SSS2.p1"
+    )
+
+    assert [passage.order for passage in loaded.passages] == list(range(84))
+    assert caption.order < following_paragraph.order
 
 
 # -- downloading -----------------------------------------------------------

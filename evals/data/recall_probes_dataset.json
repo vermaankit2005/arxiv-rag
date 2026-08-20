@@ -74,6 +74,16 @@
         "text": "This hurts perplexity, as the model learns to be more unsure, but improves accuracy and BLEU score.",
         "order": 7,
         "section": "Regularization"
+      },
+      {
+        "text": "Figure 1: The Transformer - model architecture.",
+        "order": 8,
+        "section": "Model Architecture"
+      },
+      {
+        "text": "Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several attention layers running in parallel.",
+        "order": 9,
+        "section": "Multi-Head Attention"
       }
     ]
   },
@@ -168,6 +178,16 @@
         "text": "We also observed that large data sets (e.g., 100k+ labeled training examples) were far less sensitive to hyperparameter choice than small data sets.",
         "order": 7,
         "section": "Fine-tuning Procedure"
+      },
+      {
+        "text": "Figure 1: Overall pre-training and fine-tuning procedures for BERT. Apart from output layers, the same architectures are used in both pre-training and fine-tuning. The same pre-trained model parameters are used to initialize models for different down-stream tasks. During fine-tuning, all parameters are fine-tuned. [CLS] is a special symbol added in front of every input example, and [SEP] is a special separator token (e.g. separating questions/answers).",
+        "order": 8,
+        "section": "Unsupervised Feature-based Approaches"
+      },
+      {
+        "text": "Figure 2: BERT input representation. The input embeddings are the sum of the token embeddings, the segmentation embeddings and the position embeddings.",
+        "order": 9,
+        "section": "Input/Output Representations"
       }
     ]
   },
@@ -253,6 +273,16 @@
         "text": "The prompts are prefixes from the IMDB dataset of length 2-8 tokens.",
         "order": 7,
         "section": "IMDb Sentiment Experiment and Baseline Details"
+      },
+      {
+        "text": "Figure 1: DPO optimizes for human preferences while avoiding reinforcement learning. Existing methods for fine-tuning language models with human feedback first fit a reward model to a dataset of prompts and human preferences over pairs of responses, and then use RL to find a policy that maximizes the learned reward. In contrast, DPO directly optimizes for the policy best satisfying the preferences with a simple classification objective, fitting an implicit reward model whose corresponding optimal policy can be extracted in closed form.",
+        "order": 8,
+        "section": "Introduction"
+      },
+      {
+        "text": "Figure 2: Left. The frontier of expected reward vs KL to the reference policy. DPO provides the highest expected reward for all KL values, demonstrating the quality of the optimization. Right. TL;DR summarization win rates vs. human-written summaries, using GPT-4 as evaluator. DPO exceeds PPO’s best-case performance on summarization, while being more robust to changes in the sampling temperature.",
+        "order": 9,
+        "section": "Experiments"
       }
     ]
   },
@@ -345,6 +375,16 @@
         "text": "We experimented with adding \"Null document\" mechanism to RAG, similar to REALM [20] in order to model cases where no useful information could be retrieved for a given input.",
         "order": 7,
         "section": "Null Document Probabilities"
+      },
+      {
+        "text": "Figure 1: Overview of our approach. We combine a pre-trained retriever (Query Encoder + Document Index) with a pre-trained seq2seq model (Generator) and fine-tune end-to-end. For query x , we use Maximum Inner Product Search (MIPS) to find the top-K documents z_{i} . For final prediction y , we treat z as a latent variable and marginalize over seq2seq predictions given different documents.",
+        "order": 8,
+        "section": "Introduction"
+      },
+      {
+        "text": "Figure 2: RAG-Token document posterior p(z_{i}|x,y_{i},y_{-i}) for each generated token for input “Hemingway\" for Jeopardy generation with 5 retrieved documents. The posterior for document 1 is high when generating “A Farewell to Arms\" and for document 2 when generating “The Sun Also Rises\".",
+        "order": 9,
+        "section": "Jeopardy Question Generation"
       }
     ]
   },
@@ -423,6 +463,16 @@
         "text": "Table 12 shows the accuracy results for channel-wise reordering, denoted as Reorder.",
         "order": 7,
         "section": "Addressing Multiple Outliers in a Block"
+      },
+      {
+        "text": "Figure 1. Industry-driven block floating-point formats.",
+        "order": 8,
+        "section": "Introduction"
+      },
+      {
+        "text": "Figure 2. Perplexity with BF16 baseline (B), MSFP, SMX, and MX formats. We compare each format with varying bit widths: high (H), moderate (M), and low (L).",
+        "order": 9,
+        "section": "Serving LLMs with Block-Based Data Formats"
       }
     ]
   },
@@ -511,6 +561,16 @@
         "text": "The generated data serves the purpose of advancing research in semantic similarity and does not extend beyond the intended scope of the original datasets.",
         "order": 7,
         "section": "Artifact Use and Compliance with Intended Purpose"
+      },
+      {
+        "text": "Figure 1: Schematic Overview of SemshareKV",
+        "order": 8,
+        "section": "Introduction"
+      },
+      {
+        "text": "Figure 2: Insight 1: High-deviation tokens remain consistent across layers.",
+        "order": 9,
+        "section": "Insights 1 HD tokens stay consistent across layers."
       }
     ]
   },
@@ -592,6 +652,16 @@
         "text": "Inspired by 26, we adopt a learning rate adjustment.",
         "order": 7,
         "section": "Match AdamW RMS"
+      },
+      {
+        "text": "Figure 1: Spectra of the weight change for different LoRA optimizers. We show the average singular values of the weight updates (attention weight, layer 6 of 12), during ReLoRA pretraining ( r=32 ). We normalize by \\overline{\\sigma}_{1} , and denote the LoRA rank by the dashed grey line.",
+        "order": 8,
+        "section": "Introduction"
+      },
+      {
+        "text": "Figure 2: Common-sense accuracy against learning rate for each base model. Each curve is one optimizer; accuracy is the overall common-sense benchmark accuracy at the final training step.",
+        "order": 9,
+        "section": "Learning rate curves"
       }
     ]
   },
@@ -647,6 +717,16 @@
         "text": "Commit author accounts are replaced by keyed one-way codes, identical for the same account throughout, so authorship can be traced without identifying anyone.",
         "order": 7,
         "section": "How to Access"
+      },
+      {
+        "text": "Figure 1: Collection pipeline. Discovery retains every filename match; deduplication selects one representative per distinct content while retaining all copies; enrichment applies to the representatives.",
+        "order": 8,
+        "section": "How to Access"
+      },
+      {
+        "text": "Figure 2: Opening of the SKILL.md of Anthropic’s web-artifacts-builder skill, reproduced verbatim and truncated. Source: https://github.com/anthropics/skills. The YAML front matter carries the name and the description that the agent matches against the task when deciding whether to load the skill; the Markdown body holds the instructions, here referencing bundled executable scripts.",
+        "order": 9,
+        "section": "Dataset Construction"
       }
     ]
   },
@@ -743,6 +823,16 @@
         "text": "The “4 Digit 7 Segment Display” project (Figure 9) represents Level 3 complexity but achieves near-zero performance across all models.",
         "order": 7,
         "section": "4 Digit 7 Segment Display (Level 3)"
+      },
+      {
+        "text": "Figure 1: This figure illustrates the core protocols of the PCEval benchmark. The left panels show the input options for LLMs, while the right panels show the evaluation workflow. There are basically two types of tasks: code generation (blue arrow) and circuit generation (red arrow). Generated outputs undergo validation through standardized test procedures and circuit validation metrics, measuring both logical correctness and physical implementation feasibility in Arduino systems. (The circuit visualizations are shown to aid understanding; they are not used as inputs to the LLMs.)",
+        "order": 8,
+        "section": ""
+      },
+      {
+        "text": "Figure 2: Impact of physical-constraint filters in D, C \\rightarrow P: success rates are shown under progressively stricter criteria— blue: functional correctness only; orange: functional correctness and no breadboard bypass; green: functional correctness and no pin conflict; red: functional correctness and no breadboard bypass and no pin conflict. The drop from blue to red highlights how bypasses and pin conflicts drive failures in physical layout generation.",
+        "order": 9,
+        "section": "Exploratory Mitigation Strategies"
       }
     ]
   },
@@ -824,6 +914,16 @@
         "text": "For these experiments, we run Falcon-180B over two nodes, each with four A100 GPUs, connected over 100 Gbps Ethernet.",
         "order": 7,
         "section": "Making Pipeline Parallel Viable"
+      },
+      {
+        "text": "Figure 1: Yi-34B running on two A100 GPUs serving 128 requests from arxiv-summarisation trace. 1(a) highlights one of the many generation stalls lasting over several seconds in vLLM [53]. 1(b) shows the impact of increasing load on tail latency. Sarathi-Serve improves throughput while eliminating generation stalls.",
+        "order": 8,
+        "section": "Introduction"
+      },
+      {
+        "text": "Figure 2: Current LLM serving systems involve a tradeoff between throughput and latency depending on their scheduling policy. Prioritizing prefills optimizes throughput but sacrifices TBT (time-between-tokens) tail latency whereas prioritizing decodes has the opposite effect. Sarathi-Serve serves high throughput with low TBT latency via stall-free batching. (The figure is illustrative and actual values will depend on the model and workload characteristics.)",
+        "order": 9,
+        "section": "Introduction"
       }
     ]
   },
@@ -918,6 +1018,16 @@
         "text": "Only those with error rate above 15% are shown.",
         "order": 7,
         "section": "Test Performance"
+      },
+      {
+        "text": "Figure 1. This scenario illustrates a system implemented based on GestureGPT.",
+        "order": 8,
+        "section": ""
+      },
+      {
+        "text": "Figure 2. Overview of current gestural interaction systems.",
+        "order": 9,
+        "section": "Natural Free-form Gesture Understanding"
       }
     ]
   },
@@ -983,6 +1093,16 @@
         "text": "The following is an example of using the Python API to write a zero-shot prompt for adding two numbers.",
         "order": 7,
         "section": "Prompt programming"
+      },
+      {
+        "text": "Figure 1: The Hex diagram for a problem (q,\\sigma_{i}) .",
+        "order": 8,
+        "section": "The mathematical framework"
+      },
+      {
+        "text": "Figure 2: Chain-of-thought reasoning.",
+        "order": 9,
+        "section": "Chain-of-Thought"
       }
     ]
   }
