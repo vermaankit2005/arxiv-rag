@@ -3,21 +3,27 @@
 An evidence-grounded reading assistant for language-centric GenAI research
 papers. Every claim it makes points at the passage it came from.
 
-**Status: sprint 1 — document loading.** Nothing works yet.
+**Status: sprint 1 — document loading.** Nothing works end to end yet.
 
-## Documents
+## What exists
 
-| File | What it holds |
-|------|---------------|
-| [docs/PRODUCT.md](docs/PRODUCT.md) | what it does, what it refuses, the citation contract |
-| [docs/GRAPH.md](docs/GRAPH.md) | the runtime map — nodes and edges, nothing more |
-| [docs/PRINCIPLES.md](docs/PRINCIPLES.md) | the seven principles and where each one lands |
-| [docs/PROCESS.md](docs/PROCESS.md) | how a component gets built, decided, and tested |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | the likely order of components |
-| [docs/decisions/](docs/decisions/) | one record per decided component, with the numbers |
+`src/loader/` reads a paper from arXiv's HTML and returns its passages, each
+carrying the section it sits in and a paragraph anchor. A citation resolves to a
+clickable link like `https://arxiv.org/html/2005.11401v4#S4.SS1.p1` — the exact
+paragraph, not a page number.
+
+The source was chosen by measurement, not preference: 40 papers surveyed, 39 of
+them have arXiv HTML, and the loader was scored against an answer key built from
+the LaTeX source — deliberately a third source, so it favours neither the HTML
+nor the PDF.
 
 ## How this is built
 
-Bottom-up. One component at a time, each one decided with data and tested before
-the next begins. No component enters without a demonstrated need — see
-`docs/PRINCIPLES.md`.
+Bottom-up. One component at a time, each decided with data and tested before the
+next begins. No component enters without a demonstrated need: before any
+database, queue, cache, vector store or framework, something in the running
+program has to be broken, slow, or wrong.
+
+Working notes — the product definition, the runtime map, the seven principles,
+the sprint records and the decision log — are kept locally and are not published
+with the code.
