@@ -2,7 +2,7 @@ from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
-from langsmith import Client
+from langsmith import Client  # pyright: ignore[reportMissingImports]
 
 from loader.load import load
 
@@ -13,17 +13,21 @@ HTML_PATH = Path(__file__).parents[2] / "data" / "raw" / "html"
 TEST_HTML_DATA_PATH = Path(__file__).parents[1] / "data" / "papers.json"
 
 
-def target(inputs: dict) -> dict:
+def load_passages_for_evaluation(inputs: dict) -> dict:
     arxiv_id = inputs["arxiv_id"]
     with httpx.Client() as http_client:
         loaded = load(arxiv_id, http_client)
         return {
-            "anchors_from_loaded_passages": [p.location.lstrip("#") for p in loaded.passages],
-            "passages": loaded.passages
+            "anchors_from_loaded_passages": [
+                p.location.lstrip("#") for p in loaded.passages
+            ],
+            "passages": loaded.passages,
         }
 
 
-def evaluator(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
+def evaluate_passage_anchor_validity_and_probe_recall(
+    inputs: dict, outputs: dict, reference_outputs: dict
+) -> list[dict]:
     arxiv_id = inputs["arxiv_id"]
     html_content = (HTML_PATH / f"{arxiv_id}.html").read_text(encoding="utf-8")
 
@@ -37,7 +41,11 @@ def evaluator(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
         if f'id="{anchor}"' in html_content:
             loaded_anchor_found_in_html += 1
 
-    coverage_score = loaded_anchor_found_in_html / loaded_passage_count if loaded_passage_count > 0 else 0.0
+    coverage_score = (
+        loaded_anchor_found_in_html / loaded_passage_count
+        if loaded_passage_count > 0
+        else 0.0
+    )
 
     # Calculate the recall score.
     probes_found_in_loaded_passages = 0
@@ -52,10 +60,11 @@ def evaluator(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
                 break
         print("\n \n --------------------------------- \n \n")
 
-
-
-    recall_score = probes_found_in_loaded_passages / len(reference_outputs["probes"]) if reference_outputs[
-        "probes"] else 0.0
+    recall_score = (
+        probes_found_in_loaded_passages / len(reference_outputs["probes"])
+        if reference_outputs["probes"]
+        else 0.0
+    )
 
     return [
         {
@@ -65,14 +74,14 @@ def evaluator(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
         {
             "key": "text_recall",
             "score": recall_score,
-        }
+        },
     ]
 
 
 if __name__ == "__main__":
     client.evaluate(
-        target,
+        load_passages_for_evaluation,
         data="anchor_and_recall_dataset",
-        evaluators=[evaluator],
-        experiment_prefix="anchor_and_recall_dataset"
+        evaluators=[evaluate_passage_anchor_validity_and_probe_recall],
+        experiment_prefix="anchor_and_recall_dataset",
     )
