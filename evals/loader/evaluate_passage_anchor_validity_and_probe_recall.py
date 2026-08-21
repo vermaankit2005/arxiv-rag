@@ -81,7 +81,7 @@ def evaluate_passage_anchor_validity_and_probe_recall(
 if __name__ == "__main__":
     client.evaluate(
         load_passages_for_evaluation,
-        data="anchor_and_recall_dataset",
+        data="sampled_probe_recall_dataset",
         evaluators=[evaluate_passage_anchor_validity_and_probe_recall],
-        experiment_prefix="anchor_and_recall_dataset",
+        experiment_prefix="sampled_probe_recall",
     )

@@ -39,15 +39,20 @@ def _fetch_html(arxiv_id: str, client: httpx.Client) -> str | None:
 
 # Loader class that fetches and parses HTML from arXiv, returning a Loaded object.
 def load(arxiv_id: str, client: httpx.Client) -> Loaded:
+
     html = _fetch_html(arxiv_id, client)
+
     if html is None:
         log.warning("arXiv %s has no HTML published", arxiv_id)
         return Loaded(arxiv_id, [], [], note="no arXiv HTML published")
+
     reader = Reader()
     reader.feed(html)
     reader.passages.extend(reader.pending)
+
     for i, passage in enumerate(reader.passages):
         passage.order = i
+
     return Loaded(arxiv_id, reader.titles, reader.passages, images=reader.images)
 
 

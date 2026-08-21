@@ -3,7 +3,8 @@
 An evidence-grounded reading assistant for language-centric GenAI research
 papers. Every claim it makes points at the passage it came from.
 
-**Status: sprint 1 — final loader evaluation.** Nothing works end to end yet.
+**Status: sprint 1 complete — loader finished.** Nothing works end to end yet;
+chunking is the next question.
 
 ## What exists
 
@@ -15,8 +16,10 @@ image list. A citation resolves to a link like
 
 The source was chosen by measurement, not preference: 40 papers surveyed, 39 have
 arXiv HTML, and the source decision used a 12-paper answer key built from LaTeX.
-The current loader finds all 120 sampled passages and all 1,211 emitted passage
-anchors resolve; whole-document word retention is the remaining Sprint 1 check.
+The shipping loader finds all 120 sampled passages, all 1,211 passage anchors
+resolve, and all 1,211 useful HTML blocks are emitted. It retains 99.91% of
+reference words overall; the worst benchmark paper retains 99.53% against the
+95% rule.
 
 ## How this is built
 

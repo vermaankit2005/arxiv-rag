@@ -19,9 +19,9 @@ def create_passage_anchor_and_probe_recall_dataset():
         LOADED_PROBES_DATASET_PATH.read_text(encoding="utf-8")
     )
 
-    if client.has_dataset(dataset_name="anchor_and_recall_dataset"):
+    if client.has_dataset(dataset_name="sampled_probe_recall_dataset"):
         return
-    client.create_dataset("anchor_and_recall_dataset")
+    client.create_dataset("sampled_probe_recall_dataset")
 
     for paper in papers:
         # for the paper["arxiv_id"], find the probe in probes that matches the arxiv_id
@@ -49,7 +49,7 @@ def create_passage_anchor_and_probe_recall_dataset():
             )
 
         client.create_example(
-            dataset_name="anchor_and_recall_dataset",
+            dataset_name="sampled_probe_recall_dataset",
             inputs={"arxiv_id": paper["arxiv_id"]},
             outputs={"probes": outputs},
         )

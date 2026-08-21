@@ -20,6 +20,7 @@ extract = ["pypdf>=6.0", "pymupdf>=1.24", "pymupdf4llm>=0.0.30"]
 extract-docling = ["docling>=2.60"]
 dev = [
     "langsmith>=0.11.1",
+    "lxml>=6.1",
     "pytest>=8.4",
 ]
 

@@ -92,6 +92,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "langsmith" },
+    { name = "lxml" },
     { name = "pytest" },
 ]
 extract = [
@@ -117,6 +118,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "langsmith", specifier = ">=0.11.1" },
+    { name = "lxml", specifier = ">=6.1" },
     { name = "pytest", specifier = ">=8.4" },
 ]
 extract = [

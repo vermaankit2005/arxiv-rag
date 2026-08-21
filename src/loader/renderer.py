@@ -1,5 +1,29 @@
 """Pull the paper out of one arXiv HTML page.
 
+HTML content contract
+---------------------
+Passages:
+* ``ltx_para`` containers and bare ``p.ltx_p`` elements become prose. Lists
+  nested inside them are therefore prose too.
+* anchored note classes become notes.
+* ``figcaption.ltx_caption`` becomes a figure or table caption.
+* ``table.ltx_tabular`` becomes a serialized data table.
+
+Metadata only:
+* headings name sections but are not passages;
+* ``img.ltx_graphics`` and ``object.ltx_graphics`` become linked images, while
+  their pixels and embedded SVG text are not passages.
+
+Skipped:
+* ``head``, ``script``, ``style`` and ``svg`` subtrees;
+* numbering scaffolding around headings and notes;
+* notes without an anchor;
+* bibliography entries, author metadata, navigation and every other element
+  that is neither a passage source nor metadata listed above.
+
+Formulae are the one special case: keep ``math.alttext`` once, then skip the
+MathML subtree so the same formula is not duplicated.
+
 The page is read once, top to bottom, the way a person reads it. Four small
 piles of state do all the work:
 
@@ -27,15 +51,37 @@ from urllib.parse import urljoin
 
 from loader.shape import FigureImage, Passage
 
-# Subtrees whose text is never prose a reader wants quoted.
-SKIP_TAGS = {"script", "style", "math", "svg", "head"}
-HEADINGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
-# Footnote-like prose: real content, but nested inside another paragraph.
+# HTML CONTENT CONTRACT. The parser below uses these names directly; do not add
+# a content rule in handle_starttag without recording it here.
+
+# Passage sources.
+PROSE_CONTAINER_CLASS = "ltx_para"
+PROSE_FALLBACK_TAG = "p"
+PROSE_FALLBACK_CLASS = "ltx_p"
 NOTE_CLASSES = {"ltx_note_content", "ltx_role_thanks", "ltx_role_footnote"}
-# Scaffolding LaTeXML writes around a footnote -- its number twice over, and a
-# label saying what kind of note it is ("footnotemark: "). The author wrote none
-# of it. See handle_starttag.
-LABELS = {"ltx_note_mark", "ltx_tag_note", "ltx_note_type"}
+CAPTION_TAG = "figcaption"
+CAPTION_CLASS = "ltx_caption"
+DATA_TABLE_TAG = "table"
+DATA_TABLE_CLASS = "ltx_tabular"
+
+# Metadata sources: retained on Loaded/Passage objects, not as passage text.
+HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
+TITLE_CLASS = "ltx_title"
+SECTION_TAG = "section"
+SECTION_CLASSES = {"ltx_bibliography", "ltx_appendix"}
+FIGURE_TAG = "figure"
+FIGURE_CLASS = "ltx_figure"
+TABLE_FIGURE_CLASS = "ltx_table"
+FIGURE_CLASSES = {FIGURE_CLASS, TABLE_FIGURE_CLASS}
+IMAGE_TAGS = {"img", "object"}
+IMAGE_CLASS = "ltx_graphics"
+
+# Excluded content. Everything not named above is ignored automatically because
+# passages are allowlisted rather than obtained by stripping every HTML tag.
+FORMULA_TAG = "math"  # alttext is retained once before its subtree is skipped
+SKIPPED_SUBTREE_TAGS = {"script", "style", "svg", "head"}
+SKIPPED_LABEL_CLASSES = {"ltx_note_mark", "ltx_tag_note", "ltx_note_type"}
+HEADING_NUMBER_CLASS = "ltx_tag"
 VOID_TAGS = {"br", "img", "hr", "meta", "link", "input", "source", "col"}
 
 
@@ -44,7 +90,7 @@ class Section:
     """A <section> we have entered and not yet left."""
 
     depth: int
-    title: str = ""       # filled in when its heading is read
+    title: str = ""  # filled in when its heading is read
 
 
 @dataclass
@@ -83,7 +129,7 @@ class Reader(HTMLParser):
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.titles: list[str] = []       # every heading, in order
+        self.titles: list[str] = []  # every heading, in order
         self.passages: list[Passage] = []
         self.images: list[FigureImage] = []
         self.pending: list[Passage] = []  # notes, emitted after their host
@@ -94,7 +140,7 @@ class Reader(HTMLParser):
         self.figures: list[FigureContext] = []
         self.captures: list[Capture] = []
         self.open_ids: list[tuple[int, str]] = []
-        self.in_tag_span = False          # <span class="ltx_tag">2 </span>
+        self.in_tag_span = False  # <span class="ltx_tag">2 </span>
 
     # -- what we are in the middle of ------------------------------------
     @property
@@ -153,12 +199,12 @@ class Reader(HTMLParser):
         if self.skip_until is not None:
             return
 
-        if tag == "math":
+        if tag == FORMULA_TAG:
             # Keep one plain-text copy of the formula, then skip the markup.
             self.append_text(f" {attrs.get('alttext', '')} ")
             self.skip_until = self.depth
             return
-        if tag in SKIP_TAGS:
+        if tag in SKIPPED_SUBTREE_TAGS:
             self.skip_until = self.depth
             return
 
@@ -166,11 +212,11 @@ class Reader(HTMLParser):
             self.open_ids.append((self.depth, attrs["id"]))
 
         css = set((attrs.get("class") or "").split())
-        if tag == "figure" and ({"ltx_figure", "ltx_table"} & css):
-            figure_kind = "figure" if "ltx_figure" in css else "table"
+        if tag == FIGURE_TAG and (FIGURE_CLASSES & css):
+            figure_kind = "figure" if FIGURE_CLASS in css else "table"
             self.figures.append(FigureContext(self.depth, figure_kind))
 
-        if tag in {"img", "object"} and "ltx_graphics" in css:
+        if tag in IMAGE_TAGS and IMAGE_CLASS in css:
             # LaTeXML uses <img> for raster figures and <object> for SVGs.
             # Page logos and banner icons lack ltx_graphics. Their alt text adds
             # no information, so retain only the URL and real anchor.
@@ -189,10 +235,10 @@ class Reader(HTMLParser):
         # land on the pile like any other. Their *entries* never reach here:
         # LaTeXML writes them as <li class="ltx_bibitem">, which is neither
         # ltx_para nor p.ltx_p, so nothing below captures them.
-        if tag == "section" or "ltx_bibliography" in css or "ltx_appendix" in css:
+        if tag == SECTION_TAG or SECTION_CLASSES & css:
             self.sections.append(Section(self.depth))
 
-        if tag in HEADINGS and "ltx_title" in css:
+        if tag in HEADING_TAGS and TITLE_CLASS in css:
             self.start_capture("title")
             return
 
@@ -201,7 +247,7 @@ class Reader(HTMLParser):
         # LaTeXML also uses <table> for displayed equations. Only ltx_tabular is
         # a data table; math in its cells is kept once through the alttext rule
         # above, while ltx_eqn_table remains on the existing equation path.
-        if not self.capturing and tag == "table" and "ltx_tabular" in css:
+        if not self.capturing and tag == DATA_TABLE_TAG and DATA_TABLE_CLASS in css:
             self.start_capture("table", node_id)
             return
 
@@ -212,7 +258,7 @@ class Reader(HTMLParser):
                 self.start_table_cell()
             return
 
-        if not self.capturing and tag == "figcaption" and "ltx_caption" in css:
+        if not self.capturing and tag == CAPTION_TAG and CAPTION_CLASS in css:
             caption_kind = (
                 "table_caption"
                 if self.figures and self.figures[-1].kind == "table"
@@ -233,7 +279,10 @@ class Reader(HTMLParser):
         # anchor and may hold several <p>. A bare <p class="ltx_p"> is the
         # fallback -- the abstract is written that way, with an <h6>Abstract</h6>
         # beside it, and capturing the wrapper instead loses the whole abstract.
-        if not self.capturing and ("ltx_para" in css or (tag == "p" and "ltx_p" in css)):
+        if not self.capturing and (
+            PROSE_CONTAINER_CLASS in css
+            or (tag == PROSE_FALLBACK_TAG and PROSE_FALLBACK_CLASS in css)
+        ):
             self.start_capture("para", node_id)
             return
 
@@ -248,7 +297,9 @@ class Reader(HTMLParser):
         # Only the footnote flavours of ltx_tag are skipped. ltx_tag_figure and
         # ltx_tag_table hold "Figure 1:" and "Table 2:", which are worth
         # keeping -- they say what the passage is.
-        if LABELS & css or ("ltx_tag" in css and self.capturing == "title"):
+        if SKIPPED_LABEL_CLASSES & css or (
+            HEADING_NUMBER_CLASS in css and self.capturing == "title"
+        ):
             self.in_tag_span = True
 
     def handle_data(self, data: str) -> None:
