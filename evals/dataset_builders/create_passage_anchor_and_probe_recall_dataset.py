@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 from dotenv import load_dotenv
-from langsmith import Client
+from langsmith import Client  # pyright: ignore[reportMissingImports]
 
 ROOT = Path(__file__).parents[2]
 BENCHMARK_PAPERS_PATH = ROOT / "evals" / "dataset" / "papers.json"
