@@ -1,47 +1,51 @@
+"""Run a quick local check that every loader passage has a valid HTML anchor."""
+
 import json
 from pathlib import Path
 
+import httpx
+
 from loader.load import load
 
-HTML_PATH = Path(__file__).parents[2] / "data" / "raw" / "html"
-TEST_HTML_DATA_PATH = Path(__file__).parents[1] / "data" / "papers.json"
+ROOT = Path(__file__).parents[2]
+CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
+BENCHMARK_PAPERS_PATH = ROOT / "evals" / "dataset" / "papers.json"
 
 
-def check_passage_anchor_validity():
-    # Load the HTML content from the HTML file
-    # Convert it to the Loaded object
-    # Comapre the anchors in the HTML with the locations in the Loaded object
+def check_passage_anchor_validity() -> None:
+    """Print anchor coverage across the cached benchmark papers."""
+    try:
+        papers = json.loads(BENCHMARK_PAPERS_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError(
+            f"Could not read benchmark papers from {BENCHMARK_PAPERS_PATH}"
+        ) from error
 
-    json_data = json.loads(TEST_HTML_DATA_PATH.read_text(encoding="utf-8"))
+    anchors_found = 0
+    passage_count = 0
 
-    loaded_anchor_found_in_html = 0
-    loaded_passage_count = 0
+    with httpx.Client(follow_redirects=True) as http_client:
+        for paper in papers:
+            arxiv_id = paper["arxiv_id"]
+            html_content = (CACHED_HTML_DIRECTORY / f"{arxiv_id}.html").read_text(
+                encoding="utf-8"
+            )
+            loaded = load(arxiv_id, http_client)
 
-    for paper in json_data:
-        html_content = (HTML_PATH / f"{paper['arxiv_id']}.html").read_text(
-            encoding="utf-8"
-        )
-        loaded = load(
-            paper["arxiv_id"],
-            None,  # pyright: ignore[reportArgumentType]
-        )  # Cached benchmark HTML means the client is never used.
-
-        for passage in loaded.passages:
-            loaded_passage_count += 1
-            if passage.location:
+            for passage in loaded.passages:
+                passage_count += 1
                 anchor = passage.location.lstrip("#")
-
                 if f'id="{anchor}"' in html_content:
-                    loaded_anchor_found_in_html += 1
+                    anchors_found += 1
                 else:
                     print(
-                        f"Anchor not found in HTML: {passage.location} for passage: {passage.text[:60]}..."
+                        f"Anchor not found in HTML: {passage.location} "
+                        f"for passage: {passage.text[:60]}..."
                     )
 
-    print(f"Total anchors found in HTML: {loaded_anchor_found_in_html}")
-    print(
-        f"Metrics Anchor Coverage: {loaded_anchor_found_in_html / loaded_passage_count * 100:.2f}%"
-    )
+    coverage = anchors_found / passage_count if passage_count else 0.0
+    print(f"Anchors found in HTML: {anchors_found}/{passage_count}")
+    print(f"Anchor coverage: {coverage:.2%}")
 
 
 if __name__ == "__main__":

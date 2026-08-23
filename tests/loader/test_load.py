@@ -6,7 +6,7 @@ import pytest  # pyright: ignore[reportMissingImports]
 
 from loader.load import _fetch_html, load
 
-HTML_DIR = Path(__file__).parents[2] / "data" / "raw" / "html"
+HTML_DIR = Path(__file__).parents[2] / "data" / "raw" / "sampled_html"
 FIXTURE = HTML_DIR / "1706.03762v7.html"
 HTML_FILES = sorted(HTML_DIR.glob("*.html"))
 
@@ -19,7 +19,7 @@ STUB_PAGE = "<html><body>No HTML is available for this paper.</body></html>"
 
 @pytest.fixture
 def cache(tmp_path, monkeypatch):
-    """Send the download cache to a throwaway folder, never data/raw/html."""
+    """Send the download cache to a throwaway folder, never data/raw/sampled_html."""
     monkeypatch.setattr("loader.load.HTML_DIR", tmp_path)
     return tmp_path
 

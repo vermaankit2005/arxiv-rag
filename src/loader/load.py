@@ -7,7 +7,7 @@ from loader.shape import Loaded
 from util.log import get_logger
 
 ROOT = Path(__file__).resolve().parents[2]
-HTML_DIR = ROOT / "data" / "raw" / "html"
+HTML_DIR = ROOT / "data" / "raw" / "sampled_html"
 
 log = get_logger(__name__)
 

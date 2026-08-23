@@ -25,7 +25,7 @@ from langsmith import Client  # pyright: ignore[reportMissingImports]
 from loader.load import load
 
 ROOT = Path(__file__).parents[2]
-CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "html"
+CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
 LANGSMITH_DATASET_NAME = "html_content_retention_dataset"
 WORD_PATTERN = re.compile(r"\w+", re.UNICODE)
 
@@ -103,7 +103,9 @@ def evaluate_html_content_retention(inputs: dict, outputs: dict, reference_outpu
         missing_words.update(expected_word_counts - actual_word_counts)
 
     block_coverage = found_blocks / len(expected_blocks) if expected_blocks else 0.0
-    word_retention = (retained_word_count / expected_word_count if expected_word_count else 0.0)
+    word_retention = (
+        retained_word_count / expected_word_count if expected_word_count else 0.0
+    )
 
     block_comment = f"Found {found_blocks}/{len(expected_blocks)} expected blocks." + (
         f" Missing: {', '.join(missing_blocks[:5])}" if missing_blocks else ""
@@ -112,8 +114,8 @@ def evaluate_html_content_retention(inputs: dict, outputs: dict, reference_outpu
         f"{word} ({count})" for word, count in missing_words.most_common(10)
     )
     word_comment = (
-            f"Retained {retained_word_count}/{expected_word_count} expected words."
-            + (f" Most common missing: {common_missing_words}" if missing_words else "")
+        f"Retained {retained_word_count}/{expected_word_count} expected words."
+        + (f" Most common missing: {common_missing_words}" if missing_words else "")
     )
 
     return [

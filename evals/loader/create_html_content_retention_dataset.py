@@ -22,9 +22,11 @@ from lxml import html  # pyright: ignore[reportMissingImports]
 from lxml.html import HtmlElement  # pyright: ignore[reportMissingImports]
 
 ROOT = Path(__file__).parents[2]
-BENCHMARK_PAPERS_PATH = ROOT / "evals" / "data" / "papers.json"
-CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "html"
-REFERENCE_DATASET_PATH = ROOT / "evals" / "data" / "html_content_retention_dataset.json"
+BENCHMARK_PAPERS_PATH = ROOT / "evals" / "dataset" / "papers.json"
+CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
+REFERENCE_DATASET_PATH = (
+    ROOT / "evals" / "dataset" / "html_content_retention_dataset.json"
+)
 LANGSMITH_DATASET_NAME = "html_content_retention_dataset"
 
 NOTE_CLASSES = {"ltx_note_content", "ltx_role_thanks", "ltx_role_footnote"}
@@ -66,9 +68,7 @@ def is_separate_content_block(element: HtmlElement) -> bool:
     )
 
 
-def normalized_visible_text(
-    element: HtmlElement, *, skip_nested_content_blocks: bool = True
-) -> str:
+def normalized_visible_text(element: HtmlElement, *, skip_nested_content_blocks: bool = True) -> str:
     """Read visible text once, without browser scaffolding or duplicate maths."""
     parts: list[str] = [element.text or ""]
 
