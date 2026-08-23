@@ -1,26 +1,12 @@
-"""Check that every useful HTML block survives in the loader passages.
-
-The LangSmith dataset contains one example per paper. Each example holds the
-usable HTML blocks extracted independently by
-``create_html_content_retention_dataset.py``.
-
-This evaluator reports two scores:
-
-* ``html_block_coverage`` -- did every expected anchor and kind produce a passage?
-* ``html_word_retention`` -- how many expected words survived in those passages?
-"""
-
-from __future__ import annotations
-
 import hashlib
 import re
-import unicodedata
 from collections import Counter
 from pathlib import Path
 
 import httpx
+import unicodedata
 from dotenv import load_dotenv
-from langsmith import Client  # pyright: ignore[reportMissingImports]
+from langsmith import Client
 
 from loader.load import load
 
@@ -114,8 +100,8 @@ def evaluate_html_content_retention(inputs: dict, outputs: dict, reference_outpu
         f"{word} ({count})" for word, count in missing_words.most_common(10)
     )
     word_comment = (
-        f"Retained {retained_word_count}/{expected_word_count} expected words."
-        + (f" Most common missing: {common_missing_words}" if missing_words else "")
+            f"Retained {retained_word_count}/{expected_word_count} expected words."
+            + (f" Most common missing: {common_missing_words}" if missing_words else "")
     )
 
     return [

@@ -25,7 +25,7 @@ ROOT = Path(__file__).parents[2]
 BENCHMARK_PAPERS_PATH = ROOT / "evals" / "dataset" / "papers.json"
 CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
 REFERENCE_DATASET_PATH = (
-    ROOT / "evals" / "dataset" / "html_content_retention_dataset.json"
+        ROOT / "evals" / "dataset" / "html_content_retention_dataset.json"
 )
 LANGSMITH_DATASET_NAME = "html_content_retention_dataset"
 
@@ -79,11 +79,11 @@ def normalized_visible_text(element: HtmlElement, *, skip_nested_content_blocks:
         if tag == "math":
             parts.append(f" {child.get('alttext', '')} ")
         elif (
-            tag in IGNORED_TAGS
-            or classes & NUMBERING_CLASSES
-            or "ltx_title" in classes
-            or skip_nested_content_blocks
-            and is_separate_content_block(child)
+                tag in IGNORED_TAGS
+                or classes & NUMBERING_CLASSES
+                or "ltx_title" in classes
+                or skip_nested_content_blocks
+                and is_separate_content_block(child)
         ):
             pass
         else:
@@ -131,7 +131,7 @@ def classify_usable_block(element: HtmlElement) -> str | None:
         return None
 
     if classes & BIBLIOGRAPHY_CLASSES or has_ancestor_with_any_class(
-        element, BIBLIOGRAPHY_CLASSES
+            element, BIBLIOGRAPHY_CLASSES
     ):
         return None
 
@@ -150,16 +150,16 @@ def classify_usable_block(element: HtmlElement) -> str | None:
 
     if "ltx_para" in classes:
         if has_ancestor_with_any_class(
-            element,
-            {"ltx_para", "ltx_tabular", "ltx_caption", *NOTE_CLASSES},
+                element,
+                {"ltx_para", "ltx_tabular", "ltx_caption", *NOTE_CLASSES},
         ):
             return None
         return "prose"
 
     if element.tag == "p" and "ltx_p" in classes:
         if has_ancestor_with_any_class(
-            element,
-            {"ltx_para", "ltx_tabular", "ltx_caption", *NOTE_CLASSES},
+                element,
+                {"ltx_para", "ltx_tabular", "ltx_caption", *NOTE_CLASSES},
         ):
             return None
         return "prose"
@@ -259,12 +259,12 @@ def create_html_content_retention_dataset() -> None:
     langsmith_client = Client()
 
     if langsmith_client.has_dataset(dataset_name=LANGSMITH_DATASET_NAME):
+
         existing = {
-            example.inputs["arxiv_id"]: example.outputs
-            for example in langsmith_client.list_examples(
-                dataset_name=LANGSMITH_DATASET_NAME
-            )
+            existing_example.inputs["arxiv_id"]: existing_example.outputs
+            for existing_example in langsmith_client.list_examples(dataset_name=LANGSMITH_DATASET_NAME)
         }
+
         expected = {
             paper["arxiv_id"]: {
                 "html_sha256": paper["html_sha256"],

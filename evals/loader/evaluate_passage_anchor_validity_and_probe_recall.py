@@ -51,15 +51,15 @@ def evaluate_passage_anchor_validity_and_probe_recall(inputs: dict, outputs: dic
 
     html_content = cached_html_path(arxiv_id).read_text(encoding="utf-8")
     passage_anchors = outputs["passage_anchors"]
-    valid_anchor_count = sum(
-        f'id="{anchor}"' in html_content for anchor in passage_anchors
-    )
+    valid_anchor_count = sum(f'id="{anchor}"' in html_content for anchor in passage_anchors)
+
     anchor_coverage = (
         valid_anchor_count / len(passage_anchors) if passage_anchors else 0.0
     )
 
     probes = reference_outputs["probes"]
     passage_texts = outputs["passage_texts"]
+
     recalled_probe_count = sum(
         any(probe["text"] in passage_text for passage_text in passage_texts)
         for probe in probes

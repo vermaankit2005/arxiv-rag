@@ -1,11 +1,9 @@
-"""Create the frozen LangSmith dataset for anchor and probe-recall evals."""
-
 import hashlib
 import json
 from pathlib import Path
 
 from dotenv import load_dotenv
-from langsmith import Client  # pyright: ignore[reportMissingImports]
+from langsmith import Client
 
 ROOT = Path(__file__).parents[2]
 BENCHMARK_PAPERS_PATH = ROOT / "evals" / "dataset" / "papers.json"
@@ -72,10 +70,8 @@ def create_passage_anchor_and_probe_recall_dataset() -> None:
 
     if langsmith_client.has_dataset(dataset_name=LANGSMITH_DATASET_NAME):
         existing = {
-            example.inputs["arxiv_id"]: example.outputs
-            for example in langsmith_client.list_examples(
-                dataset_name=LANGSMITH_DATASET_NAME
-            )
+            existing_example.inputs["arxiv_id"]: existing_example.outputs
+            for existing_example in langsmith_client.list_examples(dataset_name=LANGSMITH_DATASET_NAME)
         }
         expected = {
             example["inputs"]["arxiv_id"]: example["outputs"] for example in examples
