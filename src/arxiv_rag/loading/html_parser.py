@@ -49,7 +49,7 @@ from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from urllib.parse import urljoin
 
-from loader.shape import FigureImage, Passage
+from arxiv_rag.loading.models import FigureImage, Passage
 
 # HTML CONTENT CONTRACT. The parser below uses these names directly; do not add
 # a content rule in handle_starttag without recording it here.
@@ -64,7 +64,7 @@ CAPTION_CLASS = "ltx_caption"
 DATA_TABLE_TAG = "table"
 DATA_TABLE_CLASS = "ltx_tabular"
 
-# Metadata sources: retained on Loaded/Passage objects, not as passage text.
+# Metadata sources: retained on LoadedPaper/Passage objects, not as passage text.
 HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 TITLE_CLASS = "ltx_title"
 SECTION_TAG = "section"
@@ -121,7 +121,7 @@ class Capture:
         return re.sub(r"\s+", " ", "".join(self.parts)).strip()
 
 
-class Reader(HTMLParser):
+class ArxivHtmlParser(HTMLParser):
     """Walk the page once, emitting prose, captions, tables and image records.
 
     Read `passages`, `images` and `pending` when the feed is done.

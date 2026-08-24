@@ -8,7 +8,7 @@ import unicodedata
 from dotenv import load_dotenv
 from langsmith import Client
 
-from loader.load import load
+from arxiv_rag.loading import load_paper
 
 ROOT = Path(__file__).parents[2]
 CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
@@ -32,12 +32,12 @@ def normalized_words(text: str) -> list[str]:
 
 
 def load_paper_for_content_retention(inputs: dict) -> dict:
-    """Run the shipping loader and return simple values LangSmith can store."""
+    """Run the paper-loading pipeline and return simple serializable values."""
     arxiv_id = inputs["arxiv_id"]
     html_content = cached_html_path(arxiv_id).read_bytes()
 
     with httpx.Client(follow_redirects=True) as http_client:
-        loaded = load(arxiv_id, http_client)
+        paper = load_paper(arxiv_id, http_client)
 
     return {
         "html_sha256": hashlib.sha256(html_content).hexdigest(),
@@ -47,7 +47,7 @@ def load_paper_for_content_retention(inputs: dict) -> dict:
                 "kind": passage.kind,
                 "text": passage.text,
             }
-            for passage in loaded.passages
+            for passage in paper.passages
         ],
     }
 

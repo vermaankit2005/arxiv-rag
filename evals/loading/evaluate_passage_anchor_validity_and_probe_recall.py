@@ -7,7 +7,7 @@ import httpx
 from dotenv import load_dotenv
 from langsmith import Client  # pyright: ignore[reportMissingImports]
 
-from loader.load import load
+from arxiv_rag.loading import load_paper
 
 ROOT = Path(__file__).parents[2]
 CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
@@ -24,19 +24,19 @@ def cached_html_path(arxiv_id: str) -> Path:
 
 
 def load_passages_for_evaluation(inputs: dict) -> dict:
-    """Run the shipping loader and return values LangSmith can serialize."""
+    """Run the paper-loading pipeline and return serializable values."""
     arxiv_id = inputs["arxiv_id"]
     html_content = cached_html_path(arxiv_id).read_bytes()
 
     with httpx.Client(follow_redirects=True) as http_client:
-        loaded = load(arxiv_id, http_client)
+        paper = load_paper(arxiv_id, http_client)
 
     return {
         "html_sha256": hashlib.sha256(html_content).hexdigest(),
         "passage_anchors": [
-            passage.location.lstrip("#") for passage in loaded.passages
+            passage.location.lstrip("#") for passage in paper.passages
         ],
-        "passage_texts": [passage.text for passage in loaded.passages],
+        "passage_texts": [passage.text for passage in paper.passages],
     }
 
 

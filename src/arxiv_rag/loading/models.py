@@ -37,7 +37,7 @@ class FigureImage:
 
 
 @dataclass
-class Loaded:
+class LoadedPaper:
     arxiv_id: str
     sections: list[str]               # headings in document order
     passages: list[Passage]

@@ -1,11 +1,11 @@
-"""Run a quick local check that every loader passage has a valid HTML anchor."""
+"""Check that every loaded passage has a valid HTML anchor."""
 
 import json
 from pathlib import Path
 
 import httpx
 
-from loader.load import load
+from arxiv_rag.loading import load_paper
 
 ROOT = Path(__file__).parents[2]
 CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
@@ -30,9 +30,9 @@ def check_passage_anchor_validity() -> None:
             html_content = (CACHED_HTML_DIRECTORY / f"{arxiv_id}.html").read_text(
                 encoding="utf-8"
             )
-            loaded = load(arxiv_id, http_client)
+            loaded_paper = load_paper(arxiv_id, http_client)
 
-            for passage in loaded.passages:
+            for passage in loaded_paper.passages:
                 passage_count += 1
                 anchor = passage.location.lstrip("#")
                 if f'id="{anchor}"' in html_content:

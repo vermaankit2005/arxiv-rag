@@ -2,7 +2,7 @@
 
 Use it like this, at the top of any module:
 
-    from util.log import get_logger
+    from arxiv_rag.logging import get_logger
 
     log = get_logger(__name__)
     log.info("loaded %s: %d passages", arxiv_id, len(doc.passages))
@@ -110,7 +110,7 @@ def setup(level: str | int | None = None) -> logging.Logger:
 def get_logger(name: str | None = None) -> logging.Logger:
     """The logger to use in a module. Pass `__name__`.
 
-    A module called `loader.loader` becomes `arxiv_rag.loader.loader`, so every
+    A module called `arxiv_rag.loading.arxiv` keeps that name in each record, so every
     line says which part of the project it came from and one switch controls
     them all.
     """

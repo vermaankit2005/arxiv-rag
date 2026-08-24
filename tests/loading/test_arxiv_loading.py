@@ -4,7 +4,8 @@ from unittest.mock import Mock, patch
 import httpx
 import pytest  # pyright: ignore[reportMissingImports]
 
-from loader.load import _fetch_html, load
+from arxiv_rag.loading import load_paper
+from arxiv_rag.loading.arxiv import _fetch_arxiv_html
 
 HTML_DIR = Path(__file__).parents[2] / "data" / "raw" / "sampled_html"
 FIXTURE = HTML_DIR / "1706.03762v7.html"
@@ -20,7 +21,7 @@ STUB_PAGE = "<html><body>No HTML is available for this paper.</body></html>"
 @pytest.fixture
 def cache(tmp_path, monkeypatch):
     """Send the download cache to a throwaway folder, never data/raw/sampled_html."""
-    monkeypatch.setattr("loader.load.HTML_DIR", tmp_path)
+    monkeypatch.setattr("arxiv_rag.loading.arxiv.HTML_DIR", tmp_path)
     return tmp_path
 
 
@@ -31,13 +32,13 @@ def fake_response(status: int, text: str) -> Mock:
     return reply
 
 
-def test_load_html_returns_loaded_when_fetch_returns_html():
+def test_load_paper_returns_content_when_fetch_returns_html():
     client = Mock()
     mock_html = FIXTURE.read_text(encoding="utf-8")
 
-    with patch("loader.load._fetch_html",
+    with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html",
                return_value=mock_html) as mock_fetch_html:
-        loaded = load("test_html", client)
+        loaded = load_paper("test_html", client)
         mock_fetch_html.assert_called_once_with("test_html", client)
 
         assert loaded.arxiv_id == "test_html"
@@ -46,12 +47,12 @@ def test_load_html_returns_loaded_when_fetch_returns_html():
         assert len(loaded.passages) == 84
 
 
-def test_load_html_returns_empty_loded_when_fetch_returns_none():
+def test_load_paper_returns_empty_loaded_paper_when_fetch_returns_none():
     client = Mock()
 
-    with patch("loader.load._fetch_html",
+    with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html",
                return_value=None) as mock_fetch_html:
-        loaded = load("dummy_arxiv_id", client)
+        loaded = load_paper("dummy_arxiv_id", client)
         mock_fetch_html.assert_called_once_with("dummy_arxiv_id", client)
 
         assert loaded.arxiv_id == "dummy_arxiv_id"
@@ -63,8 +64,8 @@ def test_load_html_returns_empty_loded_when_fetch_returns_none():
 def test_every_passage_has_a_location_that_is_in_the_page():
     mock_html = FIXTURE.read_text(encoding="utf-8")
 
-    with patch("loader.load._fetch_html", return_value=mock_html):
-        loaded = load("test_html", Mock())
+    with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html", return_value=mock_html):
+        loaded = load_paper("test_html", Mock())
 
     for passage in loaded.passages:
         assert passage.location, f"passage {passage.order} has no location: {passage.text[:60]}"
@@ -79,9 +80,9 @@ def test_every_passage_has_a_location_that_is_in_the_page():
 def test_loading_the_same_paper_twice_gives_the_same_result():
     mock_html = FIXTURE.read_text(encoding="utf-8")
 
-    with patch("loader.load._fetch_html", return_value=mock_html):
-        first = load("test_html", Mock())
-        second = load("test_html", Mock())
+    with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html", return_value=mock_html):
+        first = load_paper("test_html", Mock())
+        second = load_paper("test_html", Mock())
 
     assert first == second
 
@@ -90,9 +91,9 @@ def test_loading_the_same_paper_twice_gives_the_same_result():
 def test_every_cached_html_has_basic_correctness(html_path: Path):
     html = html_path.read_text(encoding="utf-8")
 
-    with patch("loader.load._fetch_html", return_value=html):
-        loaded = load(html_path.stem, Mock())
-        loaded_again = load(html_path.stem, Mock())
+    with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html", return_value=html):
+        loaded = load_paper(html_path.stem, Mock())
+        loaded_again = load_paper(html_path.stem, Mock())
 
     assert loaded == loaded_again
 
@@ -122,15 +123,15 @@ def test_every_cached_html_has_basic_correctness(html_path: Path):
         assert f'id="{anchor}"' in html
 
 
-def load_fixture():
+def load_paper_fixture():
     mock_html = FIXTURE.read_text(encoding="utf-8")
-    with patch("loader.load._fetch_html", return_value=mock_html):
-        return load("test_html", Mock()), mock_html
+    with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html", return_value=mock_html):
+        return load_paper("test_html", Mock()), mock_html
 
 
 def test_figure_two_caption_is_one_complete_citable_passage():
     """The sentence that explains Figure 2 used to be absent from every passage."""
-    loaded, mock_html = load_fixture()
+    loaded, mock_html = load_paper_fixture()
     expected = (
         "Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention "
         "consists of several attention layers running in parallel."
@@ -144,7 +145,7 @@ def test_figure_two_caption_is_one_complete_citable_passage():
 
 def test_every_figure_and_table_caption_becomes_a_typed_passage():
     """All nine captions retain the type retrieval needs to present them."""
-    loaded, _ = load_fixture()
+    loaded, _ = load_paper_fixture()
     expected_kinds = {
         "#S3.F1": "figure_caption",
         "#S3.F2": "figure_caption",
@@ -167,7 +168,7 @@ def test_every_figure_and_table_caption_becomes_a_typed_passage():
 
 def test_table_two_keeps_its_header_with_the_big_transformer_score():
     """A score without its BLEU header cannot answer what the big Transformer achieved."""
-    loaded, _ = load_fixture()
+    loaded, _ = load_paper_fixture()
     table = next(passage for passage in loaded.passages if passage.location == "#S6.T2.2")
 
     assert table.kind == "table"
@@ -177,7 +178,7 @@ def test_table_two_keeps_its_header_with_the_big_transformer_score():
 
 def test_equation_layout_tables_do_not_become_data_table_passages():
     """LaTeXML uses table markup for equations, which must not create duplicate passages."""
-    loaded, _ = load_fixture()
+    loaded, _ = load_paper_fixture()
     equation_locations = {"#S3.E1", "#S3.EGx1", "#S3.E2", "#S3.EGx2", "#S5.E3"}
 
     assert equation_locations.isdisjoint(
@@ -187,7 +188,7 @@ def test_equation_layout_tables_do_not_become_data_table_passages():
 
 def test_math_in_a_data_table_uses_alttext_exactly_once():
     """MathML repeats a formula visually; only its readable alttext belongs in a cell."""
-    loaded, _ = load_fixture()
+    loaded, _ = load_paper_fixture()
     table = next(passage for passage in loaded.passages if passage.location == "#S4.T1.2")
 
     assert table.text.count(r"O(n^{2}\cdot d)") == 1
@@ -195,7 +196,7 @@ def test_math_in_a_data_table_uses_alttext_exactly_once():
 
 def test_only_real_figure_images_are_recorded_with_urls_and_anchors():
     """Raster and SVG figures matter; arXiv logos and banner icons do not."""
-    loaded, mock_html = load_fixture()
+    loaded, mock_html = load_paper_fixture()
     expected_urls = {
         "https://arxiv.org/html/1706.03762v7/Figures/ModalNet-21.png",
         "https://arxiv.org/html/1706.03762v7/Figures/ModalNet-19.png",
@@ -216,7 +217,7 @@ def test_only_real_figure_images_are_recorded_with_urls_and_anchors():
 
 def test_every_figure_image_is_linked_to_its_caption_passage():
     """A retrieved caption must carry every image the interface should show."""
-    loaded, _ = load_fixture()
+    loaded, _ = load_paper_fixture()
     figure_captions = [
         passage for passage in loaded.passages if passage.kind == "figure_caption"
     ]
@@ -243,7 +244,7 @@ def test_every_figure_image_is_linked_to_its_caption_passage():
 
 
 def test_prose_and_notes_retain_their_passage_kinds():
-    loaded, _ = load_fixture()
+    loaded, _ = load_paper_fixture()
     kinds_by_location = {passage.location: passage.kind for passage in loaded.passages}
 
     assert kinds_by_location["#S3.p1"] == "prose"
@@ -252,7 +253,7 @@ def test_prose_and_notes_retain_their_passage_kinds():
 
 def test_caption_is_emitted_beside_its_figure_in_document_order():
     """Captions appended after parsing would lose the reading order around a figure."""
-    loaded, _ = load_fixture()
+    loaded, _ = load_paper_fixture()
     caption = next(passage for passage in loaded.passages if passage.location == "#S3.F2")
     following_paragraph = next(
         passage
@@ -273,7 +274,7 @@ def test_a_downloaded_paper_is_returned_and_kept_on_disk(cache):
     client = Mock()
     client.get.return_value = fake_response(200, REAL_PAGE)
 
-    assert _fetch_html("1706.03762v7", client) == REAL_PAGE
+    assert _fetch_arxiv_html("1706.03762v7", client) == REAL_PAGE
     assert (cache / "1706.03762v7.html").read_text(encoding="utf-8") == REAL_PAGE
 
 
@@ -283,14 +284,14 @@ def test_the_no_html_stub_is_not_mistaken_for_a_paper(cache):
     client = Mock()
     client.get.return_value = fake_response(200, STUB_PAGE)
 
-    assert _fetch_html("2101.00001", client) is None
+    assert _fetch_arxiv_html("2101.00001", client) is None
 
 
 def test_a_paper_already_on_disk_is_not_downloaded_again(cache):
     (cache / "1706.03762v7.html").write_text(REAL_PAGE, encoding="utf-8")
     client = Mock()
 
-    assert _fetch_html("1706.03762v7", client) == REAL_PAGE
+    assert _fetch_arxiv_html("1706.03762v7", client) == REAL_PAGE
     client.get.assert_not_called()
 
 
@@ -300,8 +301,8 @@ def test_a_paper_known_to_have_no_html_is_not_asked_for_twice(cache):
     client = Mock()
     client.get.return_value = fake_response(200, STUB_PAGE)
 
-    assert _fetch_html("2101.00001", client) is None
-    assert _fetch_html("2101.00001", client) is None
+    assert _fetch_arxiv_html("2101.00001", client) is None
+    assert _fetch_arxiv_html("2101.00001", client) is None
     assert client.get.call_count == 1
 
 
@@ -310,7 +311,7 @@ def test_arxiv_being_unreachable_does_not_stop_the_run(cache):
     client = Mock()
     client.get.side_effect = httpx.ConnectError("no route to host")
 
-    assert _fetch_html("1706.03762v7", client) is None
+    assert _fetch_arxiv_html("1706.03762v7", client) is None
 
 
 def test_arxiv_being_unreachable_is_not_recorded_as_no_html(cache):
@@ -320,10 +321,10 @@ def test_arxiv_being_unreachable_is_not_recorded_as_no_html(cache):
     client = Mock()
     client.get.side_effect = httpx.ConnectError("no route to host")
 
-    _fetch_html("1706.03762v7", client)
+    _fetch_arxiv_html("1706.03762v7", client)
     assert not (cache / "1706.03762v7.html").exists()
 
     # Network comes back: the paper is fetched, not skipped forever.
     client.get.side_effect = None
     client.get.return_value = fake_response(200, REAL_PAGE)
-    assert _fetch_html("1706.03762v7", client) == REAL_PAGE
+    assert _fetch_arxiv_html("1706.03762v7", client) == REAL_PAGE

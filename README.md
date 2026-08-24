@@ -3,12 +3,12 @@
 An evidence-grounded reading assistant for language-centric GenAI research
 papers. Every claim it makes points at the passage it came from.
 
-**Status: sprint 1 complete — loader finished.** Nothing works end to end yet;
+**Status: sprint 1 complete — paper loading finished.** Nothing works end to end yet;
 chunking is the next question.
 
 ## What exists
 
-`src/loader/` reads arXiv HTML and returns citable prose, figure/table captions
+`src/arxiv_rag/loading/` reads arXiv HTML and returns citable prose, figure/table captions
 and serialized data tables with their section path and anchor. Figure captions
 carry their image URL-and-anchor records, which are also available as a flat
 image list. A citation resolves to a link like
@@ -16,7 +16,7 @@ image list. A citation resolves to a link like
 
 The source was chosen by measurement, not preference: 40 papers surveyed, 39 have
 arXiv HTML, and the source decision used a 12-paper answer key built from LaTeX.
-The shipping loader finds all 120 sampled passages, all 1,211 passage anchors
+The shipping loading pipeline finds all 120 sampled passages, all 1,211 passage anchors
 resolve, and all 1,211 useful HTML blocks are emitted. It retains 99.91% of
 reference words overall; the worst benchmark paper retains 99.53% against the
 95% rule.

@@ -2,11 +2,11 @@ from pathlib import Path
 
 import httpx
 
-from loader.renderer import Reader
-from loader.shape import Loaded
-from util.log import get_logger
+from arxiv_rag.loading.html_parser import ArxivHtmlParser
+from arxiv_rag.loading.models import LoadedPaper
+from arxiv_rag.logging import get_logger
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 HTML_DIR = ROOT / "data" / "raw" / "sampled_html"
 
 log = get_logger(__name__)
@@ -14,7 +14,7 @@ log = get_logger(__name__)
 
 # Fetch HTML from arXiv, caching it locally. The cache is a simple text file,
 # empty if arXiv has no HTML for the paper.
-def _fetch_html(arxiv_id: str, client: httpx.Client) -> str | None:
+def _fetch_arxiv_html(arxiv_id: str, client: httpx.Client) -> str | None:
     """Download the LaTeXML page. Returns None when arXiv published none."""
 
     HTML_DIR.mkdir(parents=True, exist_ok=True)
@@ -37,29 +37,34 @@ def _fetch_html(arxiv_id: str, client: httpx.Client) -> str | None:
     return None if missing else r.text
 
 
-# Loader class that fetches and parses HTML from arXiv, returning a Loaded object.
-def load(arxiv_id: str, client: httpx.Client) -> Loaded:
+# Fetch and parse an arXiv paper into the application's loading model.
+def load_paper(arxiv_id: str, client: httpx.Client) -> LoadedPaper:
 
-    html = _fetch_html(arxiv_id, client)
+    html = _fetch_arxiv_html(arxiv_id, client)
 
     if html is None:
         log.warning("arXiv %s has no HTML published", arxiv_id)
-        return Loaded(arxiv_id, [], [], note="no arXiv HTML published")
+        return LoadedPaper(arxiv_id, [], [], note="no arXiv HTML published")
 
-    reader = Reader()
-    reader.feed(html)
-    reader.passages.extend(reader.pending)
+    parser = ArxivHtmlParser()
+    parser.feed(html)
+    parser.passages.extend(parser.pending)
 
-    for i, passage in enumerate(reader.passages):
+    for i, passage in enumerate(parser.passages):
         passage.order = i
 
-    return Loaded(arxiv_id, reader.titles, reader.passages, images=reader.images)
+    return LoadedPaper(
+        arxiv_id,
+        parser.titles,
+        parser.passages,
+        images=parser.images,
+    )
 
 
 if __name__ == "__main__":
     with httpx.Client() as client:
-        loaded = load("1706.03762v7", client)
-        print(f"\n=== {loaded.arxiv_id}  {len(loaded.sections)} sections  "
-              f"{len(loaded.passages)} passages  {loaded.note}")
-        for p in loaded.passages:
+        paper = load_paper("1706.03762v7", client)
+        print(f"\n=== {paper.arxiv_id}  {len(paper.sections)} sections  "
+              f"{len(paper.passages)} passages  {paper.note}")
+        for p in paper.passages:
             print(f"  [{p.location or '-'}] ({p.section}) {p.text}")
