@@ -20,3 +20,4 @@ experiments/
 !tests/data/
 # The evals' answer key ships with the evals that read it.
 !evals/dataset/
+chroma_db/

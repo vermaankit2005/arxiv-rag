@@ -11,7 +11,6 @@ HTML_DIR = ROOT / "data" / "raw" / "sampled_html"
 
 log = get_logger(__name__)
 
-
 # Fetch HTML from arXiv, caching it locally. The cache is a simple text file,
 # empty if arXiv has no HTML for the paper.
 def _fetch_arxiv_html(arxiv_id: str, client: httpx.Client) -> str | None:
@@ -39,15 +38,19 @@ def _fetch_arxiv_html(arxiv_id: str, client: httpx.Client) -> str | None:
 
 # Fetch and parse an arXiv paper into the application's loading model.
 def load_paper(arxiv_id: str, client: httpx.Client) -> LoadedPaper:
-
     html = _fetch_arxiv_html(arxiv_id, client)
 
     if html is None:
         log.warning("arXiv %s has no HTML published", arxiv_id)
         return LoadedPaper(arxiv_id, [], [], note="no arXiv HTML published")
 
+    return load_paper_from_html(arxiv_id, html)
+
+
+# Fetch and parse an arXiv paper into the application's loading model.
+def load_paper_from_html(arxiv_id: str, arxiv_html: str) -> LoadedPaper:
     parser = ArxivHtmlParser()
-    parser.feed(html)
+    parser.feed(arxiv_html)
     parser.passages.extend(parser.pending)
 
     for i, passage in enumerate(parser.passages):
