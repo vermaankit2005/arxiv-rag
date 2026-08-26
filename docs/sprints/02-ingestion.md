@@ -30,7 +30,8 @@ files.
 | Vector store | Smallest local stack compatible with Ollama and LangChain. | ✅ Chroma in `chroma_db/`. |
 | Intermediate storage | Raw HTML deterministically regenerates Documents. | ✅ Save raw HTML, not Documents. |
 | Stable Document identity | Split parts can share the same source anchor, so anchors alone can collide. | ✅ UUID input includes arXiv ID, ordered source anchors, and Document content. Same input stays stable; different split content gets a different ID. |
-| Retrieval eval | The five-question check proved the new representation is better, but it is not a frozen answer key. | 🔶 Open separately. Do not call the manual check an eval. |
+| Retrieval eval suite | The five-question check proved the new representation is better, but it is not a frozen answer key. Retrieval needs separate completeness, first-useful-rank, and noise signals. | ✅ Track Evidence Recall@5, MRR@5, and Context Precision@5. Evidence Recall@5 is the primary metric. |
+| Retrieval eval tooling | Retrieval examples and experiment history should use the same evaluation platform as the loader evals. | ✅ Keep the frozen dataset and runs in LangSmith; implement the metric evaluators with OpenEvals. |
 
 ## Steps
 
@@ -48,6 +49,9 @@ files.
 - ✅ Split an individual source passage only when it exceeds 600 words; do not cap the later overlap stage.
 - ✅ Include Document content in stable IDs and include passage text in quick-retriever deduplication.
 - ⬜ Rebuild Chroma once more after oversized-passage metadata and IDs are final.
+- ⬜ Define a minimal frozen retrieval dataset with questions and required source evidence.
+- ⬜ Implement Evidence Recall@5 with OpenEvals and record runs in LangSmith.
+- ⬜ Add MRR@5 and Context Precision@5 after the Recall@5 contract is proven.
 - ⬜ Prove a safe rerun or make fresh-database rebuilding the explicit supported behaviour.
 - ⏸ Indexing a 500-paper development corpus is deferred until the ingestion representation is stable.
 
@@ -84,7 +88,36 @@ share one anchor while still deduplicating exact overlap.
 
 ## Evals
 
-There is **no tracked retrieval-quality eval yet**.
+There is **no tracked retrieval-quality run yet**, but the metric suite is now
+fixed: **Evidence Recall@5**, **MRR@5**, and **Context Precision@5**. We will design
+and implement Evidence Recall@5 first.
+
+### Evidence Recall@5 contract
+
+For each frozen question, the answer key contains one or more required evidence
+units. Each unit identifies the source evidence by arXiv ID, source location, and
+a short exact evidence quote. A unit may list accepted alternatives when more
+than one source passage supports the same fact.
+
+The evaluator retrieves the top five Documents, expands their `source_passages`,
+and removes overlap duplicates using `(arxiv_id, location, text)`. A required unit
+is covered when a deduplicated source passage has the expected paper and location
+and contains one of the unit's normalized evidence quotes. The answer key does not
+use retrieval Document IDs or a hash of the complete grouped text, so regrouping
+Documents does not invalidate the evidence.
+
+`Evidence Recall@5 = covered required evidence units / all required evidence units`
+
+This deliberately scores source evidence rather than retrieval Document IDs.
+Document IDs change when grouping changes, and overlap can place the same source
+passage in more than one Document. Questions with one required unit therefore
+score either 0 or 1; questions needing several pieces of evidence receive partial
+credit when only some are found.
+
+The first dataset will stay small and human-reviewable. LangSmith will store the
+frozen examples and experiment results. OpenEvals will implement the evaluator.
+The exact question count and mix remain open until we agree what the minimum
+representative set must cover.
 
 The completed manual probe used five questions after rebuilding with
 `qwen3-embedding:4b`:
@@ -97,8 +130,7 @@ The completed manual probe used five questions after rebuilding with
 
 Observed query latency was roughly **0.76–1.23 seconds**. This showed a major
 improvement over the old passage-per-Document representation, but five hand-picked
-questions are a smoke check, not an eval. The retrieval eval, its answer key, and
-its scoring rules remain a separate decision.
+questions remain a smoke check, not an eval.
 
 ## Done when
 
@@ -156,9 +188,12 @@ the representation is final would create expensive throwaway embeddings.
   without dropping different segments from one anchor.
 - Retrieval-eval metrics were discussed but not accepted. Keep that decision
   separate instead of quietly treating suggested metrics as agreed work.
+- The retrieval suite is now accepted: Evidence Recall@5, MRR@5, and Context
+  Precision@5. Evidence Recall@5 comes first, using source-level evidence after
+  overlap deduplication. LangSmith will hold the dataset and runs; OpenEvals will
+  provide the evaluators.
 
 ## Next question
 
-Once oversized passages and rerun behaviour are settled, **what production
-retrieval contract should the answering layer consume, and what evidence would
-convince us that retrieval is good enough to build on?**
+For the minimal Evidence Recall@5 dataset, **which question types and how many
+questions are the smallest representative set we trust?**

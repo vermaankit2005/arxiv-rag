@@ -104,6 +104,7 @@ def _group_passages(loaded_paper: LoadedPaper) -> list[list[Passage]]:
 
     for passage in loaded_paper.passages:
 
+        # This looks complicated, but it's just splitting up passages that are too long into smaller passages.
         passage_list = _process_oversize_passages(passage)
 
         for _passage in passage_list:
@@ -163,6 +164,8 @@ def convert_loaded_paper_to_documents(loaded_paper: LoadedPaper) -> list[Documen
 
     for group in grouped_passages:
         locations = [passage.location for passage in group]
+        # Preserve the original passage text, location, section path, and kind in the metadata for each passage.
+        # !!! Important for retrieval and context building.
         source_passages = [
             {
                 "text": passage.text,
