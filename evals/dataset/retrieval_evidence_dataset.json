@@ -1,0 +1,650 @@
+[
+  {
+    "inputs": {
+      "question": "How does the Transformer decoder prevent a position from using future output tokens?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "1706.03762v7-q1-e1",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "1706.03762v7",
+              "location": "#S3.SS1.SSS0.Px2.p1",
+              "quote": "We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions. This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position i can depend only on the known outputs at positions less than i ."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "method"
+    }
+  },
+  {
+    "inputs": {
+      "question": "What F1 scores did the four-layer Transformer achieve on WSJ constituency parsing with WSJ-only training and with semi-supervised training?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "1706.03762v7-q2-e1",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "1706.03762v7",
+              "location": "#S6.T4.2",
+              "quote": "Transformer (4 layers) | WSJ only, discriminative | 91.3"
+            }
+          ]
+        },
+        {
+          "id": "1706.03762v7-q2-e2",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "1706.03762v7",
+              "location": "#S6.T4.2",
+              "quote": "Transformer (4 layers) | semi-supervised | 92.7"
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "result"
+    }
+  },
+  {
+    "inputs": {
+      "question": "When BERT selects a token position for masked-language-model prediction, how often is it replaced by [MASK], by a random token, or left unchanged?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "1810.04805v2-q1-e1",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "1810.04805v2",
+              "location": "#S3.SS1.SSS0.Px1.p3",
+              "quote": "If the i -th token is chosen, we replace the i -th token with (1) the [MASK] token 80% of the time (2) a random token 10% of the time (3) the unchanged i -th token 10% of the time."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "method"
+    }
+  },
+  {
+    "inputs": {
+      "question": "What average GLUE test scores did OpenAI GPT, BERT BASE, and BERT LARGE obtain in the reported comparison?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "1810.04805v2-q2-e1",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "1810.04805v2",
+              "location": "#S3.T1.2",
+              "quote": "OpenAI GPT | 82.1/81.4 | 70.3 | 87.4 | 91.3 | 45.4 | 80.0 | 82.3 | 56.0 | 75.1"
+            }
+          ]
+        },
+        {
+          "id": "1810.04805v2-q2-e2",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "1810.04805v2",
+              "location": "#S3.T1.2",
+              "quote": "BERT {}_{\\textsc{BASE}} | 84.6/83.4 | 71.2 | 90.5 | 93.5 | 52.1 | 85.8 | 88.9 | 66.4 | 79.6"
+            }
+          ]
+        },
+        {
+          "id": "1810.04805v2-q2-e3",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "1810.04805v2",
+              "location": "#S3.T1.2",
+              "quote": "BERT {}_{\\textsc{LARGE}} | 86.7/85.9 | 72.1 | 92.7 | 94.9 | 60.5 | 86.5 | 89.3 | 70.1 | 82.1"
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "result"
+    }
+  },
+  {
+    "inputs": {
+      "question": "What three phases does the DPO paper say the usual RLHF pipeline includes?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "2305.18290v3-q1-e1",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2305.18290v3",
+              "location": "#S3.p1",
+              "quote": "It usually includes three phases: 1) supervised fine-tuning (SFT); 2) preference sampling and reward learning and 3) RL optimization."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "method"
+    }
+  },
+  {
+    "inputs": {
+      "question": "On out-of-distribution CNN/DailyMail articles, what GPT-4 win rates against ground-truth summaries did DPO and PPO achieve at temperatures 0 and 0.25?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "2305.18290v3-q2-e1",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2305.18290v3",
+              "location": "#S6.T1.2",
+              "quote": "DPO | 0.36 | 0.31"
+            }
+          ]
+        },
+        {
+          "id": "2305.18290v3-q2-e2",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2305.18290v3",
+              "location": "#S6.T1.2",
+              "quote": "PPO | 0.26 | 0.23"
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "result"
+    }
+  },
+  {
+    "inputs": {
+      "question": "How do RAG-Sequence and RAG-Token differ in which retrieved document they use while generating target tokens?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "2005.11401v4-q1-e1",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2005.11401v4",
+              "location": "#S2.p2",
+              "quote": "In one approach, RAG-Sequence, the model uses the same document to predict each target token. The second approach, RAG-Token, can predict each target token based on a different document."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "comparison"
+    }
+  },
+  {
+    "inputs": {
+      "question": "In the human assessment of Jeopardy question generation, what percentages rated BART better and RAG better for factuality and for specificity?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "2005.11401v4-q2-e1",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2005.11401v4",
+              "location": "#S4.T5.fig1.3",
+              "quote": "BART better | 7.1% | 16.8%"
+            }
+          ]
+        },
+        {
+          "id": "2005.11401v4-q2-e2",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2005.11401v4",
+              "location": "#S4.T5.fig1.3",
+              "quote": "RAG better | 42.7% | 37.4%"
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "result"
+    }
+  },
+  {
+    "inputs": {
+      "question": "How does MX+ use the eight additional bits assigned to each MX block?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "mxplus-extra-bits",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2510.14557v1",
+              "location": "#S4.SS2.p1",
+              "quote": "An additional 8 bits are assigned to each MX block, where five bits are used to store the index of the BM element within the block. The remaining three bits are reserved, which can be utilized for further optimizations or to support future MX specifications that define formats with block sizes other than 32 elements."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "method"
+    }
+  },
+  {
+    "inputs": {
+      "question": "For MXFP4+ hardware integration, what average prefill slowdown was measured relative to MXFP4, and what area and power did the added MX+ components consume per Tensor Core?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "mxplus-prefill-slowdown",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2510.14557v1",
+              "location": "#S7.SS4.p1",
+              "quote": "Overall, MXFP4+ shows a 0.38% slowdown on average compared to MXFP4."
+            }
+          ]
+        },
+        {
+          "id": "mxplus-area-power",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2510.14557v1",
+              "location": "#S7.SS4.p2",
+              "quote": "Our design has an area of 0.020mm2 and a power consumption of 12.11mW."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "result"
+    }
+  },
+  {
+    "inputs": {
+      "question": "What speedup and maximum KV-cache memory saving does SemShareKV report relative to a conventional KV cache?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "semsharekv-speed-memory",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2509.24832v2",
+              "location": "#S6.p1",
+              "quote": "SemShareKV achieves a speed of 6.25 \\times and saves up to 42% KV cache memory space compared to conventional KV cache, with a minimum performance drop."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "result"
+    }
+  },
+  {
+    "inputs": {
+      "question": "How does SemShareKV select a stored reference prompt, then align and inject its reused cache and decide which tokens to recompute or evict?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "semsharekv-reference-selection",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2509.24832v2",
+              "location": "#S4.SS2.p2",
+              "quote": "When the LLM receives a new prompt as the target prompt, it retrieves a reference prompt by computing an LSH-distance-based similarity score between the target’s contextualized E cache and all stored E caches. The reference prompt with the highest similarity is then loaded onto the GPU along with its corresponding KV cache for reuse."
+            }
+          ]
+        },
+        {
+          "id": "semsharekv-align-recompute-evict",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2509.24832v2",
+              "location": "#S4.SS2.p3",
+              "quote": "Based on these LSH mappings, the precomputed KV cache of the reference prompt is rearranged token by token and injected into LLM transformer layers. On the first transformer layer, all tokens undergo full recomputation. The recomputed outputs are compared with the rearranged cache values via L_{2} norm, identifying high-deviation tokens for prioritized recomputation in subsequent layers. Simultaneously, the system evicts tokens with the lowest attention scores from recent computations, optimizing KV cache memory usage dynamically."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "method"
+    }
+  },
+  {
+    "inputs": {
+      "question": "What time and memory complexity does the paper report for the closed-form low-rank Muon step?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "smuon-complexity",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2608.14492v1",
+              "location": "#S6.p1",
+              "quote": "The resulting step is available in closed form, is invariant to the adapter parameterization (B,A)\\mapsto(BS,S^{-1}A) and is cheap, costing O(r^{2}(d_{1}+d_{2})+r^{3}) time and O(r\\max(d_{1},d_{2})) memory, using less optimizer state than LoRA+AdamW."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "method"
+    }
+  },
+  {
+    "inputs": {
+      "question": "In ReLoRA pretraining, which optimizers tied for the lowest final validation loss, what was that loss, and what explanation does the paper offer for Muon methods outperforming LoRA+AdamW?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "relora-best-validation-loss",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2608.14492v1",
+              "location": "#S5.T3.2",
+              "quote": " | AdamW | Per-factor Muon | LoRA-Muon | Riemannion | sMuon (ours)\nFinal val loss | 3.83 | 3.70 | 3.68 | 3.66 | 3.66"
+            }
+          ]
+        },
+        {
+          "id": "relora-muon-explanation",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2608.14492v1",
+              "location": "#S5.SS0.SSS0.Px3.p1",
+              "quote": "Every Muon-based method achieves lower validation loss than LoRA+AdamW. One explanation for the strong Muon performance is amplification of the small but real signal in the long tail of the gradient’s spectrum (38)."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "explanation"
+    }
+  },
+  {
+    "inputs": {
+      "question": "What files can an agent skill folder contain, and which file is required?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "required-folder-contents",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2608.10906v1",
+              "location": "#abstract1",
+              "quote": "An agent skill is a folder containing a SKILL.md file with instructions for a language-model agent, optionally accompanied by scripts and reference files."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "definition"
+    }
+  },
+  {
+    "inputs": {
+      "question": "How did GitSkills overcome GitHub code search's result limit and deduplicate files without losing information about copies?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "search-limit-strategy",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2608.10906v1",
+              "location": "#A1.p2",
+              "quote": "We therefore partitioned the search space by file size, splitting any range with more than 1,000 results until every range could be retrieved completely."
+            }
+          ]
+        },
+        {
+          "id": "deduplication-and-copy-retention",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2608.10906v1",
+              "location": "#A1.p3",
+              "quote": "Files are grouped by content hash. One representative per group is selected for enrichment, preferring a file in the .claude/skills/ directory, with a deterministic rule to break ties. The representative is not assumed to be the original source. All copies remain in the dataset with their repository, path, and location class, so the spread of each content can be measured."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "method"
+    }
+  },
+  {
+    "inputs": {
+      "question": "What five components define each PCEval project instance?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "project-components",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2601.02404v1",
+              "location": "#S3.SS2.p1",
+              "quote": "Each PCEval project instance is defined by five components: (D)escription, a natural language specification of objectives and requirements; (L)ogical circuit, an abstract pin-to-pin connection map; (P)hysical circuit, a breadboard-level implementation with wiring constraints; (C)ode, an executable program aligned with the given circuit; and (T)est procedure, a set of automated checks that assert expected outputs under simulated inputs."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "definition"
+    }
+  },
+  {
+    "inputs": {
+      "question": "How did physical-circuit generation success change from Level 1 to Level 4 for o3-mini, GPT-4o, Claude 3.7, and Mistral-Small 3?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "complexity-results",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2601.02404v1",
+              "location": "#S4.SS2.SSS0.Px2.p1",
+              "quote": "For physical circuit generation, success commonly drops from Level 1 (L1) to Level 4 (L4): o3-mini 65.0% \\rightarrow 25.5%, GPT-4o 56.7% \\rightarrow 12.7%, Claude 3.7 33.3% \\rightarrow 5.5%, Mistral-Small 3 36.7% \\rightarrow 3.6%."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "result"
+    }
+  },
+  {
+    "inputs": {
+      "question": "What two key techniques does Sarathi-Serve use to balance throughput and latency?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "key-techniques",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2403.02310v3",
+              "location": "#S1.p8",
+              "quote": "Sarathi-Serve is based on two key ideas: chunked-prefills and stall-free scheduling."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "method"
+    }
+  },
+  {
+    "inputs": {
+      "question": "How does Sarathi-Serve's stall-free batching schedule work, and what maximum capacity gains did it achieve over Orca and vLLM under strict SLOs?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "stall-free-scheduling-method",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2403.02310v3",
+              "location": "#S4.SS2.p2",
+              "quote": "In every scheduling iteration, we first pack all the running decodes in the next batch (lines 6-8 in Algorithm 3). After that, we include any partially completed prefill (lines 9-12). Only after all the running requests have been accommodated, we admit new requests (lines 13-20). When adding prefill requests to the batch, we compute the maximum chunk size that can be accommodated within the leftover token budget for that batch (lines 11, 15)."
+            }
+          ]
+        },
+        {
+          "id": "strict-slo-capacity-results",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2403.02310v3",
+              "location": "#S5.SS1.p2",
+              "quote": "Under strict SLO, Sarathi-Serve can sustain up to 4.0\\times higher load compared to Orca and 3.7\\times higher load than vLLM under strict SLO (Yi-34B, openchat_sharegpt4). For larger models using pipeline parallelism, Sarathi-Serve achieves gains of up to 6.3 \\times and 4.3 \\times compared to Orca and vLLM respectively (LLaMA2-70B, openchat_sharegpt4) due to few pipeline bubbles."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "method"
+    }
+  },
+  {
+    "inputs": {
+      "question": "What are the three agents in GestureGPT, and what task does each one handle?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "agent_roles",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2310.12821v5",
+              "location": "#S3.p1",
+              "quote": "GestureGPT has a triple-agent framework to efficiently manage gesture description, context, and inference tasks, enhancing system flexibility and scalability while addressing the shortcomings of single or dual agent systems, consists of: (1) Gesture Description Agent, generating descriptions of gestures from videos; (2) Context Management Agent, handling interaction context; and (3) Gesture Inference Agent, synthesize information to infer gesture intentions through dialogue and reasoning."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "definition"
+    }
+  },
+  {
+    "inputs": {
+      "question": "With all context types available, what Top-1 accuracy did GestureGPT achieve in the smart-home and video-scenario experiments, and how did the video result compare with the two single-context settings?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "smart_home_all_context_top1",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2310.12821v5",
+              "location": "#S4.SS1.SSS2.p2",
+              "quote": "When all contexts are combined together, the overall framework achieves the best Top-1 performance at 44.79%."
+            }
+          ]
+        },
+        {
+          "id": "video_all_context_top1_and_comparison",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2310.12821v5",
+              "location": "#S4.SS2.SSS2.p2",
+              "quote": "Specifically, Top-1 accuracy improved from 19.53% to 37.50% when all types of context are available, significantly outperforming each single context setting: +11.20% compared to only the history and external setting, and +11.72% compared to the only gaze setting."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "result"
+    }
+  },
+  {
+    "inputs": {
+      "question": "What two roles does the same language model play during self-verification?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "self_verification_roles",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2311.03033v1",
+              "location": "#S4.SS1.p1",
+              "quote": "In problems solved with self-verification, the same LLM plays two different roles: 1) it is a generator of solutions, and 2) a discriminator of potentially wrong answers."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "definition"
+    }
+  },
+  {
+    "inputs": {
+      "question": "Why is checking whether the Hex diagram commutes straightforward for the arithmetic example but dependent on the evaluation scenario for the unicorn example?"
+    },
+    "outputs": {
+      "evidence_units": [
+        {
+          "id": "arithmetic_commutativity",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2311.03033v1",
+              "location": "#S2.SS1.SSS1.p5",
+              "quote": "This example has a unique and precise solution, so we can easily check that the Hex diagram commutes."
+            }
+          ]
+        },
+        {
+          "id": "unicorn_commutativity",
+          "accepted_evidence": [
+            {
+              "arxiv_id": "2311.03033v1",
+              "location": "#S2.SS1.SSS2.p5",
+              "quote": "Unlike the arithmetic example, this problem has multiple solutions and the relation that makes the Hex diagram commute depends on the scenario. For example, different human evaluations may have different standards for how much the figure resembles an unicorn. Others may care more about the clarity of the code."
+            }
+          ]
+        }
+      ]
+    },
+    "metadata": {
+      "question_type": "comparison"
+    }
+  }
+]

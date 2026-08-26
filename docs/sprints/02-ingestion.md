@@ -49,7 +49,7 @@ files.
 - ✅ Split an individual source passage only when it exceeds 600 words; do not cap the later overlap stage.
 - ✅ Include Document content in stable IDs and include passage text in quick-retriever deduplication.
 - ⬜ Rebuild Chroma once more after oversized-passage metadata and IDs are final.
-- ⬜ Define a minimal frozen retrieval dataset with questions and required source evidence.
+- ✅ Curate a minimal frozen dataset: 24 questions and 36 required evidence units across all 12 benchmark papers.
 - ⬜ Implement Evidence Recall@5 with OpenEvals and record runs in LangSmith.
 - ⬜ Add MRR@5 and Context Precision@5 after the Recall@5 contract is proven.
 - ⬜ Prove a safe rerun or make fresh-database rebuilding the explicit supported behaviour.
@@ -57,9 +57,9 @@ files.
 
 ## Tests
 
-`uv run pytest` currently reports **54 passing tests**: 32 loader tests, 17
-tracked ingestion-document tests, and 5 local quick-retriever tests under the
-gitignored `experiments` path.
+`uv run pytest` currently reports **56 passing tests**: 32 loader tests, 17
+tracked ingestion-document tests, 5 local quick-retriever tests, and 2 retrieval
+dataset validation tests.
 
 | Invariant | State |
 |---|---|
@@ -78,6 +78,8 @@ gitignored `experiments` path.
 | Oversized tables split between rows where possible | ✅ passing |
 | One sentence or table row above 350 words stays whole | ✅ passing |
 | Same anchors with different Document content produce different stable IDs | ✅ passing |
+| Retrieval dataset has two unique questions per benchmark paper | ✅ passing |
+| Every evidence quote resolves to exactly one loaded source passage | ✅ passing |
 | A second ingestion produces no duplicate records | ⬜ not proved |
 | Stored metadata survives a Chroma write/read round trip | ⬜ only checked manually |
 
@@ -114,10 +116,18 @@ passage in more than one Document. Questions with one required unit therefore
 score either 0 or 1; questions needing several pieces of evidence receive partial
 credit when only some are found.
 
-The first dataset will stay small and human-reviewable. LangSmith will store the
-frozen examples and experiment results. OpenEvals will implement the evaluator.
-The exact question count and mix remain open until we agree what the minimum
-representative set must cover.
+The curated dataset lives at
+`../../evals/dataset/retrieval_evidence_dataset.json`. It contains 24 questions,
+two for each of the 12 benchmark papers, and 36 required evidence units. Thirteen
+questions need one evidence unit; eleven need multiple units. The question mix is
+9 method, 8 result, 4 definition, 2 comparison, and 1 explanation question. The
+five development probes were not reused as frozen questions.
+
+Every quote was checked against the shipping loader and resolves to exactly one
+passage at its recorded paper and location. The builder at
+`../../evals/dataset_builders/create_retrieval_evidence_dataset.py` uploads the
+examples to LangSmith without silently replacing a stale dataset. OpenEvals will
+implement the evaluator in the next step.
 
 The completed manual probe used five questions after rebuilding with
 `qwen3-embedding:4b`:
@@ -192,8 +202,11 @@ the representation is final would create expensive throwaway embeddings.
   Precision@5. Evidence Recall@5 comes first, using source-level evidence after
   overlap deduplication. LangSmith will hold the dataset and runs; OpenEvals will
   provide the evaluators.
+- The frozen retrieval dataset now has 24 questions and 36 evidence units across
+  all 12 benchmark papers. Tests verify paper balance, unique questions and IDs,
+  and that every exact quote resolves to one shipping-loader passage.
 
 ## Next question
 
-For the minimal Evidence Recall@5 dataset, **which question types and how many
-questions are the smallest representative set we trust?**
+With the frozen dataset ready, **what exact matching and aggregation contract
+should the OpenEvals Evidence Recall@5 evaluator implement?**
