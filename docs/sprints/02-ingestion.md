@@ -23,7 +23,7 @@ files.
 | Target size | The improved documents must carry enough context without becoming broad sections. | ✅ Pack source passages up to 350 words. Prefer natural boundaries; one sentence or table row may exceed the target. |
 | Section boundary | Treating every subsection as hard would recreate many tiny Documents. | ✅ Main section is hard. Subsections may share a Document and are identified by breadcrumbs. |
 | Overlap | Adjacent Documents need continuity, but overlap must not cross an unrelated section. | ✅ Add the previous complete passage only within the same main section. Apply the target while splitting and grouping, not again after overlap. |
-| Oversized source passage | 9/1,206 sampled passages exceed 350 words; the largest is a 1,330-word table. | 🟡 Splitting implemented: prose uses sentence boundaries and tables use row boundaries. A single sentence or row above the target stays whole. Source anchors are retained; internal segment identity is still open. |
+| Oversized source passage | 9/1,206 sampled passages exceed 350 words, but only 2 exceed 600; the largest is a 1,330-word table. | 🟡 Split only source passages above 600 words. Prose uses sentence boundaries and tables use row boundaries, packing parts toward 350 words. A single sentence or row above the target stays whole. Source anchors are retained; internal segment identity is still open. |
 | Unsectioned content | Front matter such as the abstract has no normal section path but can still be useful evidence. | ✅ Use the explicit breadcrumb `Unsectioned`. |
 | Citation mapping | A list of anchors beside combined text does not tell the answer model which text belongs to which anchor. | ✅ Store `text`, `section_path`, `location`, and `kind` for every constituent passage in `source_passages`. |
 | Embedding model | `qwen3-embedding:0.6b` was fast but retrieval was weak. The 4B model was tested on the rebuilt sample corpus. | ✅ `qwen3-embedding:4b`. Offline ingestion is slower; query latency remained practical. |
@@ -45,7 +45,7 @@ files.
 - ✅ Move the embedding model from `qwen3-embedding:0.6b` to `qwen3-embedding:4b`.
 - ✅ Rebuild and manually inspect the 12-paper sample corpus: 1,206 loaded passages became 379 retrieval Documents.
 - ✅ Make a real answer-model call from the local quick retriever and render exact clickable passage links.
-- ✅ Split an individual source passage that exceeds 350 words; do not cap the later overlap stage.
+- ✅ Split an individual source passage only when it exceeds 600 words; do not cap the later overlap stage.
 - ⬜ Add stable segment identity so multiple parts sharing one source anchor cannot collide or be deduplicated.
 - ⬜ Rebuild Chroma once more after oversized-passage metadata and IDs are final.
 - ⬜ Prove a safe rerun or make fresh-database rebuilding the explicit supported behaviour.
@@ -101,7 +101,7 @@ its scoring rules remain a separate decision.
 
 ## Done when
 
-1. Every included source passage is split near 350 words when a sentence or row boundary allows it. ✅
+1. Every included source passage above 600 words is split near 350 words when a sentence or row boundary allows it. ✅
 2. Oversized prose and tables keep all source text and the original clickable anchor. ✅ splitting and anchors; segmented identity still open
 3. Grouping, breadcrumbs, overlap, metadata, images, and stable IDs have passing tests. ✅ except segmented IDs
 4. The final representation is freshly ingested across all 12 sampled papers. 🔶 rebuild needed after oversized splitting
@@ -124,8 +124,8 @@ the representation is final would create expensive throwaway embeddings.
   changed from 84 to 82 passages.
 - Main sections became hard boundaries. Subsections remain soft boundaries so
   short neighbouring passages can form useful evidence.
-- The target became 350 words. Normal passages are never split by the grouping
-  logic; an oversized source passage was deliberately deferred.
+- The grouping target became 350 words. Source passages up to 600 words stay
+  whole; only passages above that separate split threshold are divided.
 - One complete passage is overlapped only when both groups share a main section.
 - Breadcrumbs were added to embedding text. Repeated passages in the same
   subsection do not repeat the breadcrumb; missing paths use `Unsectioned`.
@@ -142,9 +142,9 @@ the representation is final would create expensive throwaway embeddings.
   temporary passage IDs and renders them into exact clickable arXiv links.
 - Existing Chroma data must be rebuilt after metadata-shape changes. The quick
   retriever rejects old records with a clear re-ingestion message.
-- Oversized-passage measurement found 9/1,206 source passages above 350 words:
-  6 tables and 3 prose passages. The largest is 1,330 words. We agreed to fix the
-  source passage before grouping and remain lenient after the overlap stage.
+- Oversized-passage measurement found 9/1,206 source passages above 350 words,
+  but only 2 above the agreed 600-word split threshold. The largest is 1,330
+  words. We split those before grouping and remain lenient after overlap.
 - `_group_passages()` now expands an oversized source passage into bounded parts
   before applying its existing merge rules. Prose prefers sentence boundaries,
   tables prefer row boundaries, and a single sentence or row above 350 words

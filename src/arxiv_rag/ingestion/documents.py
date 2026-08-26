@@ -7,6 +7,7 @@ from langchain_core.documents import Document  # pyright: ignore[reportMissingIm
 
 from arxiv_rag.loading.models import LoadedPaper, Passage
 
+PASSAGE_SPLIT_THRESHOLD_WORDS = 600
 MAX_WORDS = 350
 
 
@@ -57,7 +58,7 @@ def _build_page_content(group: list[Passage]) -> str:
 
 
 def _process_oversize_passages(passage: Passage) -> list[Passage]:
-    if _word_count(passage) <= MAX_WORDS:
+    if _word_count(passage) <= PASSAGE_SPLIT_THRESHOLD_WORDS:
         return [passage]
 
     separator = "\n" if passage.kind == "table" else " "

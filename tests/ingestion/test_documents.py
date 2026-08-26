@@ -111,8 +111,8 @@ def test_grouping_splits_before_exceeding_max_words():
 
 def test_oversized_prose_splits_at_sentence_boundaries():
     passage = _passage(1, ["Methods"])
-    first_sentence = " ".join(["first"] * 200) + "."
-    second_sentence = " ".join(["second"] * 200) + "."
+    first_sentence = " ".join(["first"] * 300) + "."
+    second_sentence = " ".join(["second"] * 301) + "."
     passage.text = f"{first_sentence} {second_sentence}"
 
     parts = _process_oversize_passages(passage)
@@ -127,8 +127,8 @@ def test_oversized_table_splits_only_between_rows():
     passage = _passage(1, ["Results"])
     passage.kind = "table"
     header = "Model | Score"
-    first_row = " ".join(["first-row"] * 200)
-    second_row = " ".join(["second-row"] * 200)
+    first_row = " ".join(["first-row"] * 300)
+    second_row = " ".join(["second-row"] * 300)
     passage.text = f"{header}\n{first_row}\n{second_row}"
 
     parts = _process_oversize_passages(passage)
