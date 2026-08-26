@@ -1,5 +1,6 @@
 import json
 import re
+from dataclasses import replace
 from uuid import NAMESPACE_URL, uuid5
 
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
@@ -55,6 +56,44 @@ def _build_page_content(group: list[Passage]) -> str:
     return "\n\n".join(parts)
 
 
+def _process_oversize_passages(passage: Passage) -> list[Passage]:
+    if _word_count(passage) <= MAX_WORDS:
+        return [passage]
+
+    separator = "\n" if passage.kind == "table" else " "
+    if passage.kind == "table":
+        units = [line.strip() for line in passage.text.splitlines() if line.strip()]
+    else:
+        units = [
+            sentence.strip()
+            for sentence in re.split(r"(?<=[.!?])\s+", passage.text)
+            if sentence.strip()
+        ]
+
+    parts = []
+    current_units = []
+    current_words = 0
+
+    for unit in units:
+
+        words = unit.split()
+        normalized_unit = " ".join(words)
+
+        if current_units and current_words + len(words) > MAX_WORDS:
+            parts.append(separator.join(current_units))
+            current_units = []
+            current_words = 0
+
+        current_units.append(normalized_unit)
+        current_words += len(words)
+
+    # To handle any remaining units that didn't exceed the MAX_WORDS limit
+    if current_units:
+        parts.append(separator.join(current_units))
+
+    return [replace(passage, text=part) for part in parts]
+
+
 def _group_passages(loaded_paper: LoadedPaper) -> list[list[Passage]]:
     """Group passages by section path."""
     groups = []
@@ -64,22 +103,25 @@ def _group_passages(loaded_paper: LoadedPaper) -> list[list[Passage]]:
 
     for passage in loaded_paper.passages:
 
-        if not _should_include(passage):
-            continue
+        passage_list = _process_oversize_passages(passage)
 
-        main_section_changed = (
-                current_group
-                and _main_section(passage) != _main_section(current_group[0])
-        )
-        would_be_too_long = current_words + _word_count(passage) > MAX_WORDS
+        for _passage in passage_list:
+            if not _should_include(_passage):
+                continue
 
-        if current_group and (main_section_changed or would_be_too_long):
-            groups.append(current_group)
-            current_group = []
-            current_words = 0
+            main_section_changed = (
+                    current_group
+                    and _main_section(_passage) != _main_section(current_group[0])
+            )
+            would_be_too_long = current_words + _word_count(_passage) > MAX_WORDS
 
-        current_group.append(passage)
-        current_words += _word_count(passage)
+            if current_group and (main_section_changed or would_be_too_long):
+                groups.append(current_group)
+                current_group = []
+                current_words = 0
+
+            current_group.append(_passage)
+            current_words += _word_count(_passage)
 
     if current_group:
         groups.append(current_group)

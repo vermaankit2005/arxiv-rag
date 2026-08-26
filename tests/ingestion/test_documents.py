@@ -1,10 +1,13 @@
 import json
 
 from arxiv_rag.ingestion.documents import (
+    MAX_WORDS,
     _build_page_content,
     _group_passages,
     _overlap_group_passages,
+    _process_oversize_passages,
     _should_include,
+    _word_count,
     convert_loaded_paper_to_documents,
 )
 from arxiv_rag.loading.models import FigureImage, LoadedPaper, Passage
@@ -106,13 +109,63 @@ def test_grouping_splits_before_exceeding_max_words():
     assert groups == [[first], [second]]
 
 
-def test_grouping_keeps_an_oversized_passage_whole():
+def test_oversized_prose_splits_at_sentence_boundaries():
+    passage = _passage(1, ["Methods"])
+    first_sentence = " ".join(["first"] * 200) + "."
+    second_sentence = " ".join(["second"] * 200) + "."
+    passage.text = f"{first_sentence} {second_sentence}"
+
+    parts = _process_oversize_passages(passage)
+
+    assert [part.text for part in parts] == [first_sentence, second_sentence]
+    assert all(_word_count(part) <= MAX_WORDS for part in parts)
+    assert all(part.location == passage.location for part in parts)
+    assert all(part.section_path == passage.section_path for part in parts)
+
+
+def test_oversized_table_splits_only_between_rows():
+    passage = _passage(1, ["Results"])
+    passage.kind = "table"
+    header = "Model | Score"
+    first_row = " ".join(["first-row"] * 200)
+    second_row = " ".join(["second-row"] * 200)
+    passage.text = f"{header}\n{first_row}\n{second_row}"
+
+    parts = _process_oversize_passages(passage)
+
+    assert [part.text for part in parts] == [f"{header}\n{first_row}", second_row]
+    assert all(_word_count(part) <= MAX_WORDS for part in parts)
+
+
+def test_one_oversized_sentence_is_kept_whole():
+    passage = _passage(1, ["Methods"], words=701)
+
+    parts = _process_oversize_passages(passage)
+
+    assert len(parts) == 1
+    assert parts[0].text.split() == passage.text.split()
+
+
+def test_one_oversized_table_row_is_kept_whole():
+    passage = _passage(1, ["Results"], words=701)
+    passage.kind = "table"
+
+    parts = _process_oversize_passages(passage)
+
+    assert len(parts) == 1
+    assert parts[0].text.split() == passage.text.split()
+
+
+def test_grouping_keeps_one_oversized_unit_separate():
     oversized = _passage(1, ["Methods"], words=351)
     following = _passage(2, ["Methods"], words=20)
 
     groups = _group_passages(_paper([oversized, following]))
 
-    assert groups == [[oversized], [following]]
+    assert [[_word_count(passage) for passage in group] for group in groups] == [
+        [351],
+        [20],
+    ]
 
 
 def test_grouping_never_crosses_main_section_boundaries():

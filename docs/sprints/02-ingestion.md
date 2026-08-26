@@ -1,6 +1,6 @@
 # Sprint 02 — Corpus ingestion
 
-**Status:** 🟡 active · document construction and sample ingestion work · 48 tests passing locally
+**Status:** 🟡 active · oversized passages now split · segment identity still open · 52 tests passing locally
 
 ## Goal
 
@@ -20,10 +20,10 @@ files.
 | Call | What decided it | Outcome |
 |---|---|---|
 | Evidence unit | One source passage was often too small; headings and short neighbouring paragraphs retrieved poorly in isolation. | ✅ Group passages into retrieval Documents. Preserve each original passage separately in metadata. |
-| Target size | The improved documents must carry enough context without becoming broad sections. | ✅ Pack source passages up to 350 words. Split before crossing the limit. |
+| Target size | The improved documents must carry enough context without becoming broad sections. | ✅ Pack source passages up to 350 words. Prefer natural boundaries; one sentence or table row may exceed the target. |
 | Section boundary | Treating every subsection as hard would recreate many tiny Documents. | ✅ Main section is hard. Subsections may share a Document and are identified by breadcrumbs. |
 | Overlap | Adjacent Documents need continuity, but overlap must not cross an unrelated section. | ✅ Add the previous complete passage only within the same main section. Apply the target while splitting and grouping, not again after overlap. |
-| Oversized source passage | 9/1,206 sampled passages exceed 350 words; the largest is a 1,330-word table. | 🟡 Agreed, not implemented: split prose at sentence boundaries and tables at row boundaries, with a hard word fallback. Retain the source anchor and add an internal segment index. |
+| Oversized source passage | 9/1,206 sampled passages exceed 350 words; the largest is a 1,330-word table. | 🟡 Splitting implemented: prose uses sentence boundaries and tables use row boundaries. A single sentence or row above the target stays whole. Source anchors are retained; internal segment identity is still open. |
 | Unsectioned content | Front matter such as the abstract has no normal section path but can still be useful evidence. | ✅ Use the explicit breadcrumb `Unsectioned`. |
 | Citation mapping | A list of anchors beside combined text does not tell the answer model which text belongs to which anchor. | ✅ Store `text`, `section_path`, `location`, and `kind` for every constituent passage in `source_passages`. |
 | Embedding model | `qwen3-embedding:0.6b` was fast but retrieval was weak. The 4B model was tested on the rebuilt sample corpus. | ✅ `qwen3-embedding:4b`. Offline ingestion is slower; query latency remained practical. |
@@ -45,14 +45,15 @@ files.
 - ✅ Move the embedding model from `qwen3-embedding:0.6b` to `qwen3-embedding:4b`.
 - ✅ Rebuild and manually inspect the 12-paper sample corpus: 1,206 loaded passages became 379 retrieval Documents.
 - ✅ Make a real answer-model call from the local quick retriever and render exact clickable passage links.
-- ⬜ Split an individual source passage that exceeds 350 words; do not cap the later overlap stage.
+- ✅ Split an individual source passage that exceeds 350 words; do not cap the later overlap stage.
+- ⬜ Add stable segment identity so multiple parts sharing one source anchor cannot collide or be deduplicated.
 - ⬜ Rebuild Chroma once more after oversized-passage metadata and IDs are final.
 - ⬜ Prove a safe rerun or make fresh-database rebuilding the explicit supported behaviour.
 - ⏸ Indexing a 500-paper development corpus is deferred until the ingestion representation is stable.
 
 ## Tests
 
-`uv run pytest` currently reports **48 passing tests**: 32 loader tests, 12
+`uv run pytest` currently reports **52 passing tests**: 32 loader tests, 16
 tracked ingestion-document tests, and 4 local quick-retriever tests under the
 gitignored `experiments` path.
 
@@ -69,13 +70,16 @@ gitignored `experiments` path.
 | Image metadata is collected from every constituent passage | ✅ passing |
 | Document IDs are deterministic and paper-specific | ✅ passing |
 | Figure panel labels do not leak into prose | ✅ passing |
-| An oversized source passage is split without losing text or citation identity | ⬜ current test documents the temporary keep-whole behaviour; replace it with splitting tests |
+| Oversized prose splits at sentence boundaries where possible | ✅ passing |
+| Oversized tables split between rows where possible | ✅ passing |
+| One sentence or table row above 350 words stays whole | ✅ passing |
+| Split parts have stable unique identities while retaining one source anchor | ⬜ not implemented |
 | A second ingestion produces no duplicate records | ⬜ not proved |
 | Stored metadata survives a Chroma write/read round trip | ⬜ only checked manually |
 
-The oversized-passage work needs tests for prose boundaries, table row
-boundaries, hard fallback, exact text retention, segment IDs, source anchors,
-and grouping after splitting.
+The oversized-passage tests now cover prose boundaries, table row boundaries,
+oversized natural units, source anchors, and grouping after splitting. Segment IDs and a
+full multi-segment text-retention check remain open.
 
 ## Evals
 
@@ -97,8 +101,8 @@ its scoring rules remain a separate decision.
 
 ## Done when
 
-1. Every included source passage is at most 350 words before grouping. 🔶
-2. Oversized prose and tables keep all source text and the original clickable anchor. 🔶
+1. Every included source passage is split near 350 words when a sentence or row boundary allows it. ✅
+2. Oversized prose and tables keep all source text and the original clickable anchor. ✅ splitting and anchors; segmented identity still open
 3. Grouping, breadcrumbs, overlap, metadata, images, and stable IDs have passing tests. ✅ except segmented IDs
 4. The final representation is freshly ingested across all 12 sampled papers. 🔶 rebuild needed after oversized splitting
 5. A retrieved Document can be expanded into exact source passages and clickable citations. ✅ manually and in local quick-retriever tests
@@ -141,6 +145,10 @@ the representation is final would create expensive throwaway embeddings.
 - Oversized-passage measurement found 9/1,206 source passages above 350 words:
   6 tables and 3 prose passages. The largest is 1,330 words. We agreed to fix the
   source passage before grouping and remain lenient after the overlap stage.
+- `_group_passages()` now expands an oversized source passage into bounded parts
+  before applying its existing merge rules. Prose prefers sentence boundaries,
+  tables prefer row boundaries, and a single sentence or row above 350 words
+  stays whole. The parts still need stable internal segment identity.
 - Retrieval-eval metrics were discussed but not accepted. Keep that decision
   separate instead of quietly treating suggested metrics as agreed work.
 
