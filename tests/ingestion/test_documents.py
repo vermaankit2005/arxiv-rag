@@ -212,6 +212,18 @@ def test_document_ids_are_stable_and_change_with_the_paper():
     assert first_id != other_id
 
 
+def test_document_ids_change_when_content_changes():
+    original = _passage(1, ["Results"])
+    changed = _passage(1, ["Results"])
+    changed.text = "Updated evidence from the same source anchor."
+
+    original_id = convert_loaded_paper_to_documents(_paper([original]))[0].id
+    changed_id = convert_loaded_paper_to_documents(_paper([changed]))[0].id
+
+    assert original.location == changed.location
+    assert original_id != changed_id
+
+
 def test_overlap_stays_within_the_same_main_section():
     first = _passage(1, ["Introduction"])
     second = _passage(2, ["Introduction"])

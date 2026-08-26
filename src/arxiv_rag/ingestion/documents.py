@@ -3,7 +3,7 @@ import re
 from dataclasses import replace
 from uuid import NAMESPACE_URL, uuid5
 
-from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
+from langchain_core.documents import Document
 
 from arxiv_rag.loading.models import LoadedPaper, Passage
 
@@ -11,8 +11,8 @@ PASSAGE_SPLIT_THRESHOLD_WORDS = 600
 MAX_WORDS = 350
 
 
-def _document_id(arxiv_id: str, location: str) -> str:
-    source = f"https://arxiv.org/html/{arxiv_id}{location}"
+def _document_id(arxiv_id: str, location: str, content: str) -> str:
+    source = json.dumps([arxiv_id, location, content], ensure_ascii=False)
     return str(uuid5(NAMESPACE_URL, source))
 
 
@@ -173,9 +173,10 @@ def convert_loaded_paper_to_documents(loaded_paper: LoadedPaper) -> list[Documen
             for passage in group
         ]
 
+        doc_content = _build_page_content(group)
         doc = Document(
-            id=_document_id(loaded_paper.arxiv_id, "|".join(locations)),
-            page_content=_build_page_content(group),
+            id=_document_id(loaded_paper.arxiv_id, "|".join(locations), doc_content),
+            page_content=doc_content,
             metadata={
                 "arxiv_id": loaded_paper.arxiv_id,
                 "locations": json.dumps(locations),

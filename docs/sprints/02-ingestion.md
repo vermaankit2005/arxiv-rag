@@ -1,6 +1,6 @@
 # Sprint 02 — Corpus ingestion
 
-**Status:** 🟡 active · oversized passages now split · segment identity still open · 52 tests passing locally
+**Status:** 🟡 active · oversized passages and content-sensitive IDs implemented · 54 tests passing locally
 
 ## Goal
 
@@ -23,13 +23,13 @@ files.
 | Target size | The improved documents must carry enough context without becoming broad sections. | ✅ Pack source passages up to 350 words. Prefer natural boundaries; one sentence or table row may exceed the target. |
 | Section boundary | Treating every subsection as hard would recreate many tiny Documents. | ✅ Main section is hard. Subsections may share a Document and are identified by breadcrumbs. |
 | Overlap | Adjacent Documents need continuity, but overlap must not cross an unrelated section. | ✅ Add the previous complete passage only within the same main section. Apply the target while splitting and grouping, not again after overlap. |
-| Oversized source passage | 9/1,206 sampled passages exceed 350 words, but only 2 exceed 600; the largest is a 1,330-word table. | 🟡 Split only source passages above 600 words. Prose uses sentence boundaries and tables use row boundaries, packing parts toward 350 words. A single sentence or row above the target stays whole. Source anchors are retained; internal segment identity is still open. |
+| Oversized source passage | 9/1,206 sampled passages exceed 350 words, but only 2 exceed 600; the largest is a 1,330-word table. | ✅ Split only source passages above 600 words. Prose uses sentence boundaries and tables use row boundaries, packing parts toward 350 words. A single sentence or row above the target stays whole. Source anchors are retained. |
 | Unsectioned content | Front matter such as the abstract has no normal section path but can still be useful evidence. | ✅ Use the explicit breadcrumb `Unsectioned`. |
 | Citation mapping | A list of anchors beside combined text does not tell the answer model which text belongs to which anchor. | ✅ Store `text`, `section_path`, `location`, and `kind` for every constituent passage in `source_passages`. |
 | Embedding model | `qwen3-embedding:0.6b` was fast but retrieval was weak. The 4B model was tested on the rebuilt sample corpus. | ✅ `qwen3-embedding:4b`. Offline ingestion is slower; query latency remained practical. |
 | Vector store | Smallest local stack compatible with Ollama and LangChain. | ✅ Chroma in `chroma_db/`. |
 | Intermediate storage | Raw HTML deterministically regenerates Documents. | ✅ Save raw HTML, not Documents. |
-| Stable Document identity | Rebuilding the same representation must produce the same IDs. | ✅ arXiv ID + ordered source anchors. Oversized segments must add their segment index before that work is complete. |
+| Stable Document identity | Split parts can share the same source anchor, so anchors alone can collide. | ✅ UUID input includes arXiv ID, ordered source anchors, and Document content. Same input stays stable; different split content gets a different ID. |
 | Retrieval eval | The five-question check proved the new representation is better, but it is not a frozen answer key. | 🔶 Open separately. Do not call the manual check an eval. |
 
 ## Steps
@@ -46,15 +46,15 @@ files.
 - ✅ Rebuild and manually inspect the 12-paper sample corpus: 1,206 loaded passages became 379 retrieval Documents.
 - ✅ Make a real answer-model call from the local quick retriever and render exact clickable passage links.
 - ✅ Split an individual source passage only when it exceeds 600 words; do not cap the later overlap stage.
-- ⬜ Add stable segment identity so multiple parts sharing one source anchor cannot collide or be deduplicated.
+- ✅ Include Document content in stable IDs and include passage text in quick-retriever deduplication.
 - ⬜ Rebuild Chroma once more after oversized-passage metadata and IDs are final.
 - ⬜ Prove a safe rerun or make fresh-database rebuilding the explicit supported behaviour.
 - ⏸ Indexing a 500-paper development corpus is deferred until the ingestion representation is stable.
 
 ## Tests
 
-`uv run pytest` currently reports **52 passing tests**: 32 loader tests, 16
-tracked ingestion-document tests, and 4 local quick-retriever tests under the
+`uv run pytest` currently reports **54 passing tests**: 32 loader tests, 17
+tracked ingestion-document tests, and 5 local quick-retriever tests under the
 gitignored `experiments` path.
 
 | Invariant | State |
@@ -73,13 +73,14 @@ gitignored `experiments` path.
 | Oversized prose splits at sentence boundaries where possible | ✅ passing |
 | Oversized tables split between rows where possible | ✅ passing |
 | One sentence or table row above 350 words stays whole | ✅ passing |
-| Split parts have stable unique identities while retaining one source anchor | ⬜ not implemented |
+| Same anchors with different Document content produce different stable IDs | ✅ passing |
 | A second ingestion produces no duplicate records | ⬜ not proved |
 | Stored metadata survives a Chroma write/read round trip | ⬜ only checked manually |
 
 The oversized-passage tests now cover prose boundaries, table row boundaries,
-oversized natural units, source anchors, and grouping after splitting. Segment IDs and a
-full multi-segment text-retention check remain open.
+oversized natural units, source anchors, grouping after splitting, and IDs that
+change with content. The quick retriever also keeps different text segments that
+share one anchor while still deduplicating exact overlap.
 
 ## Evals
 
@@ -102,8 +103,8 @@ its scoring rules remain a separate decision.
 ## Done when
 
 1. Every included source passage above 600 words is split near 350 words when a sentence or row boundary allows it. ✅
-2. Oversized prose and tables keep all source text and the original clickable anchor. ✅ splitting and anchors; segmented identity still open
-3. Grouping, breadcrumbs, overlap, metadata, images, and stable IDs have passing tests. ✅ except segmented IDs
+2. Oversized prose and tables keep all source text and the original clickable anchor. ✅
+3. Grouping, breadcrumbs, overlap, metadata, images, and stable IDs have passing tests. ✅
 4. The final representation is freshly ingested across all 12 sampled papers. 🔶 rebuild needed after oversized splitting
 5. A retrieved Document can be expanded into exact source passages and clickable citations. ✅ manually and in local quick-retriever tests
 6. The supported rerun behaviour is explicit and tested. 🔶
@@ -148,7 +149,11 @@ the representation is final would create expensive throwaway embeddings.
 - `_group_passages()` now expands an oversized source passage into bounded parts
   before applying its existing merge rules. Prose prefers sentence boundaries,
   tables prefer row boundaries, and a single sentence or row above 350 words
-  stays whole. The parts still need stable internal segment identity.
+  stays whole.
+- Split Documents can share the same anchor sequence. Document IDs now also use
+  content, producing 384 unique IDs for 384 sampled Documents. The quick
+  retriever deduplicates by paper, anchor, and text so exact overlap is removed
+  without dropping different segments from one anchor.
 - Retrieval-eval metrics were discussed but not accepted. Keep that decision
   separate instead of quietly treating suggested metrics as agreed work.
 
