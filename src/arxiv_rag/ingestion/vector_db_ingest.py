@@ -55,7 +55,7 @@ def get_vector_store(create_if_missing: bool = False) -> VectorStore:
         raise RuntimeError("OLLAMA_BASE_URL is not set. Add it to your .env file.")
 
     embeddings = OllamaEmbeddings(
-        model="qwen3-embedding:0.6b",
+        model="qwen3-embedding:4b",
         base_url=base_url,
     )
     return ChromaStore(embeddings)

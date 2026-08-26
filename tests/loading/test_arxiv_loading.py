@@ -43,8 +43,8 @@ def test_load_paper_returns_content_when_fetch_returns_html():
 
         assert loaded.arxiv_id == "test_html"
         assert len(loaded.sections) == 31
-        # 71 prose passages + 9 captions + 4 serialised data tables.
-        assert len(loaded.passages) == 84
+        # 69 prose passages + 9 captions + 4 serialised data tables.
+        assert len(loaded.passages) == 82
 
 
 def test_load_paper_returns_empty_loaded_paper_when_fetch_returns_none():
@@ -141,6 +141,15 @@ def test_figure_two_caption_is_one_complete_citable_passage():
     assert len(matches) == 1
     assert matches[0].location == "#S3.F2"
     assert 'id="S3.F2"' in mock_html
+
+
+def test_figure_panel_labels_do_not_become_prose_passages():
+    """Visual labels inside a figure belong to the image, not the paper's prose."""
+    loaded, _ = load_paper_fixture()
+    passage_locations = {passage.location for passage in loaded.passages}
+
+    assert "#S3.F2.2.1" not in passage_locations
+    assert "#S3.F2.3.1" not in passage_locations
 
 
 def test_every_figure_and_table_caption_becomes_a_typed_passage():
@@ -261,7 +270,7 @@ def test_caption_is_emitted_beside_its_figure_in_document_order():
         if passage.location == "#S3.SS2.SSS2.p1"
     )
 
-    assert [passage.order for passage in loaded.passages] == list(range(84))
+    assert [passage.order for passage in loaded.passages] == list(range(82))
     assert caption.order < following_paragraph.order
 
 

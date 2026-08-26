@@ -23,10 +23,8 @@ reference words overall; the worst benchmark paper retains 99.53% against the
 
 ## How this is built
 
-Bottom-up. One component at a time, each decided with data and tested before the
-next begins. No component enters without a demonstrated need: before any
-database, queue, cache, vector store or framework, something in the running
-program has to be broken, slow, or wrong.
+Components are developed one at a time, with decisions informed by data and
+tests.
 
 Working notes — the product definition, the runtime map, the seven principles,
 the sprint records and the decision log — are kept locally and are not published

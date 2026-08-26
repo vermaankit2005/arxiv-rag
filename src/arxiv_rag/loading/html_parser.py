@@ -279,9 +279,13 @@ class ArxivHtmlParser(HTMLParser):
         # anchor and may hold several <p>. A bare <p class="ltx_p"> is the
         # fallback -- the abstract is written that way, with an <h6>Abstract</h6>
         # beside it, and capturing the wrapper instead loses the whole abstract.
-        if not self.capturing and (
-            PROSE_CONTAINER_CLASS in css
-            or (tag == PROSE_FALLBACK_TAG and PROSE_FALLBACK_CLASS in css)
+        if (
+            not self.capturing
+            and not self.figures
+            and (
+                PROSE_CONTAINER_CLASS in css
+                or (tag == PROSE_FALLBACK_TAG and PROSE_FALLBACK_CLASS in css)
+            )
         ):
             self.start_capture("para", node_id)
             return

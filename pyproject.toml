@@ -14,8 +14,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-# Sprint 1 needs to fetch papers and compare three extractors. Nothing else is
-# installed until a sprint demands it.
+# Optional dependencies for fetching papers and comparing extractors.
 fetch = ["arxiv>=2.1", "httpx>=0.28"]
 extract = ["pypdf>=6.0", "pymupdf>=1.24", "pymupdf4llm>=0.0.30"]
 # docling ships ~1GB of layout models. Separate group so it is opted into, not
