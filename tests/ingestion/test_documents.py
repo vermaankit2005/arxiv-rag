@@ -4,9 +4,10 @@ from arxiv_rag.ingestion.documents import (
     _build_page_content,
     _group_passages,
     _overlap_group_passages,
+    _should_include,
     convert_loaded_paper_to_documents,
 )
-from arxiv_rag.loading.models import LoadedPaper, Passage
+from arxiv_rag.loading.models import FigureImage, LoadedPaper, Passage
 
 
 def _passage(order: int, section_path: list[str], words: int = 2) -> Passage:
@@ -71,6 +72,22 @@ def test_document_metadata_preserves_each_source_passage_and_anchor():
     assert json.loads(documents[0].metadata["locations"]) == ["#p1", "#p2"]
 
 
+def test_passage_filter_rejects_content_that_cannot_be_retrieved_or_cited():
+    whitespace = _passage(1, ["Introduction"])
+    whitespace.text = "   \n"
+    missing_anchor = _passage(2, ["Introduction"])
+    missing_anchor.location = ""
+    bare_url = _passage(3, ["Introduction"])
+    bare_url.text = "https://example.com/paper"
+    useful_prose = _passage(4, ["Introduction"])
+    useful_prose.text = "See https://example.com for the complete results."
+
+    assert not _should_include(whitespace)
+    assert not _should_include(missing_anchor)
+    assert not _should_include(bare_url)
+    assert _should_include(useful_prose)
+
+
 def test_grouping_crosses_subsection_boundaries_when_content_fits():
     first = _passage(1, ["Training", "Optimizer"], words=200)
     second = _passage(2, ["Training", "Regularization"], words=100)
@@ -89,6 +106,15 @@ def test_grouping_splits_before_exceeding_max_words():
     assert groups == [[first], [second]]
 
 
+def test_grouping_keeps_an_oversized_passage_whole():
+    oversized = _passage(1, ["Methods"], words=351)
+    following = _passage(2, ["Methods"], words=20)
+
+    groups = _group_passages(_paper([oversized, following]))
+
+    assert groups == [[oversized], [following]]
+
+
 def test_grouping_never_crosses_main_section_boundaries():
     first = _passage(1, ["Introduction"], words=20)
     second = _passage(2, ["Methods"], words=20)
@@ -96,6 +122,41 @@ def test_grouping_never_crosses_main_section_boundaries():
     groups = _group_passages(_paper([first, second]))
 
     assert groups == [[first], [second]]
+
+
+def test_conversion_returns_no_documents_when_every_passage_is_filtered():
+    empty = _passage(1, ["Introduction"])
+    empty.text = ""
+    missing_anchor = _passage(2, ["Introduction"])
+    missing_anchor.location = ""
+
+    assert convert_loaded_paper_to_documents(_paper([empty, missing_anchor])) == []
+
+
+def test_document_metadata_collects_images_from_every_source_passage():
+    first = _passage(1, ["Results"])
+    first.images = [FigureImage(url="https://example.com/figure-1.png", location="#F1")]
+    second = _passage(2, ["Results"])
+    second.images = [FigureImage(url="https://example.com/figure-2.png", location="#F2")]
+
+    document = convert_loaded_paper_to_documents(_paper([first, second]))[0]
+
+    assert json.loads(document.metadata["images"]) == [
+        {"url": "https://example.com/figure-1.png", "location": "#F1"},
+        {"url": "https://example.com/figure-2.png", "location": "#F2"},
+    ]
+
+
+def test_document_ids_are_stable_and_change_with_the_paper():
+    passages = [_passage(1, ["Results"]), _passage(2, ["Results"])]
+
+    first_id = convert_loaded_paper_to_documents(_paper(passages))[0].id
+    repeated_id = convert_loaded_paper_to_documents(_paper(passages))[0].id
+    other_paper = LoadedPaper(arxiv_id="other-paper", sections=[], passages=passages)
+    other_id = convert_loaded_paper_to_documents(other_paper)[0].id
+
+    assert first_id == repeated_id
+    assert first_id != other_id
 
 
 def test_overlap_stays_within_the_same_main_section():
