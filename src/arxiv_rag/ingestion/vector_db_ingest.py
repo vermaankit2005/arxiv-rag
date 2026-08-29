@@ -9,6 +9,7 @@ from langchain_ollama import OllamaEmbeddings  # pyright: ignore[reportMissingIm
 
 CHROMA_DIRECTORY = Path(__file__).parents[3] / "chroma_db"
 CHROMA_DATABASE_FILE = CHROMA_DIRECTORY / "chroma.sqlite3"
+CHROMA_COLLECTION_NAME = "arxiv_papers"
 
 
 class VectorStore(ABC):
@@ -21,16 +22,28 @@ class VectorStore(ABC):
         ...
 
     @abstractmethod
-    def similarity_search_with_score(self, query: str, k: int = 4) -> list[tuple[Document, float]]:
+    def similarity_search_with_score(
+        self, query: str, k: int = 4
+    ) -> list[tuple[Document, float]]:
+        ...
+
+    @abstractmethod
+    def reset(self) -> None:
+        """Remove every document so the full corpus can be rebuilt safely."""
         ...
 
 
 class ChromaStore(VectorStore):
-    def __init__(self, embeddings) -> None:
+    def __init__(
+        self,
+        embeddings,
+        persist_directory: Path = CHROMA_DIRECTORY,
+        collection_name: str = CHROMA_COLLECTION_NAME,
+    ) -> None:
         self._db = Chroma(
-            collection_name="arxiv_papers",
+            collection_name=collection_name,
             embedding_function=embeddings,
-            persist_directory=CHROMA_DIRECTORY,
+            persist_directory=str(persist_directory),
         )
 
     def add(self, documents: list[Document]) -> list[str]:
@@ -39,8 +52,13 @@ class ChromaStore(VectorStore):
     def get(self, ids: list[str]) -> list[Document]:
         return self._db.get_by_ids(ids)
 
-    def similarity_search_with_score(self, query: str, k: int = 4) -> list[tuple[Document, float]]:
+    def similarity_search_with_score(
+        self, query: str, k: int = 4
+    ) -> list[tuple[Document, float]]:
         return self._db.similarity_search_with_score(query, k=k)
+
+    def reset(self) -> None:
+        self._db.reset_collection()
 
 
 def get_vector_store(create_if_missing: bool = False) -> VectorStore:

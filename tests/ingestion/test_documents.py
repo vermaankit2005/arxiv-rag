@@ -200,6 +200,54 @@ def test_document_metadata_collects_images_from_every_source_passage():
     ]
 
 
+def test_conversion_preserves_every_included_passage():
+    first = _passage(1, ["Results"], words=300)
+    second = _passage(2, ["Results"], words=100)
+    second.kind = "figure_caption"
+    third = _passage(3, ["Methods"])
+    excluded = _passage(4, ["Methods"])
+    excluded.text = "https://example.com"
+
+    documents = convert_loaded_paper_to_documents(
+        _paper([first, second, third, excluded])
+    )
+    stored_passages = {
+        (
+            passage["text"],
+            passage["location"],
+            tuple(passage["section_path"]),
+            passage["kind"],
+        )
+        for document in documents
+        for passage in json.loads(document.metadata["source_passages"])
+    }
+
+    assert stored_passages == {
+        (passage.text, passage.location, tuple(passage.section_path), passage.kind)
+        for passage in [first, second, third]
+    }
+
+
+def test_conversion_creates_non_empty_documents_with_unique_ids():
+    passage = _passage(1, ["Results"])
+    passage.text = " ".join(
+        " ".join([word] * 301) + "." for word in ["first", "second", "third"]
+    )
+
+    documents = convert_loaded_paper_to_documents(_paper([passage]))
+
+    assert len(documents) == 3
+    assert all(document.id for document in documents)
+    assert len({document.id for document in documents}) == len(documents)
+    assert all(document.page_content.strip() for document in documents)
+    assert all(document.metadata["arxiv_id"] == "test-paper" for document in documents)
+    for document in documents:
+        source_passages = json.loads(document.metadata["source_passages"])
+        assert json.loads(document.metadata["locations"]) == [
+            source_passage["location"] for source_passage in source_passages
+        ]
+
+
 def test_document_ids_are_stable_and_change_with_the_paper():
     passages = [_passage(1, ["Results"]), _passage(2, ["Results"])]
 

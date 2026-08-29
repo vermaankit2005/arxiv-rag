@@ -182,6 +182,7 @@ def convert_loaded_paper_to_documents(loaded_paper: LoadedPaper) -> list[Documen
             page_content=doc_content,
             metadata={
                 "arxiv_id": loaded_paper.arxiv_id,
+                # if we ever need to re-embed , we can remove location as it is already in source_passages
                 "locations": json.dumps(locations),
                 "source_passages": json.dumps(source_passages),
                 "images": json.dumps(

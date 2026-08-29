@@ -4,6 +4,8 @@ Read the latest relevant code and documentation before proposing work.
 
 - All Python code must be simple and easy to understand. Prefer clear, direct
   code over clever or unnecessarily abstract code.
+- Keep Python function signatures and imports on one line when they fit
+  reasonably. Do not wrap them into parenthesized multiline formatting by default.
 - Any requested implementation or code change includes adding or updating the
   relevant tests and running them, unless the user explicitly says otherwise.
 
