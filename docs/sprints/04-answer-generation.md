@@ -1,6 +1,6 @@
 # Sprint 04 — Grounded answer generation
 
-**Status:** 🟡 active · grounded answer path implemented · citation-support evaluator implemented · answer-quality dataset frozen · 80 tests passing
+**Status:** 🟡 active · grounded answer path implemented · all four answer-quality evaluators implemented · answer-quality dataset frozen · first baseline pending
 
 **Working rule:** Update this file when each decision, implementation step, test,
 manual check, or eval run happens. Do not reconstruct the sprint at the end. If
@@ -26,8 +26,8 @@ components unless answer-generation evidence proves one is required now.
 | Production boundary | The graph still contains unproved branches, while retrieval already returns a complete `RetrievalContext`. | ✅ Start with plain production functions under `src/arxiv_rag/`; do not build the graph in this sprint. |
 | Answer contract | We need readable answers without losing the claim-to-source connection. | ✅ Normal answer text containing only supplied inline passage IDs such as `[P1]`. No JSON claim structure unless this proves hard to validate. |
 | Citation placement | A citation list at the end does not show which passage supports which claim. | ✅ Put `[P#]` immediately after the supported sentence; allow multiple IDs; production code renders compact trusted links. |
-| Generation model | The model must follow the answer contract and stay grounded at practical latency and cost. | ✅ Use Ollama `gemma4:26b` at temperature 0 through `OLLAMA_BASE_URL`; model comparisons remain evidence-driven. |
-| Groundedness judge | The judge should be fast, locally available, and independently replaceable from the generator. | ✅ Use Ollama `gpt-oss:20b` for judging only. Restrict scores to `0`, `0.25`, `0.5`, `0.75`, or `1` because the first continuous-score run produced invalid values above 1. |
+| Generation model | The model must follow the answer contract and stay grounded at practical latency and cost. | ✅ Use Ollama `qwen3.8:27b` at temperature 0 through `OLLAMA_BASE_URL`; model comparisons remain evidence-driven. |
+| Answer-quality judge | The judge should be fast, locally available, and replaceable without changing evaluator contracts. | ✅ Use Ollama `qwen3.8:27b`. Restrict ordinal scores to `0`, `0.25`, `0.5`, `0.75`, or `1`, and pair/fact decisions to binary choices. |
 | Evidence use | The model receives deduplicated source passages with temporary IDs, but it may still ignore or misuse them. | ✅ Prompt allows only supplied passages and IDs, requires inline citations, forbids URLs, and uses one exact insufficient-evidence response. |
 | Unsupported claims | The architecture map says unsupported claims are deleted rather than repaired, but this has not been proved in shipping code. | ⬜ Confirm the behavior with examples before accepting it. |
 | Partial answers | Retrieved evidence may support only part of a question. | ⬜ Decide whether to answer the supported part, state the limitation, or refuse. |
@@ -56,14 +56,15 @@ components unless answer-generation evidence proves one is required now.
   support, correctness, and completeness.
 - ✅ Freeze the minimum answer-quality dataset in `evals/dataset/generation_quality_dataset.json`.
 - ✅ Add a LangSmith dataset builder for publishing the frozen examples to the UI.
-- 🟡 Implement the accepted evaluators against shipping code: groundedness and citation support are implemented; correctness and completeness remain.
+- ✅ Implement the accepted evaluators against shipping code: groundedness, citation support, correctness, and completeness are implemented.
 - ⬜ Run the first described LangSmith baseline against shipping code.
 - ⬜ Manually inspect failures, record measured results, and choose the next change.
 
 ## Tests
 
 Nine production answer-generation tests and six citation-support evaluator tests
-pass without calling Ollama. The command-line test covers question input,
+pass without calling Ollama. Seven focused correctness and completeness tests were
+added but were not run at the user's request. The command-line test covers question input,
 retrieval-context handoff, generation, trusted citation rendering, and output.
 Citation-support tests cover pair extraction, multiple citations, Markdown and
 decimal punctuation, mixed support, missing citations, unknown IDs, and stable
@@ -83,19 +84,19 @@ passing tests**.
 | A normal answer without any citation fails clearly | ✅ passing |
 | Prompt contains the question, passages, citation rules, and concise formatting rules | ✅ passing |
 | Ollama model configuration stays pinned to `qwen3.8:27b` | ✅ passing |
-| Whether every factual claim is grounded and each cited passage supports its claim | 🟡 groundedness and citation-support evaluators implemented; baseline needed |
+| Whether answers are grounded, correctly cited, correct, and complete | 🟡 all four evaluators implemented; baseline needed |
 
 Prompt quality and whether a passage truly supports a generated claim are eval
 questions, not unit-test assertions.
 
 ## Evals
 
-The groundedness and citation-support evaluators are implemented, but there is no accepted automated
-answer-generation baseline yet. The first run used `gemma4:26b` as both generator
+The groundedness, citation-support, correctness, and completeness evaluators are
+implemented, but there is no accepted automated answer-generation baseline yet. The first run used `gemma4:26b` as both generator
 and judge with OpenEvals continuous scoring. It is invalid because the judge
-returned values up to `5` despite the intended `0`–`1` range. The replacement
-judge is `gpt-oss:20b`, with scores restricted to five explicit values from `0`
-to `1`.
+returned values up to `5` despite the intended `0`–`1` range. The configured
+judge is now `qwen3.8:27b`; ordinal scores are restricted to five explicit values
+from `0` to `1`, while citation-support and fact-coverage decisions are binary.
 
 A six-question manual probe used production retrieval and `qwen3.8:27b`. It covered
 method, comparison, and numeric-result questions from the frozen retrieval dataset.
@@ -272,20 +273,31 @@ the contract or metric changes.
   judge with `continuous=True`. Its feedback contained scores of `1` and `5`, so
   the reported aggregate was outside the metric's intended `0`–`1` range and the
   run is not an accepted baseline. OpenEvals described the range but did not
-  enforce numeric bounds in its schema. The judge is now independently pinned to
-  Ollama `gpt-oss:20b`, and the evaluator permits only `0`, `0.25`, `0.5`, `0.75`,
-  or `1`.
+  enforce numeric bounds in its schema. The judge is now pinned to Ollama
+  `qwen3.8:27b`; ordinal evaluators permit only `0`, `0.25`, `0.5`, `0.75`, or
+  `1`, and binary evaluators use explicit choices.
 - Citation support is implemented in
   `evals/answering/evaluate_generation_citation_support.py`. It deterministically
   attaches every `[P#]` marker to the preceding statement, resolves the frozen
-  passage ID in code, asks `gpt-oss:20b` for a binary support decision for each
-  statement-passage pair, and reports supported pairs divided by all cited pairs.
-  Six focused tests cover statement extraction, multiple citations, Markdown and
-  decimal punctuation, mixed support, missing citations, unknown IDs, and stable
-  frozen passage IDs. The full suite passes **80 tests**; no LangSmith baseline
-  has been run yet.
+  passage ID in code, asks the configured judge for a binary support decision for
+  each statement-passage pair, and reports supported pairs divided by all cited
+  pairs. Six focused tests cover statement extraction, multiple citations,
+  Markdown and decimal punctuation, mixed support, missing citations, unknown
+  IDs, and stable frozen passage IDs. The last full-suite run passed **80 tests**.
+- Correctness is implemented in
+  `evals/answering/evaluate_generation_correctness.py`. It judges the generated
+  answer against the frozen required facts and only their named supporting
+  passages, uses the restricted five-value score, and leaves omitted facts to the
+  completeness metric.
+- Completeness is implemented in
+  `evals/answering/evaluate_generation_completeness.py`. It makes one binary
+  coverage decision per frozen required fact and reports covered facts divided by
+  all required facts. Seven focused tests were added for both metrics, including
+  frozen-reference construction, score aggregation, invalid scores, missing
+  facts, and unknown passage IDs. They were not run at the user's request, and no
+  LangSmith baseline has been run yet.
 
 ## Next question
 
-Implement the accepted groundedness, citation-support, correctness, and
-completeness evaluators against the frozen dataset, without changing its labels.
+Run the first described LangSmith baseline for all four implemented metrics,
+inspect the failures manually, and record the measured results.

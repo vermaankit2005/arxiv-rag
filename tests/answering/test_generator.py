@@ -40,7 +40,7 @@ def _context() -> RetrievalContext:
 
 
 def test_generator_uses_qwen_model_name():
-    assert generator.MODEL_NAME == "gemma4:26b"
+    assert generator.MODEL_NAME == "qwen3.8:27b"
 
 
 def test_generate_answer_returns_normal_text_with_valid_inline_citations():

@@ -14,11 +14,11 @@ load_dotenv()
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_citation_support"
-JUDGE_MODEL_NAME = "gpt-oss:20b"
+JUDGE_MODEL_NAME = "qwen3.8:27b"
 EXPERIMENT_METADATA = {
     "metric": "citation_support",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": "gemma4:26b",
+    "generator_model": "qwen3.8:27b",
     "judge_model": JUDGE_MODEL_NAME,
 }
 
@@ -53,7 +53,7 @@ citation_support_judge = create_llm_as_judge(
     prompt=CITATION_SUPPORT_PROMPT,
     feedback_key="citation_support_pair",
     judge=judge_model,
-    continuous=True
+    choices=[False, True],
 )
 
 
@@ -125,11 +125,18 @@ def generate_answer_for_citation_support(inputs: dict) -> dict:
     return {"answer": answer}
 
 
-def evaluate_citation_support(inputs: dict, outputs: dict) -> dict:
+def evaluate_citation_support(
+    inputs: dict, outputs: dict, judge: Judge = citation_support_judge
+) -> dict:
     """Return the share of cited statement-passage pairs supported by that passage."""
     answer = outputs.get("answer", "")
-
     pairs = _extract_statement_citation_pairs(answer)
+    if not pairs:
+        return {
+            "key": "citation_support",
+            "score": 0.0,
+            "comment": "The answer contained no statement-citation pairs.",
+        }
 
     passages_by_id = {
         passage["id"]: passage["text"]
@@ -145,7 +152,7 @@ def evaluate_citation_support(inputs: dict, outputs: dict) -> dict:
 
     for statement, citation_id in pairs:
 
-        result = citation_support_judge(
+        result = judge(
             inputs={
                 "question": inputs.get("question", ""),
                 "statement": statement,
@@ -164,6 +171,7 @@ def evaluate_citation_support(inputs: dict, outputs: dict) -> dict:
     return {
         "key": "citation_support",
         "score": score,
+        "comment": summary,
     }
 
 

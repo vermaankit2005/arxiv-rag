@@ -9,12 +9,12 @@ from openevals.prompts import RAG_GROUNDEDNESS_PROMPT  # pyright: ignore[reportM
 from arxiv_rag import answering
 from arxiv_rag.retrieval import Citation, RetrievalContext
 
-
 load_dotenv()
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_groundedness"
-JUDGE_MODEL_NAME = "gpt-oss:20b"
+JUDGE_MODEL_NAME = "qwen3.8:27b"
+
 EXPERIMENT_METADATA = {
     "metric": "groundedness",
     "dataset": LANGSMITH_DATASET_NAME,
@@ -34,7 +34,7 @@ groundedness_judge = create_llm_as_judge(
     prompt=RAG_GROUNDEDNESS_PROMPT,
     feedback_key="groundedness",
     judge=judge_model,
-    choices=[0.0, 0.25, 0.5, 0.75, 1.0],
+    choices=[0, 0.25, 0.5, 0.75, 1],
 )
 
 def _build_section_breadcrumbs(section_path: list[str]) -> str:
