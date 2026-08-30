@@ -1,6 +1,6 @@
 # Sprint 04 — Grounded answer generation
 
-**Status:** 🟡 active · grounded answer path implemented · semantic evaluator contracts chosen · answer-quality dataset frozen · 74 tests passing
+**Status:** 🟡 active · grounded answer path implemented · citation-support evaluator implemented · answer-quality dataset frozen · 80 tests passing
 
 **Working rule:** Update this file when each decision, implementation step, test,
 manual check, or eval run happens. Do not reconstruct the sprint at the end. If
@@ -56,20 +56,23 @@ components unless answer-generation evidence proves one is required now.
   support, correctness, and completeness.
 - ✅ Freeze the minimum answer-quality dataset in `evals/dataset/generation_quality_dataset.json`.
 - ✅ Add a LangSmith dataset builder for publishing the frozen examples to the UI.
-- ⬜ Implement the accepted evaluators against shipping code.
+- 🟡 Implement the accepted evaluators against shipping code: groundedness and citation support are implemented; correctness and completeness remain.
 - ⬜ Run the first described LangSmith baseline against shipping code.
 - ⬜ Manually inspect failures, record measured results, and choose the next change.
 
 ## Tests
 
-Nine answer-generation tests pass. They use an injected fake model, so normal
-test runs never call Ollama. The command-line test covers question input,
+Nine production answer-generation tests and six citation-support evaluator tests
+pass without calling Ollama. The command-line test covers question input,
 retrieval-context handoff, generation, trusted citation rendering, and output.
-Three focused ingestion-pipeline tests cover parse failure, embedding/write
-failure, and activation only after every staged write succeeds. A storage test
-checks the active pointer replacement. Three focused MRR tests cover rank-first
-matching across multiple evidence units, exact paper/location/quote identity, and
-no-match scoring. The full suite has **74 passing tests**.
+Citation-support tests cover pair extraction, multiple citations, Markdown and
+decimal punctuation, mixed support, missing citations, unknown IDs, and stable
+frozen passage IDs. Three focused ingestion-pipeline tests cover parse failure,
+embedding/write failure, and activation only after every staged write succeeds.
+A storage test checks the active pointer replacement. Three focused MRR tests
+cover rank-first matching across multiple evidence units, exact
+paper/location/quote identity, and no-match scoring. The full suite has **80
+passing tests**.
 
 | Invariant | State |
 | --- | --- |
@@ -80,14 +83,14 @@ no-match scoring. The full suite has **74 passing tests**.
 | A normal answer without any citation fails clearly | ✅ passing |
 | Prompt contains the question, passages, citation rules, and concise formatting rules | ✅ passing |
 | Ollama model configuration stays pinned to `qwen3.8:27b` | ✅ passing |
-| Whether every factual claim is grounded and each cited passage supports its claim | ⬜ eval needed |
+| Whether every factual claim is grounded and each cited passage supports its claim | 🟡 groundedness and citation-support evaluators implemented; baseline needed |
 
 Prompt quality and whether a passage truly supports a generated claim are eval
 questions, not unit-test assertions.
 
 ## Evals
 
-The groundedness evaluator is implemented, but there is no accepted automated
+The groundedness and citation-support evaluators are implemented, but there is no accepted automated
 answer-generation baseline yet. The first run used `gemma4:26b` as both generator
 and judge with OpenEvals continuous scoring. It is invalid because the judge
 returned values up to `5` despite the intended `0`–`1` range. The replacement
@@ -272,6 +275,15 @@ the contract or metric changes.
   enforce numeric bounds in its schema. The judge is now independently pinned to
   Ollama `gpt-oss:20b`, and the evaluator permits only `0`, `0.25`, `0.5`, `0.75`,
   or `1`.
+- Citation support is implemented in
+  `evals/answering/evaluate_generation_citation_support.py`. It deterministically
+  attaches every `[P#]` marker to the preceding statement, resolves the frozen
+  passage ID in code, asks `gpt-oss:20b` for a binary support decision for each
+  statement-passage pair, and reports supported pairs divided by all cited pairs.
+  Six focused tests cover statement extraction, multiple citations, Markdown and
+  decimal punctuation, mixed support, missing citations, unknown IDs, and stable
+  frozen passage IDs. The full suite passes **80 tests**; no LangSmith baseline
+  has been run yet.
 
 ## Next question
 
