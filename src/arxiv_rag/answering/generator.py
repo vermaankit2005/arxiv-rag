@@ -7,7 +7,7 @@ from langchain_ollama import ChatOllama  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag.retrieval import RetrievalContext
 
-MODEL_NAME = "qwen3.8:27b"
+MODEL_NAME = "gemma4:26b"
 INSUFFICIENT_EVIDENCE_ANSWER = "I don't know the answer based on the provided evidence."
 CITATION_PATTERN = re.compile(r"\[(P\d+)\]")
 URL_PATTERN = re.compile(r"https?://", re.IGNORECASE)

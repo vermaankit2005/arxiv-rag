@@ -13,7 +13,7 @@ load_dotenv()
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_groundedness"
-JUDGE_MODEL_NAME = "qwen3.8:27b"
+JUDGE_MODEL_NAME = "gpt-oss:20b"
 
 EXPERIMENT_METADATA = {
     "metric": "groundedness",
@@ -103,6 +103,7 @@ def run_groundedness() -> None:
         description=(
             "Evaluate the groundedness of generated answers by comparing them to reference evidence units."
         ),
+        max_concurrency=4
     )
 
 if __name__ == "__main__":

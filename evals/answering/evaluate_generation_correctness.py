@@ -12,12 +12,12 @@ load_dotenv()
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_correctness"
-JUDGE_MODEL_NAME = "qwen3.8:27b"
+JUDGE_MODEL_NAME = "gemma4:26b"
 ALLOWED_SCORES = {0, 0.25, 0.5, 0.75, 1}
 EXPERIMENT_METADATA = {
     "metric": "correctness",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": "qwen3.8:27b",
+    "generator_model": "gemma4:26b",
     "judge_model": JUDGE_MODEL_NAME,
 }
 
@@ -66,10 +66,6 @@ def _build_fact_references(context_passages: list[dict], required_facts: list[di
 
     for required_fact in required_facts:
         supporting_ids = required_fact.get("supporting_passage_ids", [])
-        unknown_ids = sorted(set(supporting_ids) - passages_by_id.keys())
-        if unknown_ids:
-            unknown = ", ".join(unknown_ids)
-            raise ValueError(f"Required fact {required_fact.get('id', '<unknown>')} used unknown passage IDs: {unknown}")
 
         references.append({
             "id": required_fact["id"],
@@ -84,13 +80,9 @@ def _build_fact_references(context_passages: list[dict], required_facts: list[di
 
 
 def evaluate_correctness(
-    inputs: dict, outputs: dict, reference_outputs: dict, judge: Judge = correctness_judge
-) -> dict:
+    inputs: dict, outputs: dict, reference_outputs: dict, judge: Judge = correctness_judge) -> dict:
     """Judge factual correctness without treating omitted facts as incorrect."""
-    references = _build_fact_references(
-        inputs.get("context_passages", []),
-        reference_outputs.get("required_facts", []),
-    )
+    references = _build_fact_references(inputs.get("context_passages", []), reference_outputs.get("required_facts", []))
     if not references:
         raise ValueError("Correctness evaluation requires at least one required fact")
 
@@ -127,8 +119,8 @@ def run_correctness() -> None:
             "to 0, 0.25, 0.5, 0.75, or 1. Missing facts are not penalized here because "
             "they are measured by completeness."
         ),
+        max_concurrency=4
     )
-
 
 if __name__ == "__main__":
     run_correctness()

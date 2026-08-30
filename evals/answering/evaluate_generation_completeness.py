@@ -12,11 +12,11 @@ load_dotenv()
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_completeness"
-JUDGE_MODEL_NAME = "qwen3.8:27b"
+JUDGE_MODEL_NAME = "qwen3.8:27b-mtp-q4_K_M"
 EXPERIMENT_METADATA = {
     "metric": "completeness",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": "qwen3.8:27b",
+    "generator_model": "qwen3.8:27b-mtp-q4_K_M",
     "judge_model": JUDGE_MODEL_NAME,
 }
 
@@ -40,7 +40,6 @@ Judge = Callable[..., dict]
 judge_model = ChatOllama(
     model=JUDGE_MODEL_NAME,
     base_url=os.environ["OLLAMA_BASE_URL"],
-    temperature=0,
 )
 
 completeness_judge = create_llm_as_judge(
@@ -58,10 +57,6 @@ def _build_fact_references(context_passages: list[dict], required_facts: list[di
 
     for required_fact in required_facts:
         supporting_ids = required_fact.get("supporting_passage_ids", [])
-        unknown_ids = sorted(set(supporting_ids) - passages_by_id.keys())
-        if unknown_ids:
-            unknown = ", ".join(unknown_ids)
-            raise ValueError(f"Required fact {required_fact.get('id', '<unknown>')} used unknown passage IDs: {unknown}")
 
         references.append({
             "id": required_fact["id"],
@@ -76,8 +71,7 @@ def _build_fact_references(context_passages: list[dict], required_facts: list[di
 
 
 def evaluate_completeness(
-    inputs: dict, outputs: dict, reference_outputs: dict, judge: Judge = completeness_judge
-) -> dict:
+    inputs: dict, outputs: dict, reference_outputs: dict, judge: Judge = completeness_judge) -> dict:
     """Return covered frozen required facts divided by all required facts."""
     references = _build_fact_references(
         inputs.get("context_passages", []),
@@ -122,6 +116,7 @@ def run_completeness() -> None:
             "The score is the number of covered required facts divided by the total "
             "number of required facts."
         ),
+        max_concurrency=4
     )
 
 

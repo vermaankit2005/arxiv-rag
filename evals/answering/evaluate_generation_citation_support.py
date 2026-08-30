@@ -14,11 +14,11 @@ load_dotenv()
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_citation_support"
-JUDGE_MODEL_NAME = "qwen3.8:27b"
+JUDGE_MODEL_NAME = "gpt-oss:20b"
 EXPERIMENT_METADATA = {
     "metric": "citation_support",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": "qwen3.8:27b",
+    "generator_model": "gpt-oss:20b",
     "judge_model": JUDGE_MODEL_NAME,
 }
 
@@ -189,6 +189,7 @@ def run_citation_support() -> None:
             "that exact frozen passage supports the complete statement. The score "
             "is supported statement-passage pairs divided by all cited pairs."
         ),
+        max_concurrency=4
     )
 
 
