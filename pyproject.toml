@@ -38,6 +38,6 @@ default-groups = ["dev"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 addopts = "-ra --strict-markers -m 'not slow'"
 markers = ["slow: runs the real benchmark against the benchmark papers"]

@@ -1,22 +1,10 @@
 # Sprint 04 — Grounded answer generation
 
-**Status:** 🟡 active · generator and one production answer renderer implemented · compact clickable terminal citations added · 67 tests passing
+**Status:** 🟡 active · grounded answer path implemented · failure-safe corpus activation added · corrected MRR evaluator · 74 tests passing
 
 **Working rule:** Update this file when each decision, implementation step, test,
 manual check, or eval run happens. Do not reconstruct the sprint at the end. If
 this document disagrees with the code, the code wins and this file is corrected.
-
-## Next-session review queue
-
-Keep these review findings deferred for the next session; they are not part of
-this commit:
-
-1. Correct MRR evaluation so ranked Documents are checked first and evidence is
-   matched by arXiv ID, location, and quote; add focused evaluator tests.
-2. Make corpus rebuilding failure-safe so a failed parse, embedding, or write
-   cannot leave the active Chroma corpus empty or partial.
-3. Reject model-written URL schemes case-insensitively and add mixed/uppercase
-   URL validation tests.
 
 ## Goal
 
@@ -42,7 +30,8 @@ components unless answer-generation evidence proves one is required now.
 | Evidence use | The model receives deduplicated source passages with temporary IDs, but it may still ignore or misuse them. | ✅ Prompt allows only supplied passages and IDs, requires inline citations, forbids URLs, and uses one exact insufficient-evidence response. |
 | Unsupported claims | The architecture map says unsupported claims are deleted rather than repaired, but this has not been proved in shipping code. | ⬜ Confirm the behavior with examples before accepting it. |
 | Partial answers | Retrieved evidence may support only part of a question. | ⬜ Decide whether to answer the supported part, state the limitation, or refuse. |
-| Citation validation | String-valid citation IDs do not prove that the cited passage supports the claim. | 🔶 Deterministic validation now rejects missing IDs, unknown IDs, and model-written URLs; semantic claim support still needs an eval. |
+| Citation validation | String-valid citation IDs do not prove that the cited passage supports the claim. | 🔶 Deterministic validation now rejects missing IDs, unknown IDs, and model-written URL schemes case-insensitively; semantic claim support still needs an eval. |
+| Corpus activation | Clearing the active collection before parsing and embedding can leave retrieval empty or partial after a failure. | ✅ Parse every paper first, build a uniquely named staging collection, then atomically update the active-collection pointer only after every write succeeds. |
 | Answer eval dataset | The 24 retrieval questions identify required evidence, not complete reference answers. | ⬜ Decide whether to extend those examples or freeze a smaller answer-specific set. |
 | First answer metric | A single clear quality failure should be measured before adding a metric suite. | ⬜ Choose after inspecting the first generated answers. |
 
@@ -72,13 +61,18 @@ components unless answer-generation evidence proves one is required now.
 Nine answer-generation tests pass. They use an injected fake model, so normal
 test runs never call Ollama. The command-line test covers question input,
 retrieval-context handoff, generation, trusted citation rendering, and output.
+Three focused ingestion-pipeline tests cover parse failure, embedding/write
+failure, and activation only after every staged write succeeds. A storage test
+checks the active pointer replacement. Three focused MRR tests cover rank-first
+matching across multiple evidence units, exact paper/location/quote identity, and
+no-match scoring. The full suite has **74 passing tests**.
 
 | Invariant | State |
 | --- | --- |
 | Empty or missing retrieval context cannot produce an unsupported factual answer | ✅ fixed insufficient-evidence response |
 | Every citation ID in the draft exists in the supplied context | ✅ passing |
 | Unknown or model-invented citation IDs fail clearly | ✅ passing |
-| Model-written URLs fail clearly | ✅ passing |
+| Model-written URLs fail clearly, including mixed and uppercase schemes | ✅ passing |
 | A normal answer without any citation fails clearly | ✅ passing |
 | Prompt contains the question, passages, citation rules, and concise formatting rules | ✅ passing |
 | Ollama model configuration stays pinned to `qwen3.8:27b` | ✅ passing |
@@ -123,7 +117,8 @@ the contract or metric changes.
 ## Log
 
 - Sprint opened after Retrieval Sprint 03 closed with Evidence Recall@5 `0.9375`,
-  MRR@5 `0.7847`, and Document Precision@5 `0.275` across 24 frozen questions.
+  historical MRR@5 `0.7847`, and Document Precision@5 `0.275` across 24 frozen
+  questions. The corrected MRR evaluator later scored `0.8368` in LangSmith.
 - Retrieval owns source-passage parsing, exact overlap deduplication, temporary
   citation IDs, and trusted arXiv URLs. Answering owns final link rendering.
 - The answer model is not trusted to create URLs or decide citation identity. It
@@ -162,6 +157,22 @@ the contract or metric changes.
   production and test files, and session diagnostics reported no issues. The
   remaining Sprint 04 work is the fixed probe set, unsupported/partial-answer
   policy, and the first answer-quality eval.
+- Corpus rebuilding no longer clears the active Chroma collection first. It now
+  parses all papers before creating a uniquely named staging collection, deletes
+  an incomplete staging collection after an embedding or write failure, and
+  atomically replaces `chroma_db/active_collection.txt` only after the complete
+  corpus is stored. Existing databases without the pointer keep using the legacy
+  `arxiv_papers` collection until the first successful rebuild.
+- URL validation now matches `http://` and `https://` without regard to scheme
+  case. Focused tests cover lowercase, uppercase, and mixed-case model output.
+- MRR evaluation now checks Documents in retrieval-rank order and returns the
+  reciprocal rank of the first Document containing any required evidence. A
+  match requires the same arXiv ID and passage location plus the accepted quote,
+  consistent with the other retrieval metrics. Three focused evaluator tests
+  guard the earlier evidence-ordering and identity-matching defects. The corrected
+  LangSmith run `retriever-mrr-at-5-9c2543fe` completed all 24 questions and scored
+  **0.8368**. The evaluator now loads `.env` explicitly before constructing its
+  LangSmith client. The full suite passes **74 tests**.
 
 ## Next question
 

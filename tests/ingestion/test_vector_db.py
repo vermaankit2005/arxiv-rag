@@ -2,6 +2,7 @@ from langchain_core.embeddings import (  # pyright: ignore[reportMissingImports]
     DeterministicFakeEmbedding,
 )
 
+from arxiv_rag.ingestion import vector_db_ingest
 from arxiv_rag.ingestion.documents import convert_loaded_paper_to_documents
 from arxiv_rag.ingestion.vector_db_ingest import ChromaStore
 from arxiv_rag.loading.models import LoadedPaper, Passage
@@ -45,16 +46,24 @@ def test_chroma_round_trip_preserves_document_content_and_metadata(tmp_path):
     assert stored[0].metadata == documents[0].metadata
 
 
-def test_fresh_rebuild_removes_old_records_before_adding_the_corpus(tmp_path):
+def test_activating_collection_replaces_active_pointer(monkeypatch, tmp_path):
+    active_collection_file = tmp_path / "active_collection.txt"
+    active_collection_file.write_text("old_collection", encoding="utf-8")
+    monkeypatch.setattr(vector_db_ingest, "CHROMA_DIRECTORY", tmp_path)
+    monkeypatch.setattr(vector_db_ingest, "ACTIVE_COLLECTION_FILE", active_collection_file)
+
+    vector_db_ingest.activate_collection("complete_collection")
+
+    assert vector_db_ingest.get_active_collection_name() == "complete_collection"
+    assert list(tmp_path.glob(".active_collection.txt.*")) == []
+
+
+def test_deleted_staging_collection_can_be_recreated_without_partial_records(tmp_path):
     store = _store(tmp_path)
     documents = _documents()
-    old_document = documents[0].model_copy(update={"id": "old-record"})
-    store.add([old_document])
+    store.add([documents[0].model_copy(update={"id": "partial-record"})])
 
-    store.reset()
-    store.add(documents)
+    store.delete()
+    replacement = _store(tmp_path)
 
-    assert store.get(["old-record"]) == []
-    assert [document.id for document in store.get([documents[0].id])] == [
-        documents[0].id
-    ]
+    assert replacement.get(["partial-record"]) == []

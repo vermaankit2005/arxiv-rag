@@ -10,6 +10,7 @@ from arxiv_rag.retrieval import RetrievalContext
 MODEL_NAME = "qwen3.8:27b"
 INSUFFICIENT_EVIDENCE_ANSWER = "I don't know the answer based on the provided evidence."
 CITATION_PATTERN = re.compile(r"\[(P\d+)\]")
+URL_PATTERN = re.compile(r"https?://", re.IGNORECASE)
 
 
 class ChatResponse:
@@ -55,7 +56,7 @@ def _validate_answer(answer: str, context: RetrievalContext) -> None:
     if answer == INSUFFICIENT_EVIDENCE_ANSWER:
         return
 
-    if "http://" in answer or "https://" in answer:
+    if URL_PATTERN.search(answer):
         raise RuntimeError("The generated answer must not contain model-written URLs.")
 
     citation_ids = set(CITATION_PATTERN.findall(answer))

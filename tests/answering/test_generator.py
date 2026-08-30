@@ -69,15 +69,16 @@ def test_generate_answer_rejects_an_unknown_citation_id():
         raise AssertionError("Expected an unknown citation ID to fail")
 
 
-def test_generate_answer_rejects_model_written_urls():
-    model = RecordingModel("See https://example.com for the result [P1].")
+def test_generate_answer_rejects_model_written_urls_case_insensitively():
+    for url in ["https://example.com", "HTTPS://example.com", "hTtP://example.com"]:
+        model = RecordingModel(f"See {url} for the result [P1].")
 
-    try:
-        generator.generate_answer("What happened?", _context(), model)
-    except RuntimeError as error:
-        assert "must not contain model-written URLs" in str(error)
-    else:
-        raise AssertionError("Expected a model-written URL to fail")
+        try:
+            generator.generate_answer("What happened?", _context(), model)
+        except RuntimeError as error:
+            assert "must not contain model-written URLs" in str(error)
+        else:
+            raise AssertionError(f"Expected model-written URL to fail: {url}")
 
 
 def test_generate_answer_rejects_an_uncited_answer():

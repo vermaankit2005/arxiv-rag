@@ -23,7 +23,7 @@ class RecordingStore(VectorStore):
         self.k = k
         return self.results
 
-    def reset(self):
+    def delete(self):
         return None
 
 

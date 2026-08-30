@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from langsmith import Client
 
 from arxiv_rag import retrieval
@@ -12,53 +13,61 @@ EXPERIMENT_METADATA = {
     "corpus": "12-papers-384-documents",
     "vector_db": "chroma",
 }
-doc_ranking = {
-    "rank_1": 1.0,
-    "rank_2": 0.5,
-    "rank_3": 0.3333,
-    "rank_4": 0.25,
-    "rank_5": 0.1
-}
-
-retriever = retrieval.PaperRetriever()
 
 
 def fetch_docs_for_evaluation(inputs: dict) -> dict | None:
+
+    retriever = retrieval.PaperRetriever()
     retrieved_doc_list = retriever.retrieve(inputs["question"])
 
     if not retrieved_doc_list:
         return None
 
-    return {
-        "doc_list": [doc for doc, _ in retrieved_doc_list],
-    }
+    documents = []
+    for doc, _ in retrieved_doc_list:
+        source_passages = []
+        for source_passage in retrieval.get_source_passage_for_a_document(doc):
+            source_passages.append({
+                "arxiv_id": doc.metadata.get("arxiv_id"),
+                "text": source_passage.text,
+                "location": source_passage.location,
+            })
+
+        documents.append({"source_passages": source_passages})
+
+    return {"documents": documents}
 
 
-def evaluate_mrr(outputs: dict, reference_outputs: dict) -> dict:
-    score = 0.0
+def _passage_matches_evidence(source_passage: dict, reference_outputs: dict) -> bool:
 
     for evidence_unit in reference_outputs.get("evidence_units", []):
-        unit_matched = False
 
         for accepted_evidence in evidence_unit.get("accepted_evidence", []):
 
-            for rank, doc in enumerate(outputs.get("doc_list", []), start=1):
-                if accepted_evidence.get("quote") in doc.page_content:
-                    score +=(1 / rank)
-                    unit_matched = True
-                    break
-            if unit_matched:
-                break
-        if unit_matched:
-            break
+            if (
+                accepted_evidence.get("arxiv_id") == source_passage.get("arxiv_id")
+                and accepted_evidence.get("location") == source_passage.get("location")
+                and accepted_evidence.get("quote") in source_passage.get("text", "")
+            ):
+                return True
 
-    return {
-        "key": "mrr_at_5",
-        "score": score,
-    }
+    return False
+
+
+def evaluate_mrr(outputs: dict, reference_outputs: dict) -> dict:
+    for rank, document in enumerate(outputs.get("documents", []), start=1):
+        if any(
+            _passage_matches_evidence(source_passage, reference_outputs)
+            for source_passage in document.get("source_passages", [])
+        ):
+            return {"key": "mrr_at_5", "score": 1 / rank}
+
+    return {"key": "mrr_at_5", "score": 0.0}
+
 
 def run_mrr() -> None:
     """Evaluate the retriever by fetching documents for a given question and log to LangSmith."""
+    load_dotenv()
     client = Client()
     client.evaluate(
         fetch_docs_for_evaluation,
@@ -73,6 +82,7 @@ def run_mrr() -> None:
             "in the top 5, and the final score is the average across all questions."
         ),
     )
+
 
 if __name__ == "__main__":
     run_mrr()

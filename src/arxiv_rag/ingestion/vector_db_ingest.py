@@ -1,6 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
+from uuid import uuid4
 
 from dotenv import load_dotenv
 from langchain_chroma import Chroma  # pyright: ignore[reportMissingImports]
@@ -10,6 +11,7 @@ from langchain_ollama import OllamaEmbeddings  # pyright: ignore[reportMissingIm
 CHROMA_DIRECTORY = Path(__file__).parents[3] / "chroma_db"
 CHROMA_DATABASE_FILE = CHROMA_DIRECTORY / "chroma.sqlite3"
 CHROMA_COLLECTION_NAME = "arxiv_papers"
+ACTIVE_COLLECTION_FILE = CHROMA_DIRECTORY / "active_collection.txt"
 
 
 class VectorStore(ABC):
@@ -28,8 +30,8 @@ class VectorStore(ABC):
         ...
 
     @abstractmethod
-    def reset(self) -> None:
-        """Remove every document so the full corpus can be rebuilt safely."""
+    def delete(self) -> None:
+        """Delete this collection."""
         ...
 
 
@@ -57,11 +59,29 @@ class ChromaStore(VectorStore):
     ) -> list[tuple[Document, float]]:
         return self._db.similarity_search_with_score(query, k=k)
 
-    def reset(self) -> None:
-        self._db.reset_collection()
+    def delete(self) -> None:
+        self._db.delete_collection()
 
 
-def get_vector_store(create_if_missing: bool = False) -> VectorStore:
+def get_active_collection_name() -> str:
+    if not ACTIVE_COLLECTION_FILE.exists():
+        return CHROMA_COLLECTION_NAME
+
+    collection_name = ACTIVE_COLLECTION_FILE.read_text(encoding="utf-8").strip()
+    if not collection_name:
+        raise RuntimeError(f"Active Chroma collection file is empty: {ACTIVE_COLLECTION_FILE}")
+    return collection_name
+
+
+def activate_collection(collection_name: str) -> None:
+    """Atomically point new retrievers at a completely built collection."""
+    CHROMA_DIRECTORY.mkdir(parents=True, exist_ok=True)
+    temporary_file = ACTIVE_COLLECTION_FILE.with_name(f".{ACTIVE_COLLECTION_FILE.name}.{uuid4().hex}")
+    temporary_file.write_text(collection_name, encoding="utf-8")
+    temporary_file.replace(ACTIVE_COLLECTION_FILE)
+
+
+def get_vector_store(create_if_missing: bool = False, collection_name: str | None = None) -> VectorStore:
     if not create_if_missing and not CHROMA_DATABASE_FILE.exists():
         raise FileNotFoundError(
             f"No Chroma database found at {CHROMA_DIRECTORY}. Run ingestion first."
@@ -76,4 +96,4 @@ def get_vector_store(create_if_missing: bool = False) -> VectorStore:
         model="qwen3-embedding:4b",
         base_url=base_url,
     )
-    return ChromaStore(embeddings)
+    return ChromaStore(embeddings, collection_name=collection_name or get_active_collection_name())

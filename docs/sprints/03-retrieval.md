@@ -1,6 +1,6 @@
 # Sprint 03 — Retrieval
 
-**Status:** ✅ closed · Recall@5 0.9375 · MRR@5 0.7847 · Document Precision@5 0.275 · 59 tests passing
+**Status:** ✅ closed · Recall@5 0.9375 · corrected MRR@5 0.8368 · Document Precision@5 0.275 · 59 tests passing at close
 
 ## Goal
 
@@ -36,7 +36,7 @@ a trustworthy baseline.
 - ✅ Add simple comparison tags under the stable experiment prefix `retriever-evidence-recall-at-5`.
 - ✅ Run the first Evidence Recall@5 LangSmith baseline: 0.9375.
 - ✅ Manually inspect the Recall@5 misses.
-- ✅ Implement and run MRR@5: 0.7847.
+- ✅ Correct and rerun MRR@5: the original evidence-first evaluator scored 0.7847; ranked-Document-first matching scores 0.8368.
 - ✅ Run passage-level Context Precision@5 and record its 0.07085 baseline.
 - ✅ Replace the misaligned passage metric with Document Precision@5 under a new experiment prefix.
 - ✅ Run the first Document Precision@5 baseline: 0.275.
@@ -59,7 +59,8 @@ Six production retrieval tests pass. They cover:
 ## Evals
 
 The production retrieval baselines are complete across all 24 frozen questions.
-The five manual questions from Sprint 02 remain a smoke check only.
+The corrected MRR evaluator scores 0.8368 in LangSmith. The five manual questions
+from Sprint 02 remain a smoke check only.
 
 All metrics score the top five ranked Documents. A source passage matches when
 its arXiv ID and location match and its text contains an accepted quote as an
@@ -132,13 +133,15 @@ embedding model, top-k, corpus, and vector database.
   mismatch: minimally labelled evidence made useful neighbouring passages look
   like noise. We kept that run and introduced Document Precision@5 under a new
   prefix instead of overwriting the history.
-- After clearing the earlier experiments, four clean runs were created in order,
-  all with plain-English descriptions and formulas: Evidence Recall@5 scored
-  0.9375 in `retriever-evidence-recall-at-5-2b3b3489`; MRR@5 scored 0.7847 in
-  `retriever-mrr-at-5-3ccdd954`; passage precision scored 0.07085 in
+- After clearing the earlier experiments, four runs were created in order, all
+  with plain-English descriptions and formulas: Evidence Recall@5 scored 0.9375
+  in `retriever-evidence-recall-at-5-2b3b3489`; the historical MRR@5 run scored
+  0.7847 in `retriever-mrr-at-5-3ccdd954`; passage precision scored 0.07085 in
   `retriever-context-precision-at-5-b7438284`; and Document Precision@5 scored
-  0.275 in `retriever-document-precision-at-5-3590ed14`. Every run completed
-  24/24 examples without errors.
+  0.275 in `retriever-document-precision-at-5-3590ed14`. The MRR run is retained
+  as history but used evidence ordering rather than retrieval rank ordering.
+  The corrected LangSmith run `retriever-mrr-at-5-9c2543fe` completed 24/24
+  examples and scored 0.8368.
 - Manual review confirmed the Recall@5 misses were scored as intended and that
   Document Precision fits this dataset better than passage-level precision. No
   first-run score was turned into a release threshold.
