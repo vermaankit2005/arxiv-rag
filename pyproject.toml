@@ -10,6 +10,7 @@ dependencies = [
     "langchain-core>=1.6.0",
     "langchain-ollama>=1.1.0",
     "langgraph>=1.2.11",
+    "openevals>=0.2.0",
     "python-dotenv>=1.2.3",
 ]
 

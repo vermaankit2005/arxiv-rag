@@ -1,6 +1,6 @@
 # Sprint 04 — Grounded answer generation
 
-**Status:** 🟡 active · grounded answer path implemented · failure-safe corpus activation added · corrected MRR evaluator · 74 tests passing
+**Status:** 🟡 active · grounded answer path implemented · semantic evaluator contracts chosen · answer-quality dataset frozen · 74 tests passing
 
 **Working rule:** Update this file when each decision, implementation step, test,
 manual check, or eval run happens. Do not reconstruct the sprint at the end. If
@@ -26,22 +26,23 @@ components unless answer-generation evidence proves one is required now.
 | Production boundary | The graph still contains unproved branches, while retrieval already returns a complete `RetrievalContext`. | ✅ Start with plain production functions under `src/arxiv_rag/`; do not build the graph in this sprint. |
 | Answer contract | We need readable answers without losing the claim-to-source connection. | ✅ Normal answer text containing only supplied inline passage IDs such as `[P1]`. No JSON claim structure unless this proves hard to validate. |
 | Citation placement | A citation list at the end does not show which passage supports which claim. | ✅ Put `[P#]` immediately after the supported sentence; allow multiple IDs; production code renders compact trusted links. |
-| Generation model | The model must follow the answer contract and stay grounded at practical latency and cost. | ✅ Start with Ollama `qwen3.8:27b` at temperature 0 using `OLLAMA_BASE_URL`; compare models only if measured failures justify it. |
+| Generation model | The model must follow the answer contract and stay grounded at practical latency and cost. | ✅ Use Ollama `gemma4:26b` at temperature 0 through `OLLAMA_BASE_URL`; model comparisons remain evidence-driven. |
+| Groundedness judge | The judge should be fast, locally available, and independently replaceable from the generator. | ✅ Use Ollama `gpt-oss:20b` for judging only. Restrict scores to `0`, `0.25`, `0.5`, `0.75`, or `1` because the first continuous-score run produced invalid values above 1. |
 | Evidence use | The model receives deduplicated source passages with temporary IDs, but it may still ignore or misuse them. | ✅ Prompt allows only supplied passages and IDs, requires inline citations, forbids URLs, and uses one exact insufficient-evidence response. |
 | Unsupported claims | The architecture map says unsupported claims are deleted rather than repaired, but this has not been proved in shipping code. | ⬜ Confirm the behavior with examples before accepting it. |
 | Partial answers | Retrieved evidence may support only part of a question. | ⬜ Decide whether to answer the supported part, state the limitation, or refuse. |
-| Citation validation | String-valid citation IDs do not prove that the cited passage supports the claim. | 🔶 Deterministic validation now rejects missing IDs, unknown IDs, and model-written URL schemes case-insensitively; semantic claim support still needs an eval. |
+| Citation validation | String-valid citation IDs do not prove that the cited passage supports the claim. | ✅ Keep citation-ID validity in deterministic tests. Add a semantic citation-support evaluator that checks each cited claim against its attached passage. |
 | Corpus activation | Clearing the active collection before parsing and embedding can leave retrieval empty or partial after a failure. | ✅ Parse every paper first, build a uniquely named staging collection, then atomically update the active-collection pointer only after every write succeeds. |
-| Answer eval dataset | The 24 retrieval questions identify required evidence, not complete reference answers. | ⬜ Decide whether to extend those examples or freeze a smaller answer-specific set. |
-| First answer metric | A single clear quality failure should be measured before adding a metric suite. | ⬜ Choose after inspecting the first generated answers. |
+| Answer eval dataset | The generation eval must not inherit the retriever's ranking or misses. | ✅ Curate the 24 contexts independently from cached source HTML through the shipping loader. Freeze each manually supported passage with its immediate source neighbours; do not call the retriever or consume retrieved Documents. |
+| First answer metrics | The manual probe showed grounded answers but does not measure whether every factual claim is supported, whether each attached citation supports its claim, or whether required facts are correct and complete. | ✅ Start with groundedness, citation support, correctness, and completeness. Defer directness until the core quality baseline exists. |
 
 ## Steps
 
 - ✅ Start from the production `RetrievalContext`: deduplicated passage text plus
   trusted citation IDs and URLs.
 - ✅ Define the smallest answer contract: normal text with supplied inline `[P#]` IDs.
-- ⬜ Create a small fixed probe set from the frozen retrieval questions and inspect
-  one baseline prompt manually.
+- ✅ Create a small fixed probe set from the frozen retrieval questions and inspect
+  the production answers manually.
 - ✅ Implement answer drafting in `src/arxiv_rag/answering/generator.py`.
 - ✅ Add `python -m arxiv_rag.answering` as a small interactive end-to-end entry point.
 - ✅ Validate that every emitted citation ID exists in the supplied retrieval
@@ -51,8 +52,11 @@ components unless answer-generation evidence proves one is required now.
 - ⬜ Decide and implement the handling of unsupported and partially supported
   claims.
 - ✅ Add deterministic tests for the accepted answer and citation contract.
-- ⬜ Freeze the minimum answer-quality dataset and evaluator only after the failure
-  modes are visible.
+- ✅ Choose the first semantic evaluator contracts: groundedness, citation
+  support, correctness, and completeness.
+- ✅ Freeze the minimum answer-quality dataset in `evals/dataset/generation_quality_dataset.json`.
+- ✅ Add a LangSmith dataset builder for publishing the frozen examples to the UI.
+- ⬜ Implement the accepted evaluators against shipping code.
 - ⬜ Run the first described LangSmith baseline against shipping code.
 - ⬜ Manually inspect failures, record measured results, and choose the next change.
 
@@ -76,28 +80,82 @@ no-match scoring. The full suite has **74 passing tests**.
 | A normal answer without any citation fails clearly | ✅ passing |
 | Prompt contains the question, passages, citation rules, and concise formatting rules | ✅ passing |
 | Ollama model configuration stays pinned to `qwen3.8:27b` | ✅ passing |
-| Whether each cited passage semantically supports its claim | ⬜ eval needed |
+| Whether every factual claim is grounded and each cited passage supports its claim | ⬜ eval needed |
 
 Prompt quality and whether a passage truly supports a generated claim are eval
 questions, not unit-test assertions.
 
 ## Evals
 
-There is no accepted answer-generation eval yet. The retrieval scores establish
-that evidence can usually be found; they do not prove that an answer uses it
-correctly.
+The groundedness evaluator is implemented, but there is no accepted automated
+answer-generation baseline yet. The first run used `gemma4:26b` as both generator
+and judge with OpenEvals continuous scoring. It is invalid because the judge
+returned values up to `5` despite the intended `0`–`1` range. The replacement
+judge is `gpt-oss:20b`, with scores restricted to five explicit values from `0`
+to `1`.
 
-The first answer eval must run against shipping code and separate three ideas:
+A six-question manual probe used production retrieval and `qwen3.8:27b`. It covered
+method, comparison, and numeric-result questions from the frozen retrieval dataset.
+Using a 1–5 judgement of correctness, completeness, citation support, and directness,
+the answers scored **5, 4, 5, 5, 4, and 4**, for a **4.5/5 average**. All six answers
+were correct, complete, and cited supporting passages. The first repeated weakness
+was over-answering: three answers added grounded but unnecessary background instead
+of stopping after the requested facts.
 
-- **Citation validity:** does every citation resolve to a supplied source passage?
-- **Citation support:** does that source passage support the claim carrying it?
-- **Answer completeness:** did the answer cover the parts of the question that the
-  available evidence supports?
+The accepted automated evaluation plan has four semantic scores:
 
-Citation validity has a known correct output and belongs in tests. Citation
-support and answer completeness require an eval because wording can vary while
-remaining correct. Do not accept formulas, thresholds, or a large metric suite
-until baseline answers expose the real failure modes.
+- **Groundedness:** judge whether every factual statement in the generated answer
+  is supported by the frozen passages.
+- **Citation support:** inspect each citation attached to a factual statement. A
+  statement-passage pair passes only when that exact cited passage supports the
+  statement.
+- **Correctness:** judge the generated answer against the frozen required facts
+  and passages.
+- **Completeness:** report the share of frozen required facts covered by the
+  generated answer.
+
+### How each metric uses the dataset
+
+- **Groundedness:** generated answer + frozen passages.
+- **Citation support:** generated answer + passage selected by each `[P#]`.
+- **Correctness:** generated answer + required facts + passages.
+- **Completeness:** covered required facts divided by total required facts.
+
+Citation-ID validity has a known correct output and remains in deterministic unit
+tests. It is not an LLM-judged metric. Directness is also deferred for now: the
+manual probe exposed over-answering, but semantic support, correctness, and
+completeness are the minimum quality baseline.
+
+`evals/dataset/generation_quality_dataset.json` is now the frozen evaluator input.
+It keeps the existing 24 questions and question-type metadata, 92 exact source
+passages, and 84 atomic required facts. Passage IDs are stable within each example,
+and every fact names one or more supporting passage IDs. Evaluator implementation
+must follow these references rather than create labels dynamically.
+
+### How the dataset was curated
+
+The frozen context is source-curated and independent of retrieval. No
+`PaperRetriever`, vector search, ranking, retrieved Document, or production
+`RetrievalContext` was used to select its passages:
+
+1. The existing questions and required-evidence locations were taken from
+   `retrieval_evidence_dataset.json`; retrieval output was not taken from it.
+2. For every question, required facts and the exact source passages supporting
+   them were manually identified and reviewed against the cached arXiv HTML.
+   Table facts include the heading, caption, or surrounding passage needed to
+   establish what an otherwise unlabeled row measures.
+3. Each manually supported passage was frozen together with its immediate previous
+   and next passage in source order. Overlapping three-passage neighbourhoods were
+   merged. This produced 92 realistic source passages across the 24 examples.
+4. Exact text, arXiv ID, location, and section path were exported from the cached
+   HTML with the shipping `load_paper_from_html()` parser. Text and anchors were
+   not retyped, and passage order follows the source document rather than a search
+   rank.
+5. A one-off automated validation parsed the JSON, checked unique and sequential
+   local IDs, resolved every supporting passage reference, confirmed all original
+   evidence units remained represented, and compared every frozen passage's text,
+   location, and section path with fresh shipping-loader output. Semantic
+   fact-to-passage support was manually reviewed.
 
 Every LangSmith run must use a clear description in plain English, including what
 the metric asks and how its score is calculated. Old runs remain immutable when
@@ -173,8 +231,49 @@ the contract or metric changes.
   LangSmith run `retriever-mrr-at-5-9c2543fe` completed all 24 questions and scored
   **0.8368**. The evaluator now loads `.env` explicitly before constructing its
   LangSmith client. The full suite passes **74 tests**.
+- A manual production probe ran six frozen questions: Transformer masking, BERT
+  GLUE averages, DPO/PPO out-of-distribution win rates, RAG-Sequence versus
+  RAG-Token, GitSkills collection and deduplication, and physical-circuit success
+  by complexity. Scores were **5, 4, 5, 5, 4, and 4**, averaging **4.5/5**. Every
+  answer contained the required facts with supported citations. The repeated
+  weakness was grounded but unnecessary expansion in three answers; no unsupported
+  factual claim was observed in this sample.
+- The first generation evaluator scope is now fixed. Groundedness will judge
+  whether every factual statement is supported by the frozen passages. Citation
+  support will judge statement-passage pairs. Answer quality will judge correctness
+  and coverage of frozen required facts. Citation-ID validity stays in unit tests,
+  and directness is deferred until after the core semantic baseline.
+- The first dataset draft incorrectly froze production retrieval contexts, making
+  the generation eval dependent on retriever ranking and misses. That draft was
+  replaced before any evaluator or baseline used it.
+- The answer-quality dataset is frozen at
+  `evals/dataset/generation_quality_dataset.json`. It preserves all 24 questions
+  and their existing type metadata, but its context is now curated independently
+  from cached source HTML. Each manually supported passage is accompanied by its
+  immediate source neighbours, with overlapping neighbourhoods merged. No
+  retriever, vector search result, retrieved Document, or `RetrievalContext` was
+  used to select the final 92 passages.
+- The dataset contains 84 atomic required facts. Supporting passage references
+  were manually reviewed, including table captions where a table body alone did
+  not establish the experiment. Automated validation confirmed valid JSON, 24
+  unique example IDs, sequential unique local passage and fact IDs, non-empty and
+  resolvable support lists, unchanged questions and metadata, all 36 original
+  evidence units represented, and exact text/location/section-path identity
+  against the shipping loader for all 92 passages. No evaluator, LangSmith
+  dataset, generation baseline, or production-code change was made.
+- `GenerationQualityDatasetBuilder` now publishes the frozen questions and source
+  passages as LangSmith inputs, required facts as reference outputs, and preserves
+  the example ID and question type as metadata. It refuses to replace an existing
+  dataset so historical evaluation inputs cannot change silently.
+- The first OpenEvals groundedness run used `gemma4:26b` as both generator and
+  judge with `continuous=True`. Its feedback contained scores of `1` and `5`, so
+  the reported aggregate was outside the metric's intended `0`–`1` range and the
+  run is not an accepted baseline. OpenEvals described the range but did not
+  enforce numeric bounds in its schema. The judge is now independently pinned to
+  Ollama `gpt-oss:20b`, and the evaluator permits only `0`, `0.25`, `0.5`, `0.75`,
+  or `1`.
 
 ## Next question
 
-Does `qwen3.8:27b` follow the inline citation contract across a small fixed set of
-real retrieval questions, and what is the first repeated failure mode?
+Implement the accepted groundedness, citation-support, correctness, and
+completeness evaluators against the frozen dataset, without changing its labels.
