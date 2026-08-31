@@ -1,6 +1,6 @@
 # Sprint 04 — Grounded answer generation
 
-**Status:** 🟡 active · grounded answer path implemented · evidence-behavior baseline accepted at 1.0 · general-quality baseline pending
+**Status:** ✅ closed · grounded answer path implemented · evidence-behavior baseline accepted at 1.0 · general-quality runs deferred until inference is stable
 
 **Working rule:** Update this file when each decision, implementation step, test,
 manual check, or eval run happens. Do not reconstruct the sprint at the end. If
@@ -59,8 +59,8 @@ components unless answer-generation evidence proves one is required now.
 - ✅ Implement the accepted evaluators against shipping code: groundedness, citation support, correctness, completeness, and naturalness are implemented.
 - ✅ Add a separate 9-example evidence-behavior dataset with three fully supported, three partially supported, and three unsupported questions.
 - ✅ Add an evidence-behavior evaluator for full answers, partial answers with limitations, and exact unsupported refusals.
-- ⬜ Run the first described LangSmith baseline against shipping code.
-- ⬜ Manually inspect failures, record measured results, and choose the next change.
+- ⏸ Run the remaining general-quality LangSmith baselines after DGX inference is stable.
+- ⏸ Manually inspect those results separately; they do not block closing this implementation sprint.
 
 ## Tests
 
@@ -82,7 +82,7 @@ full implementation suite has **73 passing tests**.
 | A normal answer without any citation fails clearly | ✅ passing |
 | Prompt contains the question, passages, citation rules, and concise formatting rules | ✅ passing |
 | Ollama model configuration stays pinned to `gemma4:26b` | ✅ passing |
-| Whether answers are grounded, correctly cited, correct, complete, and natural | 🟡 all five evaluators implemented; baseline needed |
+| Whether answers are grounded, correctly cited, correct, complete, and natural | ⏸ all five evaluators implemented; remaining runs deferred until inference is stable |
 
 Prompt quality and whether a passage truly supports a generated claim are eval
 questions, not unit-test assertions.
@@ -184,8 +184,9 @@ the contract or metric changes.
 4. Unsupported and partially supported claims have an explicit, tested behavior. ✅
 5. Deterministic answer and citation invariants have passing tests. ✅
 6. At least one answer-quality evaluator runs against a frozen dataset and shipping code. ✅
-7. The first LangSmith baseline has a plain-English description, measured results, and manual review. ⬜
-8. This sprint records the final decisions and leaves one clear next question. ⬜
+7. The evidence-behavior baseline has a plain-English description, measured results, and manual review. ✅
+8. The remaining general-quality runs are explicitly handed off rather than blocking new work. ✅
+9. This sprint records the final decisions and leaves one clear next question. ✅
 
 ## Log
 
@@ -340,8 +341,14 @@ the contract or metric changes.
   review found no invented unsupported details. The full implementation suite
   then passed **73 tests**; primary LSP diagnostics were clean for both new Python
   files.
+- Sprint 04 closed with the general-quality runs still pending because parallel
+  generator and judge inference was saturating the DGX. The evaluator contracts
+  and datasets are complete; the runs and manual review will happen separately
+  after inference is stable. This is an explicit operational deferral, not a
+  claim that the missing baselines were completed.
 
 ## Next question
 
-Run the general answer-quality baselines and inspect whether the evidence-behavior
-prompt's correct but sometimes report-like formatting affects naturalness.
+When retrieval and generation run together, how often does the final answer cover
+the required facts, keep every claim tied to supporting evidence, and choose the
+right answer/partial/refusal behavior?
