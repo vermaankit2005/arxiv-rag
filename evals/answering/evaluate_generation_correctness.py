@@ -1,5 +1,3 @@
-from collections.abc import Callable
-
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
@@ -40,8 +38,6 @@ Return one of these scores:
 - 0: entirely incorrect or directly contradicts the reference.
 """
 
-Judge = Callable[..., dict]
-
 judge_model = build_judge_model(JUDGE_MODEL_NAME)
 
 correctness_judge = create_llm_as_judge(
@@ -56,13 +52,13 @@ def _build_fact_references(context_passages: list[dict], required_facts: list[di
     return build_fact_references(context_passages, required_facts)
 
 
-def evaluate_correctness(inputs: dict, outputs: dict, reference_outputs: dict, judge: Judge = correctness_judge) -> dict:
+def evaluate_correctness(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
     """Judge factual correctness without treating omitted facts as incorrect."""
     references = _build_fact_references(inputs.get("context_passages", []), reference_outputs.get("required_facts", []))
     if not references:
         raise ValueError("Correctness evaluation requires at least one required fact")
 
-    result = judge(
+    result = correctness_judge(
         inputs={
             "question": inputs.get("question", ""),
             "required_facts": references,

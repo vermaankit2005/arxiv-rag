@@ -1,5 +1,3 @@
-from collections.abc import Callable
-
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
@@ -32,8 +30,6 @@ Generated answer:
 {outputs}
 """
 
-Judge = Callable[..., dict]
-
 judge_model = build_judge_model(JUDGE_MODEL_NAME)
 
 completeness_judge = create_llm_as_judge(
@@ -47,7 +43,7 @@ def _build_fact_references(context_passages: list[dict], required_facts: list[di
     return build_fact_references(context_passages, required_facts)
 
 
-def evaluate_completeness(inputs: dict, outputs: dict, reference_outputs: dict, judge: Judge = completeness_judge) -> dict:
+def evaluate_completeness(inputs: dict, outputs: dict, reference_outputs: dict) -> dict:
     """Return covered frozen required facts divided by all required facts."""
     references = _build_fact_references(
         inputs.get("context_passages", []),
@@ -58,7 +54,7 @@ def evaluate_completeness(inputs: dict, outputs: dict, reference_outputs: dict, 
 
     covered_count = 0
     for reference in references:
-        result = judge(
+        result = completeness_judge(
             inputs={
                 "question": inputs.get("question", ""),
                 "required_fact": reference,

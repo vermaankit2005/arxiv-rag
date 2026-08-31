@@ -1,5 +1,3 @@
-from collections.abc import Callable
-
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
@@ -42,8 +40,6 @@ Return one of these scores:
 - 0: highly unnatural and difficult to read as a human-written response.
 """
 
-Judge = Callable[..., dict]
-
 judge_model = build_judge_model(JUDGE_MODEL_NAME)
 
 naturalness_judge = create_llm_as_judge(
@@ -54,9 +50,9 @@ naturalness_judge = create_llm_as_judge(
 )
 
 
-def evaluate_naturalness(inputs: dict, outputs: dict, judge: Judge = naturalness_judge) -> dict:
+def evaluate_naturalness(inputs: dict, outputs: dict) -> dict:
     """Judge human-like phrasing without mixing in factual answer quality."""
-    result = judge(
+    result = naturalness_judge(
         inputs={"question": inputs.get("question", "")},
         outputs={"answer": outputs.get("answer", "")},
     )

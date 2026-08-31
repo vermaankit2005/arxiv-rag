@@ -62,16 +62,12 @@ components unless answer-generation evidence proves one is required now.
 
 ## Tests
 
-Nine production answer-generation tests and seventeen focused evaluator and model-setting tests
-pass without calling Ollama. The command-line test covers question input,
+Nine production answer-generation tests pass without calling Ollama. The command-line test covers question input,
 retrieval-context handoff, generation, trusted citation rendering, and output.
-Citation-support tests cover pair extraction, multiple citations, Markdown and
-decimal punctuation, mixed support, missing citations, unknown IDs, and stable
-frozen passage IDs. Three focused ingestion-pipeline tests cover parse failure,
+Evaluator scripts are validated through real eval runs rather than unit tests.
+Three focused ingestion-pipeline tests cover parse failure,
 embedding/write failure, and activation only after every staged write succeeds.
-A storage test checks the active pointer replacement. Three focused MRR tests
-cover rank-first matching across multiple evidence units, exact
-paper/location/quote identity, and no-match scoring. The full suite has **91 passing tests**.
+A storage test checks the active pointer replacement. The full implementation suite has **71 passing tests**.
 
 | Invariant | State |
 | --- | --- |
@@ -232,8 +228,7 @@ the contract or metric changes.
 - MRR evaluation now checks Documents in retrieval-rank order and returns the
   reciprocal rank of the first Document containing any required evidence. A
   match requires the same arXiv ID and passage location plus the accepted quote,
-  consistent with the other retrieval metrics. Three focused evaluator tests
-  guard the earlier evidence-ordering and identity-matching defects. The corrected
+  consistent with the other retrieval metrics. The corrected
   LangSmith run `retriever-mrr-at-5-9c2543fe` completed all 24 questions and scored
   **0.8368**. The evaluator now loads `.env` explicitly before constructing its
   LangSmith client. The full suite passes **74 tests**.
@@ -300,9 +295,10 @@ the contract or metric changes.
   ordinal scale while explicitly excluding correctness, completeness,
   groundedness, citation quality, and answer length. Shared context, judge, and
   frozen-reference helpers now remove duplication across evaluator modules.
-- The full suite passes **91 tests**, including focused evaluator score,
-  validation, dependency-injection, and model-setting coverage. No accepted
-  LangSmith baseline has been run yet.
+- Evaluator unit tests were removed by project policy: tests cover shipping
+  implementation, while evaluator scripts are checked through real eval runs.
+  The full implementation suite passes **71 tests**. No accepted LangSmith
+  baseline has been run yet.
 
 ## Next question
 

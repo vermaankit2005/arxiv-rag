@@ -1,5 +1,4 @@
 import re
-from collections.abc import Callable
 
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
@@ -36,8 +35,6 @@ Question and statement:
 Cited passage:
 {outputs}
 """
-
-Judge = Callable[..., dict]
 
 judge_model = build_judge_model(JUDGE_MODEL_NAME)
 
@@ -87,7 +84,7 @@ def generate_answer_for_citation_support(inputs: dict) -> dict:
     return evaluation_context.generate_answer_for_evaluation(inputs, _build_retrieval_context)
 
 
-def evaluate_citation_support(inputs: dict, outputs: dict, judge: Judge = citation_support_judge) -> dict:
+def evaluate_citation_support(inputs: dict, outputs: dict) -> dict:
     """Return the share of cited statement-passage pairs supported by that passage."""
     answer = outputs.get("answer", "")
     pairs = _extract_statement_citation_pairs(answer)
@@ -112,7 +109,7 @@ def evaluate_citation_support(inputs: dict, outputs: dict, judge: Judge = citati
 
     for statement, citation_id in pairs:
 
-        result = judge(
+        result = citation_support_judge(
             inputs={
                 "question": inputs.get("question", ""),
                 "statement": statement,
