@@ -7,24 +7,37 @@ from evals.answering.judges import build_judge_model
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_naturalness"
 JUDGE_MODEL_NAME = "gemma4:26b"
+NATURALNESS_RUBRIC_VERSION = "user-facing-v2"
 ALLOWED_SCORES = {0, 0.25, 0.5, 0.75, 1}
 EXPERIMENT_METADATA = {
     "metric": "naturalness",
+    "rubric_version": NATURALNESS_RUBRIC_VERSION,
+    "evaluation_focus": "user-facing readability and interaction",
     "dataset": LANGSMITH_DATASET_NAME,
     "generator_model": "gemma4:26b",
     "judge_model": JUDGE_MODEL_NAME,
 }
 
 NATURALNESS_PROMPT = """
-You are evaluating only how natural and human-written a generated research
-answer sounds in response to a question.
+You are evaluating how natural a generated research answer feels to a user who
+is reading it and interacting with an assistant.
 
-Consider phrasing, sentence rhythm, transitions, and whether the answer reads as
-a coherent explanation rather than a template or a sequence of extracted facts.
-A technical answer can be formal and still sound natural. Do not reward
-chattiness, jokes, enthusiasm, or extra detail. Ignore citation markers such as
-[P1]. Do not score factual correctness, completeness, groundedness, citation
-quality, or answer length; those are evaluated separately.
+Judge whether the answer is direct, smoothly written, and pleasant to read. It
+should synthesize the requested information instead of looking like facts copied
+into a standard response template. Technical language is appropriate when the
+question requires it, but a polished report is not automatically a natural
+assistant response.
+
+Reduce the score for unnecessary headings, excessive bullet lists, canned
+introductions such as "the following results were reported," repetitive sentence
+patterns, fragmented facts, or formatting that makes a short answer feel like a
+report. Bullets are acceptable when they genuinely improve a complex answer, but
+a list question does not automatically make a rigid list feel natural. Do not
+reward verbosity, chattiness, jokes, enthusiasm, or extra detail.
+
+Ignore citation markers such as [P1] when judging the prose. Do not score factual
+correctness, completeness, groundedness, or citation support; those are evaluated
+separately.
 
 Question:
 {inputs}
@@ -33,11 +46,11 @@ Generated answer:
 {outputs}
 
 Return one of these scores:
-- 1: natural and effortless; it reads like an articulate person wrote it.
-- 0.75: mostly natural, with minor stiffness that does not disrupt the flow.
-- 0.5: understandable but noticeably mechanical, repetitive, or template-like.
-- 0.25: strongly robotic or choppy, with awkward phrasing or poor transitions.
-- 0: highly unnatural and difficult to read as a human-written response.
+- 1: effortless, direct, and pleasant to read as a user-facing assistant response.
+- 0.75: natural overall, but somewhat formal or structured in a way a user may notice.
+- 0.5: clear and understandable, but obviously generated, templated, or report-like.
+- 0.25: strongly robotic, fragmented, repetitive, or overloaded with formatting.
+- 0: highly unnatural and difficult for a user to read or interact with.
 """
 
 judge_model = build_judge_model(JUDGE_MODEL_NAME)
@@ -48,7 +61,6 @@ naturalness_judge = create_llm_as_judge(
     judge=judge_model,
     choices=[0, 0.25, 0.5, 0.75, 1],
 )
-
 
 def evaluate_naturalness(inputs: dict, outputs: dict) -> dict:
     """Judge human-like phrasing without mixing in factual answer quality."""
@@ -67,7 +79,6 @@ def evaluate_naturalness(inputs: dict, outputs: dict) -> dict:
         "comment": result.get("comment", "The answer's naturalness was judged."),
     }
 
-
 def run_naturalness() -> None:
     """Run naturalness evaluation against the frozen generation dataset."""
     client = Client()
@@ -78,13 +89,13 @@ def run_naturalness() -> None:
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=(
-            "Judge whether each generated answer sounds natural and human-written. "
-            "The score measures phrasing, rhythm, transitions, and freedom from "
-            "robotic or template-like language on a restricted 0 to 1 scale."
+            "User-facing naturalness rubric v2. Judge whether each generated answer "
+            "is direct, smoothly written, and pleasant to read in an assistant "
+            "interaction. Penalize unnecessary report-like structure, canned phrasing, "
+            "and templated fact lists on a restricted 0 to 1 scale."
         ),
         max_concurrency=4,
     )
-
 
 if __name__ == "__main__":
     run_naturalness()

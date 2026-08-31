@@ -111,8 +111,9 @@ The accepted automated evaluation plan has five semantic scores:
   and passages.
 - **Completeness:** report the share of frozen required facts covered by the
   generated answer.
-- **Naturalness:** judge phrasing, rhythm, transitions, and freedom from robotic
-  or template-like prose without mixing in factual quality.
+- **Naturalness:** judge user-facing readability and interaction quality, including
+  directness, smooth prose, and freedom from unnecessary report-like structure,
+  without mixing in factual quality.
 
 ### How each metric uses the dataset
 
@@ -121,7 +122,8 @@ The accepted automated evaluation plan has five semantic scores:
 - **Correctness:** generated answer + required facts + passages.
 - **Completeness:** covered required facts divided by total required facts.
 - **Naturalness:** generated answer + question; citation markers and factual quality
-  are explicitly excluded from this score.
+  are explicitly excluded. Rubric metadata distinguishes the stricter
+  `user-facing-v2` contract from earlier runs.
 
 Citation-ID validity has a known correct output and remains in deterministic unit
 tests. It is not an LLM-judged metric. Directness is also deferred for now: the
@@ -291,10 +293,15 @@ the contract or metric changes.
   coverage decision per frozen required fact and reports covered facts divided by
   all required facts.
 - Naturalness is implemented in
-  `evals/answering/evaluate_generation_naturalness.py`. It uses the same restricted
-  ordinal scale while explicitly excluding correctness, completeness,
-  groundedness, citation quality, and answer length. Shared context, judge, and
-  frozen-reference helpers now remove duplication across evaluator modules.
+  `evals/answering/evaluate_generation_naturalness.py`. The first run,
+  `generation_naturalness-4c082e17`, averaged **0.8229** across 24 answers, with
+  twelve scores of `1`, seven of `0.75`, and five of `0.5`. Manual review rejected
+  that result because the rubric treated polished technical summaries as natural
+  user interactions and scored visibly templated, report-like answers too highly.
+  The replacement `user-facing-v2` rubric penalizes unnecessary headings, rigid
+  fact lists, canned introductions, repetitive patterns, and excessive formatting.
+  Its version and evaluation focus are recorded in experiment metadata. Shared
+  context, judge, and frozen-reference helpers remove duplication across evaluator modules.
   `evals/answering/context.py` preserves frozen passage IDs and owns the single
   answer-generation target used directly by every generation eval.
 - Evaluator unit tests were removed by project policy: tests cover shipping
