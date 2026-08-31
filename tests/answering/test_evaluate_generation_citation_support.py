@@ -1,8 +1,4 @@
-from evals.answering.evaluate_generation_citation_support import (
-    _build_retrieval_context,
-    _extract_statement_citation_pairs,
-    evaluate_citation_support,
-)
+from evals.answering import evaluate_generation_citation_support as citation_support
 
 
 def _passage(citation_id: str, text: str) -> dict:
@@ -36,7 +32,7 @@ def test_extracts_each_statement_and_its_attached_citation():
         "It also offsets output embeddings [P2] [P3]."
     )
 
-    pairs = _extract_statement_citation_pairs(answer)
+    pairs = citation_support._extract_statement_citation_pairs(answer)
 
     assert pairs == [
         ("The decoder masks future positions", "P2"),
@@ -48,7 +44,7 @@ def test_extracts_each_statement_and_its_attached_citation():
 def test_extracts_citation_after_sentence_punctuation_and_markdown_bullet():
     answer = "## Answer\n- The model scored 91.3 F1. [P1]"
 
-    pairs = _extract_statement_citation_pairs(answer)
+    pairs = citation_support._extract_statement_citation_pairs(answer)
 
     assert pairs == [("The model scored 91.3 F1", "P1")]
 
@@ -64,7 +60,7 @@ def test_scores_supported_pairs_over_all_cited_pairs():
     outputs = {"answer": "The model scored 91.3 F1 [P1] [P2]."}
     judge = RecordingJudge([True, False])
 
-    result = evaluate_citation_support(inputs, outputs, judge)
+    result = citation_support.evaluate_citation_support(inputs, outputs, judge)
 
     assert result["key"] == "citation_support"
     assert result["score"] == 0.5
@@ -74,7 +70,7 @@ def test_scores_supported_pairs_over_all_cited_pairs():
 
 
 def test_returns_zero_when_answer_has_no_statement_citation_pairs():
-    result = evaluate_citation_support(
+    result = citation_support.evaluate_citation_support(
         {"question": "What happened?", "context_passages": []},
         {"answer": "I do not know."},
         RecordingJudge([]),
@@ -91,7 +87,7 @@ def test_rejects_unknown_citation_ids_before_calling_judge():
     judge = RecordingJudge([])
 
     try:
-        evaluate_citation_support(
+        citation_support.evaluate_citation_support(
             {"question": "What happened?", "context_passages": [_passage("P1", "Evidence")]},
             {"answer": "A claim [P9]."},
             judge,
@@ -105,7 +101,7 @@ def test_rejects_unknown_citation_ids_before_calling_judge():
 
 
 def test_generation_context_preserves_frozen_passage_ids():
-    context = _build_retrieval_context([_passage("P7", "Frozen evidence")])
+    context = citation_support._build_retrieval_context([_passage("P7", "Frozen evidence")])
 
     assert "[P7]" in context.text
     assert list(context.citations) == ["P7"]

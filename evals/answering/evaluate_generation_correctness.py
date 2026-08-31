@@ -1,14 +1,11 @@
 from collections.abc import Callable
-import os
 
-from dotenv import load_dotenv
-from langchain_ollama import ChatOllama  # pyright: ignore[reportMissingImports]
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
-from evals.answering.evaluate_generation_citation_support import generate_answer_for_citation_support
-
-load_dotenv()
+from evals.answering import evaluate_generation_citation_support as citation_support
+from evals.answering.judges import build_judge_model
+from evals.answering.references import build_fact_references
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_correctness"
@@ -45,11 +42,7 @@ Return one of these scores:
 
 Judge = Callable[..., dict]
 
-judge_model = ChatOllama(
-    model=JUDGE_MODEL_NAME,
-    base_url=os.environ["OLLAMA_BASE_URL"],
-    temperature=0,
-)
+judge_model = build_judge_model(JUDGE_MODEL_NAME)
 
 correctness_judge = create_llm_as_judge(
     prompt=CORRECTNESS_PROMPT,
@@ -60,27 +53,10 @@ correctness_judge = create_llm_as_judge(
 
 
 def _build_fact_references(context_passages: list[dict], required_facts: list[dict]) -> list[dict]:
-    """Attach each frozen required fact to its frozen supporting passage text."""
-    passages_by_id = {passage["id"]: passage["text"] for passage in context_passages}
-    references = []
-
-    for required_fact in required_facts:
-        supporting_ids = required_fact.get("supporting_passage_ids", [])
-
-        references.append({
-            "id": required_fact["id"],
-            "fact": required_fact["fact"],
-            "supporting_passages": [
-                {"id": passage_id, "text": passages_by_id[passage_id]}
-                for passage_id in supporting_ids
-            ],
-        })
-
-    return references
+    return build_fact_references(context_passages, required_facts)
 
 
-def evaluate_correctness(
-    inputs: dict, outputs: dict, reference_outputs: dict, judge: Judge = correctness_judge) -> dict:
+def evaluate_correctness(inputs: dict, outputs: dict, reference_outputs: dict, judge: Judge = correctness_judge) -> dict:
     """Judge factual correctness without treating omitted facts as incorrect."""
     references = _build_fact_references(inputs.get("context_passages", []), reference_outputs.get("required_facts", []))
     if not references:
@@ -108,7 +84,7 @@ def run_correctness() -> None:
     """Run correctness against the frozen generation dataset in LangSmith."""
     client = Client()
     client.evaluate(
-        generate_answer_for_citation_support,
+        citation_support.generate_answer_for_citation_support,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_correctness],
         metadata=EXPERIMENT_METADATA,

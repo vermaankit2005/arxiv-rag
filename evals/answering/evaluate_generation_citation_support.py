@@ -1,24 +1,20 @@
-import os
 import re
 from collections.abc import Callable
 
-from dotenv import load_dotenv
-from langchain_ollama import ChatOllama  # pyright: ignore[reportMissingImports]
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
-from arxiv_rag import answering
-from arxiv_rag.retrieval import Citation, RetrievalContext
-
-load_dotenv()
+from arxiv_rag.retrieval import RetrievalContext
+from evals.answering import context as evaluation_context
+from evals.answering.judges import build_judge_model
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_citation_support"
-JUDGE_MODEL_NAME = "gpt-oss:20b"
+JUDGE_MODEL_NAME = "gemma4:26b"
 EXPERIMENT_METADATA = {
     "metric": "citation_support",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": "gpt-oss:20b",
+    "generator_model": "gemma4:26b",
     "judge_model": JUDGE_MODEL_NAME,
 }
 
@@ -43,11 +39,7 @@ Cited passage:
 
 Judge = Callable[..., dict]
 
-judge_model = ChatOllama(
-    model=JUDGE_MODEL_NAME,
-    base_url=os.environ["OLLAMA_BASE_URL"],
-    temperature=0,
-)
+judge_model = build_judge_model(JUDGE_MODEL_NAME)
 
 citation_support_judge = create_llm_as_judge(
     prompt=CITATION_SUPPORT_PROMPT,
@@ -56,38 +48,13 @@ citation_support_judge = create_llm_as_judge(
     choices=[False, True],
 )
 
-
 def _build_section_breadcrumbs(section_path: list[str]) -> str:
-    if not section_path:
-        return "Unsectioned"
-    return " > ".join(section_path)
+    return evaluation_context.build_section_breadcrumbs(section_path)
 
 
 def _build_retrieval_context(context_passages: list[dict]) -> RetrievalContext:
     """Build generation context while preserving the dataset's stable passage IDs."""
-    citations = {}
-    formatted_passages = []
-
-    for passage in context_passages:
-        citation_id = passage["id"]
-        section_breadcrumbs = _build_section_breadcrumbs(passage["section_path"])
-
-        url = f"https://arxiv.org/html/{passage['arxiv_id']}{passage['location']}"
-
-        citations[citation_id] = Citation(
-            label=f"{passage['arxiv_id']} — {section_breadcrumbs}",
-            url=url,
-        )
-        formatted_passages.append(
-            f"[{citation_id}]\n"
-            f"Section: {section_breadcrumbs}\n"
-            f"Text: {passage['text']}"
-        )
-
-    return RetrievalContext(
-        text="\n\n---\n\n".join(formatted_passages),
-        citations=citations,
-    )
+    return evaluation_context.build_retrieval_context(context_passages, preserve_passage_ids=True)
 
 
 def _extract_statement_citation_pairs(answer: str) -> list[tuple[str, str]]:
@@ -117,17 +84,10 @@ def _extract_statement_citation_pairs(answer: str) -> list[tuple[str, str]]:
 
 
 def generate_answer_for_citation_support(inputs: dict) -> dict:
-    """Generate an answer from the frozen context using shipping answer code."""
-    question = inputs.get("question", "")
-    context_passages = inputs.get("context_passages", [])
-    retrieval_context = _build_retrieval_context(context_passages)
-    answer = answering.generate_answer(question, retrieval_context)
-    return {"answer": answer}
+    return evaluation_context.generate_answer_for_evaluation(inputs, _build_retrieval_context)
 
 
-def evaluate_citation_support(
-    inputs: dict, outputs: dict, judge: Judge = citation_support_judge
-) -> dict:
+def evaluate_citation_support(inputs: dict, outputs: dict, judge: Judge = citation_support_judge) -> dict:
     """Return the share of cited statement-passage pairs supported by that passage."""
     answer = outputs.get("answer", "")
     pairs = _extract_statement_citation_pairs(answer)

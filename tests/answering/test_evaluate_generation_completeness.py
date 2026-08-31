@@ -1,6 +1,4 @@
-from evals.answering.evaluate_generation_completeness import (  # pyright: ignore[reportMissingImports]
-    evaluate_completeness,
-)
+from evals.answering import evaluate_generation_completeness as completeness
 
 
 def _passage(citation_id: str, text: str) -> dict:
@@ -52,7 +50,7 @@ def test_scores_covered_required_facts_over_all_required_facts():
         ]
     }
 
-    result = evaluate_completeness(
+    result = completeness.evaluate_completeness(
         inputs,
         {"answer": "The answer covers the first and third facts."},
         reference_outputs,
@@ -73,7 +71,7 @@ def test_rejects_an_invalid_binary_coverage_score():
             return {"score": 0.5}
 
     try:
-        evaluate_completeness(
+        completeness.evaluate_completeness(
             {
                 "question": "Question",
                 "context_passages": [_passage("P1", "Evidence")],
@@ -90,7 +88,7 @@ def test_rejects_an_invalid_binary_coverage_score():
 
 def test_requires_at_least_one_required_fact():
     try:
-        evaluate_completeness(
+        completeness.evaluate_completeness(
             {"question": "Question", "context_passages": []},
             {"answer": "Answer"},
             {"required_facts": []},

@@ -39,8 +39,8 @@ def _context() -> RetrievalContext:
     )
 
 
-def test_generator_uses_gpt_oss_model_name():
-    assert generator.MODEL_NAME == "gpt-oss:20b"
+def test_generator_uses_gemma_model_name():
+    assert generator.MODEL_NAME == "gemma4:26b"
 
 
 def test_generate_answer_returns_normal_text_with_valid_inline_citations():

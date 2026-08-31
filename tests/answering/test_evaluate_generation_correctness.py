@@ -1,7 +1,4 @@
-from evals.answering.evaluate_generation_correctness import (  # pyright: ignore[reportMissingImports]
-    _build_fact_references,
-    evaluate_correctness,
-)
+from evals.answering import evaluate_generation_correctness as correctness
 
 
 def _passage(citation_id: str, text: str) -> dict:
@@ -37,7 +34,7 @@ class RecordingJudge:
 
 
 def test_builds_required_facts_with_only_their_supporting_passages():
-    references = _build_fact_references(
+    references = correctness._build_fact_references(
         [_passage("P1", "Neighbour"), _passage("P2", "The score was 92.7.")],
         [_fact("F1", "The score was 92.7.", ["P2"])],
     )
@@ -51,14 +48,14 @@ def test_builds_required_facts_with_only_their_supporting_passages():
 
 def test_returns_the_restricted_correctness_score_and_comment():
     judge = RecordingJudge(0.75)
-    result = evaluate_correctness(
+    result = correctness.evaluate_correctness(
         {
             "question": "What score was reported?",
             "context_passages": [_passage("P2", "The score was 92.7.")],
         },
         {"answer": "The score was 92.7 [P2]."},
         {"required_facts": [_fact("F1", "The score was 92.7.", ["P2"])]},
-        judge,
+        judge=judge,
     )
 
     assert result == {
@@ -73,11 +70,11 @@ def test_rejects_unknown_supporting_passage_ids_before_judging():
     judge = RecordingJudge(1)
 
     try:
-        evaluate_correctness(
+        correctness.evaluate_correctness(
             {"question": "Question", "context_passages": []},
             {"answer": "Answer"},
             {"required_facts": [_fact("F1", "Fact", ["P9"])]},
-            judge,
+            judge=judge,
         )
     except ValueError as error:
         assert str(error) == "Required fact F1 used unknown passage IDs: P9"
@@ -89,14 +86,14 @@ def test_rejects_unknown_supporting_passage_ids_before_judging():
 
 def test_rejects_a_score_outside_the_five_allowed_values():
     try:
-        evaluate_correctness(
+        correctness.evaluate_correctness(
             {
                 "question": "Question",
                 "context_passages": [_passage("P1", "Evidence")],
             },
             {"answer": "Answer"},
             {"required_facts": [_fact("F1", "Fact", ["P1"])]},
-            RecordingJudge(0.6),
+            judge=RecordingJudge(0.6),
         )
     except ValueError as error:
         assert str(error) == "Correctness judge returned an invalid score: 0.6"
