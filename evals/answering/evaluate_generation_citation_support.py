@@ -132,7 +132,6 @@ def run_citation_support() -> None:
             "that exact frozen passage supports the complete statement. The score "
             "is supported statement-passage pairs divided by all cited pairs."
         ),
-        max_concurrency=4
     )
 
 

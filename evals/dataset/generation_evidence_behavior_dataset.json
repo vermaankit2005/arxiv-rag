@@ -1,0 +1,433 @@
+[
+  {
+    "id": "evidence-behavior-001",
+    "question": "How does the Transformer decoder prevent a position from using future output tokens?",
+    "expected_behavior": "fully_supported_answer",
+    "supported_facts": [
+      "The decoder self-attention sub-layer masks subsequent positions.",
+      "Output embeddings are offset by one position, so position i can depend only on known outputs before i."
+    ],
+    "unsupported_parts": [],
+    "context_passages": [
+      {
+        "id": "P1",
+        "arxiv_id": "1706.03762v7",
+        "location": "#S3.SS1.SSS0.Px1.p1",
+        "section_path": [
+          "Model Architecture",
+          "Encoder and Decoder Stacks",
+          "Encoder:"
+        ],
+        "text": "The encoder is composed of a stack of N=6 identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network. We employ a residual connection [11] around each of the two sub-layers, followed by layer normalization [1]. That is, the output of each sub-layer is \\mathrm{LayerNorm}(x+\\mathrm{Sublayer}(x)) , where \\mathrm{Sublayer}(x) is the function implemented by the sub-layer itself. To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension d_{\\text{model}}=512 ."
+      },
+      {
+        "id": "P2",
+        "arxiv_id": "1706.03762v7",
+        "location": "#S3.SS1.SSS0.Px2.p1",
+        "section_path": [
+          "Model Architecture",
+          "Encoder and Decoder Stacks",
+          "Decoder:"
+        ],
+        "text": "The decoder is also composed of a stack of N=6 identical layers. In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack. Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization. We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions. This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position i can depend only on the known outputs at positions less than i ."
+      },
+      {
+        "id": "P3",
+        "arxiv_id": "1706.03762v7",
+        "location": "#S3.SS2.p1",
+        "section_path": [
+          "Model Architecture",
+          "Attention"
+        ],
+        "text": "An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key."
+      }
+    ],
+    "metadata": {
+      "evidence_status": "fully_supported",
+      "question_type": "method"
+    }
+  },
+  {
+    "id": "evidence-behavior-002",
+    "question": "When BERT selects a token position for masked-language-model prediction, how often is it replaced by [MASK], by a random token, or left unchanged?",
+    "expected_behavior": "fully_supported_answer",
+    "supported_facts": [
+      "A selected token is replaced by [MASK] 80% of the time.",
+      "A selected token is replaced by a random token 10% of the time.",
+      "A selected token is left unchanged 10% of the time."
+    ],
+    "unsupported_parts": [],
+    "context_passages": [
+      {
+        "id": "P1",
+        "arxiv_id": "1810.04805v2",
+        "location": "#S3.SS1.SSS0.Px1.p2",
+        "section_path": [
+          "BERT",
+          "Pre-training BERT",
+          "Task #1: Masked LM"
+        ],
+        "text": "In order to train a deep bidirectional representation, we simply mask some percentage of the input tokens at random, and then predict those masked tokens. We refer to this procedure as a “masked LM” (MLM), although it is often referred to as a Cloze task in the literature Taylor 1953. In this case, the final hidden vectors corresponding to the mask tokens are fed into an output softmax over the vocabulary, as in a standard LM. In all of our experiments, we mask 15% of all WordPiece tokens in each sequence at random. In contrast to denoising auto-encoders Vincent et al. 2008, we only predict the masked words rather than reconstructing the entire input."
+      },
+      {
+        "id": "P2",
+        "arxiv_id": "1810.04805v2",
+        "location": "#S3.SS1.SSS0.Px1.p3",
+        "section_path": [
+          "BERT",
+          "Pre-training BERT",
+          "Task #1: Masked LM"
+        ],
+        "text": "Although this allows us to obtain a bidirectional pre-trained model, a downside is that we are creating a mismatch between pre-training and fine-tuning, since the [MASK] token does not appear during fine-tuning. To mitigate this, we do not always replace “masked” words with the actual [MASK] token. The training data generator chooses 15% of the token positions at random for prediction. If the i -th token is chosen, we replace the i -th token with (1) the [MASK] token 80% of the time (2) a random token 10% of the time (3) the unchanged i -th token 10% of the time. Then, T_{i} will be used to predict the original token with cross entropy loss. We compare variations of this procedure in Appendix C.2."
+      },
+      {
+        "id": "P3",
+        "arxiv_id": "1810.04805v2",
+        "location": "#S3.SS1.SSS0.Px2.p1",
+        "section_path": [
+          "BERT",
+          "Pre-training BERT",
+          "Task #2: Next Sentence Prediction (NSP)"
+        ],
+        "text": "Many important downstream tasks such as Question Answering (QA) and Natural Language Inference (NLI) are based on understanding the relationship between two sentences, which is not directly captured by language modeling. In order to train a model that understands sentence relationships, we pre-train for a binarized next sentence prediction task that can be trivially generated from any monolingual corpus. Specifically, when choosing the sentences A and B for each pre-training example, 50% of the time B is the actual next sentence that follows A (labeled as IsNext), and 50% of the time it is a random sentence from the corpus (labeled as NotNext). As we show in Figure 1, C is used for next sentence prediction (NSP). Despite its simplicity, we demonstrate in Section 5.1 that pre-training towards this task is very beneficial to both QA and NLI. The NSP task is closely related to representation-learning objectives used in Jernite et al. 2017 and Logeswaran and Lee 2018. However, in prior work, only sentence embeddings are transferred to down-stream tasks, where BERT transfers all parameters to initialize end-task model parameters."
+      }
+    ],
+    "metadata": {
+      "evidence_status": "fully_supported",
+      "question_type": "method"
+    }
+  },
+  {
+    "id": "evidence-behavior-003",
+    "question": "How do RAG-Sequence and RAG-Token differ in which retrieved document they use while generating target tokens?",
+    "expected_behavior": "fully_supported_answer",
+    "supported_facts": [
+      "RAG-Sequence uses the same retrieved document to predict every target token.",
+      "RAG-Token can predict different target tokens from different retrieved documents."
+    ],
+    "unsupported_parts": [],
+    "context_passages": [
+      {
+        "id": "P1",
+        "arxiv_id": "2005.11401v4",
+        "location": "#S2.p1",
+        "section_path": [
+          "Methods"
+        ],
+        "text": "We explore RAG models, which use the input sequence x to retrieve text documents z and use them as additional context when generating the target sequence y . As shown in Figure 1, our models leverage two components: (i) a retriever p_{\\eta}(z|x) with parameters \\eta that returns (top-K truncated) distributions over text passages given a query x and (ii) a generator p_{\\theta}(y_{i}|x,z,y_{1:i-1}) parametrized by \\theta that generates a current token based on a context of the previous i-1 tokens y_{1:i-1} , the original input x and a retrieved passage z ."
+      },
+      {
+        "id": "P2",
+        "arxiv_id": "2005.11401v4",
+        "location": "#S2.p2",
+        "section_path": [
+          "Methods"
+        ],
+        "text": "To train the retriever and generator end-to-end, we treat the retrieved document as a latent variable. We propose two models that marginalize over the latent documents in different ways to produce a distribution over generated text. In one approach, RAG-Sequence, the model uses the same document to predict each target token. The second approach, RAG-Token, can predict each target token based on a different document. In the following, we formally introduce both models and then describe the p_{\\eta} and p_{\\theta} components, as well as the training and decoding procedure."
+      },
+      {
+        "id": "P3",
+        "arxiv_id": "2005.11401v4",
+        "location": "#S2.SS1.SSS0.Px1.p1",
+        "section_path": [
+          "Methods",
+          "Models",
+          "RAG-Sequence Model"
+        ],
+        "text": "The RAG-Sequence model uses the same retrieved document to generate the complete sequence. Technically, it treats the retrieved document as a single latent variable that is marginalized to get the seq2seq probability p(y|x) via a top-K approximation. Concretely, the top K documents are retrieved using the retriever, and the generator produces the output sequence probability for each document, which are then marginalized, p_{\\text{\\tiny{RAG-Sequence}}}(y|x)\\;\\approx\\;\\sum_{\\mathclap{z\\in\\text{top-}k(p(\\cdot|x))}}p_{\\eta}(z|x)p_{\\theta}(y|x,z)\\;=\\;\\sum_{\\mathclap{z\\in\\text{top-}k(p(\\cdot|x))}}p_{\\eta}(z|x)\\prod_{i}^{N}p_{\\theta}(y_{i}|x,z,y_{1:i-1})"
+      }
+    ],
+    "metadata": {
+      "evidence_status": "fully_supported",
+      "question_type": "comparison"
+    }
+  },
+  {
+    "id": "evidence-behavior-004",
+    "question": "How does the Transformer decoder prevent a position from using future output tokens, and what BLEU score did that mechanism add?",
+    "expected_behavior": "partial_answer_with_limitation",
+    "supported_facts": [
+      "The decoder self-attention sub-layer masks subsequent positions.",
+      "Output embeddings are offset by one position, so position i can depend only on known outputs before i."
+    ],
+    "unsupported_parts": [
+      "The BLEU-score improvement caused by the masking mechanism is not specified."
+    ],
+    "context_passages": [
+      {
+        "id": "P1",
+        "arxiv_id": "1706.03762v7",
+        "location": "#S3.SS1.SSS0.Px1.p1",
+        "section_path": [
+          "Model Architecture",
+          "Encoder and Decoder Stacks",
+          "Encoder:"
+        ],
+        "text": "The encoder is composed of a stack of N=6 identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network. We employ a residual connection [11] around each of the two sub-layers, followed by layer normalization [1]. That is, the output of each sub-layer is \\mathrm{LayerNorm}(x+\\mathrm{Sublayer}(x)) , where \\mathrm{Sublayer}(x) is the function implemented by the sub-layer itself. To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension d_{\\text{model}}=512 ."
+      },
+      {
+        "id": "P2",
+        "arxiv_id": "1706.03762v7",
+        "location": "#S3.SS1.SSS0.Px2.p1",
+        "section_path": [
+          "Model Architecture",
+          "Encoder and Decoder Stacks",
+          "Decoder:"
+        ],
+        "text": "The decoder is also composed of a stack of N=6 identical layers. In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack. Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization. We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions. This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position i can depend only on the known outputs at positions less than i ."
+      },
+      {
+        "id": "P3",
+        "arxiv_id": "1706.03762v7",
+        "location": "#S3.SS2.p1",
+        "section_path": [
+          "Model Architecture",
+          "Attention"
+        ],
+        "text": "An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key."
+      }
+    ],
+    "metadata": {
+      "evidence_status": "partially_supported",
+      "question_type": "method"
+    }
+  },
+  {
+    "id": "evidence-behavior-005",
+    "question": "When BERT selects a token for masked-language-model prediction, how often is it replaced by [MASK], by a random token, or left unchanged, and which optimizer was used for this pre-training?",
+    "expected_behavior": "partial_answer_with_limitation",
+    "supported_facts": [
+      "A selected token is replaced by [MASK] 80% of the time.",
+      "A selected token is replaced by a random token 10% of the time.",
+      "A selected token is left unchanged 10% of the time."
+    ],
+    "unsupported_parts": [
+      "The optimizer used for pre-training is not specified."
+    ],
+    "context_passages": [
+      {
+        "id": "P1",
+        "arxiv_id": "1810.04805v2",
+        "location": "#S3.SS1.SSS0.Px1.p2",
+        "section_path": [
+          "BERT",
+          "Pre-training BERT",
+          "Task #1: Masked LM"
+        ],
+        "text": "In order to train a deep bidirectional representation, we simply mask some percentage of the input tokens at random, and then predict those masked tokens. We refer to this procedure as a “masked LM” (MLM), although it is often referred to as a Cloze task in the literature Taylor 1953. In this case, the final hidden vectors corresponding to the mask tokens are fed into an output softmax over the vocabulary, as in a standard LM. In all of our experiments, we mask 15% of all WordPiece tokens in each sequence at random. In contrast to denoising auto-encoders Vincent et al. 2008, we only predict the masked words rather than reconstructing the entire input."
+      },
+      {
+        "id": "P2",
+        "arxiv_id": "1810.04805v2",
+        "location": "#S3.SS1.SSS0.Px1.p3",
+        "section_path": [
+          "BERT",
+          "Pre-training BERT",
+          "Task #1: Masked LM"
+        ],
+        "text": "Although this allows us to obtain a bidirectional pre-trained model, a downside is that we are creating a mismatch between pre-training and fine-tuning, since the [MASK] token does not appear during fine-tuning. To mitigate this, we do not always replace “masked” words with the actual [MASK] token. The training data generator chooses 15% of the token positions at random for prediction. If the i -th token is chosen, we replace the i -th token with (1) the [MASK] token 80% of the time (2) a random token 10% of the time (3) the unchanged i -th token 10% of the time. Then, T_{i} will be used to predict the original token with cross entropy loss. We compare variations of this procedure in Appendix C.2."
+      },
+      {
+        "id": "P3",
+        "arxiv_id": "1810.04805v2",
+        "location": "#S3.SS1.SSS0.Px2.p1",
+        "section_path": [
+          "BERT",
+          "Pre-training BERT",
+          "Task #2: Next Sentence Prediction (NSP)"
+        ],
+        "text": "Many important downstream tasks such as Question Answering (QA) and Natural Language Inference (NLI) are based on understanding the relationship between two sentences, which is not directly captured by language modeling. In order to train a model that understands sentence relationships, we pre-train for a binarized next sentence prediction task that can be trivially generated from any monolingual corpus. Specifically, when choosing the sentences A and B for each pre-training example, 50% of the time B is the actual next sentence that follows A (labeled as IsNext), and 50% of the time it is a random sentence from the corpus (labeled as NotNext). As we show in Figure 1, C is used for next sentence prediction (NSP). Despite its simplicity, we demonstrate in Section 5.1 that pre-training towards this task is very beneficial to both QA and NLI. The NSP task is closely related to representation-learning objectives used in Jernite et al. 2017 and Logeswaran and Lee 2018. However, in prior work, only sentence embeddings are transferred to down-stream tasks, where BERT transfers all parameters to initialize end-task model parameters."
+      }
+    ],
+    "metadata": {
+      "evidence_status": "partially_supported",
+      "question_type": "method"
+    }
+  },
+  {
+    "id": "evidence-behavior-006",
+    "question": "How do RAG-Sequence and RAG-Token differ in document use during generation, and which model had the lower training cost?",
+    "expected_behavior": "partial_answer_with_limitation",
+    "supported_facts": [
+      "RAG-Sequence uses the same retrieved document to predict every target token.",
+      "RAG-Token can predict different target tokens from different retrieved documents."
+    ],
+    "unsupported_parts": [
+      "The relative training cost of RAG-Sequence and RAG-Token is not specified."
+    ],
+    "context_passages": [
+      {
+        "id": "P1",
+        "arxiv_id": "2005.11401v4",
+        "location": "#S2.p1",
+        "section_path": [
+          "Methods"
+        ],
+        "text": "We explore RAG models, which use the input sequence x to retrieve text documents z and use them as additional context when generating the target sequence y . As shown in Figure 1, our models leverage two components: (i) a retriever p_{\\eta}(z|x) with parameters \\eta that returns (top-K truncated) distributions over text passages given a query x and (ii) a generator p_{\\theta}(y_{i}|x,z,y_{1:i-1}) parametrized by \\theta that generates a current token based on a context of the previous i-1 tokens y_{1:i-1} , the original input x and a retrieved passage z ."
+      },
+      {
+        "id": "P2",
+        "arxiv_id": "2005.11401v4",
+        "location": "#S2.p2",
+        "section_path": [
+          "Methods"
+        ],
+        "text": "To train the retriever and generator end-to-end, we treat the retrieved document as a latent variable. We propose two models that marginalize over the latent documents in different ways to produce a distribution over generated text. In one approach, RAG-Sequence, the model uses the same document to predict each target token. The second approach, RAG-Token, can predict each target token based on a different document. In the following, we formally introduce both models and then describe the p_{\\eta} and p_{\\theta} components, as well as the training and decoding procedure."
+      },
+      {
+        "id": "P3",
+        "arxiv_id": "2005.11401v4",
+        "location": "#S2.SS1.SSS0.Px1.p1",
+        "section_path": [
+          "Methods",
+          "Models",
+          "RAG-Sequence Model"
+        ],
+        "text": "The RAG-Sequence model uses the same retrieved document to generate the complete sequence. Technically, it treats the retrieved document as a single latent variable that is marginalized to get the seq2seq probability p(y|x) via a top-K approximation. Concretely, the top K documents are retrieved using the retriever, and the generator produces the output sequence probability for each document, which are then marginalized, p_{\\text{\\tiny{RAG-Sequence}}}(y|x)\\;\\approx\\;\\sum_{\\mathclap{z\\in\\text{top-}k(p(\\cdot|x))}}p_{\\eta}(z|x)p_{\\theta}(y|x,z)\\;=\\;\\sum_{\\mathclap{z\\in\\text{top-}k(p(\\cdot|x))}}p_{\\eta}(z|x)\\prod_{i}^{N}p_{\\theta}(y_{i}|x,z,y_{1:i-1})"
+      }
+    ],
+    "metadata": {
+      "evidence_status": "partially_supported",
+      "question_type": "comparison"
+    }
+  },
+  {
+    "id": "evidence-behavior-007",
+    "question": "What percentages of selected BERT tokens are replaced by [MASK], replaced randomly, or left unchanged?",
+    "expected_behavior": "insufficient_evidence_refusal",
+    "supported_facts": [],
+    "unsupported_parts": [
+      "None of the requested BERT replacement percentages are provided."
+    ],
+    "context_passages": [
+      {
+        "id": "P1",
+        "arxiv_id": "1706.03762v7",
+        "location": "#S3.SS1.SSS0.Px1.p1",
+        "section_path": [
+          "Model Architecture",
+          "Encoder and Decoder Stacks",
+          "Encoder:"
+        ],
+        "text": "The encoder is composed of a stack of N=6 identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network. We employ a residual connection [11] around each of the two sub-layers, followed by layer normalization [1]. That is, the output of each sub-layer is \\mathrm{LayerNorm}(x+\\mathrm{Sublayer}(x)) , where \\mathrm{Sublayer}(x) is the function implemented by the sub-layer itself. To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension d_{\\text{model}}=512 ."
+      },
+      {
+        "id": "P2",
+        "arxiv_id": "1706.03762v7",
+        "location": "#S3.SS1.SSS0.Px2.p1",
+        "section_path": [
+          "Model Architecture",
+          "Encoder and Decoder Stacks",
+          "Decoder:"
+        ],
+        "text": "The decoder is also composed of a stack of N=6 identical layers. In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack. Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization. We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions. This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position i can depend only on the known outputs at positions less than i ."
+      },
+      {
+        "id": "P3",
+        "arxiv_id": "1706.03762v7",
+        "location": "#S3.SS2.p1",
+        "section_path": [
+          "Model Architecture",
+          "Attention"
+        ],
+        "text": "An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key."
+      }
+    ],
+    "metadata": {
+      "evidence_status": "unsupported",
+      "question_type": "method"
+    }
+  },
+  {
+    "id": "evidence-behavior-008",
+    "question": "What three phases does the DPO paper say the usual RLHF pipeline includes?",
+    "expected_behavior": "insufficient_evidence_refusal",
+    "supported_facts": [],
+    "unsupported_parts": [
+      "None of the requested RLHF pipeline phases are provided."
+    ],
+    "context_passages": [
+      {
+        "id": "P1",
+        "arxiv_id": "1810.04805v2",
+        "location": "#S3.SS1.SSS0.Px1.p2",
+        "section_path": [
+          "BERT",
+          "Pre-training BERT",
+          "Task #1: Masked LM"
+        ],
+        "text": "In order to train a deep bidirectional representation, we simply mask some percentage of the input tokens at random, and then predict those masked tokens. We refer to this procedure as a “masked LM” (MLM), although it is often referred to as a Cloze task in the literature Taylor 1953. In this case, the final hidden vectors corresponding to the mask tokens are fed into an output softmax over the vocabulary, as in a standard LM. In all of our experiments, we mask 15% of all WordPiece tokens in each sequence at random. In contrast to denoising auto-encoders Vincent et al. 2008, we only predict the masked words rather than reconstructing the entire input."
+      },
+      {
+        "id": "P2",
+        "arxiv_id": "1810.04805v2",
+        "location": "#S3.SS1.SSS0.Px1.p3",
+        "section_path": [
+          "BERT",
+          "Pre-training BERT",
+          "Task #1: Masked LM"
+        ],
+        "text": "Although this allows us to obtain a bidirectional pre-trained model, a downside is that we are creating a mismatch between pre-training and fine-tuning, since the [MASK] token does not appear during fine-tuning. To mitigate this, we do not always replace “masked” words with the actual [MASK] token. The training data generator chooses 15% of the token positions at random for prediction. If the i -th token is chosen, we replace the i -th token with (1) the [MASK] token 80% of the time (2) a random token 10% of the time (3) the unchanged i -th token 10% of the time. Then, T_{i} will be used to predict the original token with cross entropy loss. We compare variations of this procedure in Appendix C.2."
+      },
+      {
+        "id": "P3",
+        "arxiv_id": "1810.04805v2",
+        "location": "#S3.SS1.SSS0.Px2.p1",
+        "section_path": [
+          "BERT",
+          "Pre-training BERT",
+          "Task #2: Next Sentence Prediction (NSP)"
+        ],
+        "text": "Many important downstream tasks such as Question Answering (QA) and Natural Language Inference (NLI) are based on understanding the relationship between two sentences, which is not directly captured by language modeling. In order to train a model that understands sentence relationships, we pre-train for a binarized next sentence prediction task that can be trivially generated from any monolingual corpus. Specifically, when choosing the sentences A and B for each pre-training example, 50% of the time B is the actual next sentence that follows A (labeled as IsNext), and 50% of the time it is a random sentence from the corpus (labeled as NotNext). As we show in Figure 1, C is used for next sentence prediction (NSP). Despite its simplicity, we demonstrate in Section 5.1 that pre-training towards this task is very beneficial to both QA and NLI. The NSP task is closely related to representation-learning objectives used in Jernite et al. 2017 and Logeswaran and Lee 2018. However, in prior work, only sentence embeddings are transferred to down-stream tasks, where BERT transfers all parameters to initialize end-task model parameters."
+      }
+    ],
+    "metadata": {
+      "evidence_status": "unsupported",
+      "question_type": "method"
+    }
+  },
+  {
+    "id": "evidence-behavior-009",
+    "question": "What speedup and maximum KV-cache memory saving does SemShareKV report?",
+    "expected_behavior": "insufficient_evidence_refusal",
+    "supported_facts": [],
+    "unsupported_parts": [
+      "Neither the SemShareKV speedup nor its memory saving is provided."
+    ],
+    "context_passages": [
+      {
+        "id": "P1",
+        "arxiv_id": "2005.11401v4",
+        "location": "#S2.p1",
+        "section_path": [
+          "Methods"
+        ],
+        "text": "We explore RAG models, which use the input sequence x to retrieve text documents z and use them as additional context when generating the target sequence y . As shown in Figure 1, our models leverage two components: (i) a retriever p_{\\eta}(z|x) with parameters \\eta that returns (top-K truncated) distributions over text passages given a query x and (ii) a generator p_{\\theta}(y_{i}|x,z,y_{1:i-1}) parametrized by \\theta that generates a current token based on a context of the previous i-1 tokens y_{1:i-1} , the original input x and a retrieved passage z ."
+      },
+      {
+        "id": "P2",
+        "arxiv_id": "2005.11401v4",
+        "location": "#S2.p2",
+        "section_path": [
+          "Methods"
+        ],
+        "text": "To train the retriever and generator end-to-end, we treat the retrieved document as a latent variable. We propose two models that marginalize over the latent documents in different ways to produce a distribution over generated text. In one approach, RAG-Sequence, the model uses the same document to predict each target token. The second approach, RAG-Token, can predict each target token based on a different document. In the following, we formally introduce both models and then describe the p_{\\eta} and p_{\\theta} components, as well as the training and decoding procedure."
+      },
+      {
+        "id": "P3",
+        "arxiv_id": "2005.11401v4",
+        "location": "#S2.SS1.SSS0.Px1.p1",
+        "section_path": [
+          "Methods",
+          "Models",
+          "RAG-Sequence Model"
+        ],
+        "text": "The RAG-Sequence model uses the same retrieved document to generate the complete sequence. Technically, it treats the retrieved document as a single latent variable that is marginalized to get the seq2seq probability p(y|x) via a top-K approximation. Concretely, the top K documents are retrieved using the retriever, and the generator produces the output sequence probability for each document, which are then marginalized, p_{\\text{\\tiny{RAG-Sequence}}}(y|x)\\;\\approx\\;\\sum_{\\mathclap{z\\in\\text{top-}k(p(\\cdot|x))}}p_{\\eta}(z|x)p_{\\theta}(y|x,z)\\;=\\;\\sum_{\\mathclap{z\\in\\text{top-}k(p(\\cdot|x))}}p_{\\eta}(z|x)\\prod_{i}^{N}p_{\\theta}(y_{i}|x,z,y_{1:i-1})"
+      }
+    ],
+    "metadata": {
+      "evidence_status": "unsupported",
+      "question_type": "comparison"
+    }
+  }
+]

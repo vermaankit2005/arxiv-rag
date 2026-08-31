@@ -1,6 +1,6 @@
 # Sprint 04 — Grounded answer generation
 
-**Status:** 🟡 active · grounded answer path implemented · five answer-quality evaluators implemented · answer-quality dataset frozen · first baseline pending
+**Status:** 🟡 active · grounded answer path implemented · evidence-behavior baseline accepted at 1.0 · general-quality baseline pending
 
 **Working rule:** Update this file when each decision, implementation step, test,
 manual check, or eval run happens. Do not reconstruct the sprint at the end. If
@@ -29,8 +29,8 @@ components unless answer-generation evidence proves one is required now.
 | Generation model | The model must follow the answer contract and stay grounded at practical latency and cost. | ✅ Use Ollama `gemma4:26b` at temperature 0 through `OLLAMA_BASE_URL`; model comparisons remain evidence-driven. |
 | Answer-quality judge | The judge should be fast, locally available, and replaceable without changing evaluator contracts. | ✅ Use Ollama `gemma4:26b`. Restrict ordinal scores to `0`, `0.25`, `0.5`, `0.75`, or `1`, and pair/fact decisions to binary choices. |
 | Evidence use | The model receives deduplicated source passages with temporary IDs, but it may still ignore or misuse them. | ✅ Prompt allows only supplied passages and IDs, requires inline citations, forbids URLs, and uses one exact insufficient-evidence response. |
-| Unsupported claims | The architecture map says unsupported claims are deleted rather than repaired, but this has not been proved in shipping code. | ⬜ Confirm the behavior with examples before accepting it. |
-| Partial answers | Retrieved evidence may support only part of a question. | ⬜ Decide whether to answer the supported part, state the limitation, or refuse. |
+| Unsupported claims | The architecture map says unsupported claims are deleted rather than repaired, but this has not been proved in shipping code. | ✅ Refuse with the exact fixed response when no requested information is supported; the 9-example behavior baseline confirmed all unsupported cases. |
+| Partial answers | Retrieved evidence may support only part of a question. | ✅ Answer the supported part with citations, clearly state what the evidence does not specify, and refuse entirely only when none of the requested information is supported. |
 | Citation validation | String-valid citation IDs do not prove that the cited passage supports the claim. | ✅ Keep citation-ID validity in deterministic tests. Add a semantic citation-support evaluator that checks each cited claim against its attached passage. |
 | Corpus activation | Clearing the active collection before parsing and embedding can leave retrieval empty or partial after a failure. | ✅ Parse every paper first, build a uniquely named staging collection, then atomically update the active-collection pointer only after every write succeeds. |
 | Answer eval dataset | The generation eval must not inherit the retriever's ranking or misses. | ✅ Curate the 24 contexts independently from cached source HTML through the shipping loader. Freeze each manually supported passage with its immediate source neighbours; do not call the retriever or consume retrieved Documents. |
@@ -49,25 +49,29 @@ components unless answer-generation evidence proves one is required now.
   context.
 - ✅ Reject model-written URLs; production code renders supplied IDs as compact
   numbered links such as `[1]`.
-- ⬜ Decide and implement the handling of unsupported and partially supported
-  claims.
+- ✅ Define insufficient- and partial-evidence response behavior in the generation prompt and implementation tests.
+- ✅ Confirm with a 9-example real-model eval that unsupported details are not invented and partial limitations are stated clearly.
 - ✅ Add deterministic tests for the accepted answer and citation contract.
 - ✅ Choose the first semantic evaluator contracts: groundedness, citation
   support, correctness, and completeness.
 - ✅ Freeze the minimum answer-quality dataset in `evals/dataset/generation_quality_dataset.json`.
 - ✅ Add a LangSmith dataset builder for publishing the frozen examples to the UI.
 - ✅ Implement the accepted evaluators against shipping code: groundedness, citation support, correctness, completeness, and naturalness are implemented.
+- ✅ Add a separate 9-example evidence-behavior dataset with three fully supported, three partially supported, and three unsupported questions.
+- ✅ Add an evidence-behavior evaluator for full answers, partial answers with limitations, and exact unsupported refusals.
 - ⬜ Run the first described LangSmith baseline against shipping code.
 - ⬜ Manually inspect failures, record measured results, and choose the next change.
 
 ## Tests
 
-Nine production answer-generation tests pass without calling Ollama. The command-line test covers question input,
-retrieval-context handoff, generation, trusted citation rendering, and output.
-Evaluator scripts are validated through real eval runs rather than unit tests.
-Three focused ingestion-pipeline tests cover parse failure,
-embedding/write failure, and activation only after every staged write succeeds.
-A storage test checks the active pointer replacement. The full implementation suite has **71 passing tests**.
+Eleven production answer-generation tests passed in the latest run without calling
+Ollama, including partial-answer and exact-refusal prompt contracts. The
+command-line test covers question input, retrieval-context handoff, generation,
+trusted citation rendering, and output. Evaluator scripts are validated through
+real eval runs rather than unit tests. Three focused ingestion-pipeline tests
+cover parse failure, embedding/write failure, and activation only after every
+staged write succeeds. A storage test checks the active pointer replacement. The
+full implementation suite has **73 passing tests**.
 
 | Invariant | State |
 | --- | --- |
@@ -130,11 +134,18 @@ tests. It is not an LLM-judged metric. Directness is also deferred for now: the
 manual probe exposed over-answering, but semantic support, correctness, and
 completeness are the minimum quality baseline.
 
-`evals/dataset/generation_quality_dataset.json` is now the frozen evaluator input.
-It keeps the existing 24 questions and question-type metadata, 92 exact source
-passages, and 84 atomic required facts. Passage IDs are stable within each example,
-and every fact names one or more supporting passage IDs. Evaluator implementation
-must follow these references rather than create labels dynamically.
+`evals/dataset/generation_quality_dataset.json` remains the frozen general-quality
+input. It keeps the existing 24 questions and question-type metadata, 92 exact
+source passages, and 84 atomic required facts. Passage IDs are stable within each
+example, and every fact names one or more supporting passage IDs. Evaluator
+implementation must follow these references rather than create labels dynamically.
+
+`evals/dataset/generation_evidence_behavior_dataset.json` is a separate 9-example
+behavior set. It has three fully supported questions, three questions with one
+supported and one unsupported part, and three questions whose supplied context
+supports none of the request. It measures whether the generator answers, partially
+answers with a clear limitation, or uses the exact insufficient-evidence response.
+This dataset does not change or dilute the frozen general-quality baseline.
 
 ### How the dataset was curated
 
@@ -170,9 +181,9 @@ the contract or metric changes.
 1. Answer generation runs from production code using `RetrievalContext`. ✅
 2. The answer contract makes claim-to-citation mapping explicit. ✅
 3. Model-invented citation IDs and URLs cannot reach the rendered answer. ✅
-4. Unsupported and partially supported claims have an explicit, tested behavior. ⬜
+4. Unsupported and partially supported claims have an explicit, tested behavior. ✅
 5. Deterministic answer and citation invariants have passing tests. ✅
-6. At least one answer-quality evaluator runs against a frozen dataset and shipping code. ⬜
+6. At least one answer-quality evaluator runs against a frozen dataset and shipping code. ✅
 7. The first LangSmith baseline has a plain-English description, measured results, and manual review. ⬜
 8. This sprint records the final decisions and leaves one clear next question. ⬜
 
@@ -308,8 +319,29 @@ the contract or metric changes.
   implementation, while evaluator scripts are checked through real eval runs.
   The full implementation suite passes **71 tests**. No accepted LangSmith
   baseline has been run yet.
+- The stricter naturalness run `generation_naturalness-21c45575` produced 23 of
+  24 feedback scores with a provisional **0.6630** average: thirteen `0.5`, five
+  `0.75`, and five `1.0`. Manual review found the comments directionally aligned
+  with the user-facing rubric. The GestureGPT agents example remains pending, so
+  this incomplete run is not accepted as the baseline.
+- The generation prompt now distinguishes no evidence from partial evidence. It
+  refuses exactly when no requested information is supported; otherwise it
+  answers only supported parts, cites them, states what the evidence does not
+  specify, and forbids guessing. Two focused implementation tests cover these
+  contracts, and the real-model evidence-behavior baseline confirmed them.
+- A separate 9-example evidence-behavior dataset now covers three fully supported,
+  three partially supported, and three unsupported questions. The evaluator uses
+  `gemma4:26b` for semantic full/partial behavior on a restricted `0`, `0.5`, `1`
+  scale and checks the exact fixed refusal deterministically for unsupported cases.
+- LangSmith experiment `generation_evidence_behavior-27208d18` scored **1.0
+  (9/9)**. All three fully supported questions were answered, all three partial
+  questions answered the supported facts and clearly named the missing detail,
+  and all three unsupported questions returned the exact fixed refusal. Manual
+  review found no invented unsupported details. The full implementation suite
+  then passed **73 tests**; primary LSP diagnostics were clean for both new Python
+  files.
 
 ## Next question
 
-Run the first described LangSmith baseline for all five implemented metrics,
-inspect the failures manually, and record the measured results.
+Run the general answer-quality baselines and inspect whether the evidence-behavior
+prompt's correct but sometimes report-like formatting affects naturalness.

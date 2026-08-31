@@ -58,6 +58,34 @@ def test_generate_answer_returns_normal_text_with_valid_inline_citations():
     assert "Use only passage IDs" in model.prompt
 
 
+def test_generate_answer_accepts_a_supported_partial_answer_and_prompts_for_the_missing_part():
+    model = RecordingModel(
+        "The model reached 28.4 BLEU [P2]. The provided evidence does not specify its training cost."
+    )
+
+    answer = generator.generate_answer(
+        "What score did it reach, and how much did training cost?",
+        _context(),
+        model,
+    )
+
+    assert answer == model.answer
+    assert model.prompt is not None
+    assert "Never guess or fill in information" in model.prompt
+    assert "support only part of the question" in model.prompt
+    assert "clearly state what the evidence does not specify" in model.prompt
+
+
+def test_generate_answer_accepts_the_exact_refusal_when_no_passage_supports_the_question():
+    model = RecordingModel(generator.INSUFFICIENT_EVIDENCE_ANSWER)
+
+    answer = generator.generate_answer("When was the model released?", _context(), model)
+
+    assert answer == generator.INSUFFICIENT_EVIDENCE_ANSWER
+    assert model.prompt is not None
+    assert "support none of the requested information" in model.prompt
+
+
 def test_generate_answer_rejects_an_unknown_citation_id():
     model = RecordingModel("The model reached 28.4 BLEU [P9].")
 

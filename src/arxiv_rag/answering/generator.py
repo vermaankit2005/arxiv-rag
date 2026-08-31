@@ -46,7 +46,9 @@ def _build_prompt(question: str, context: RetrievalContext) -> str:
         "- Use only passage IDs that appear in the supplied passages.\n"
         "- Use [P1] [P2] when one sentence needs more than one passage.\n"
         "- Do not write or invent URLs.\n"
-        f"- If the evidence is insufficient, reply exactly: {INSUFFICIENT_EVIDENCE_ANSWER}\n\n"
+        "- Never guess or fill in information that the supplied passages do not support.\n"
+        "- If the passages support only part of the question, answer that part and clearly state what the evidence does not specify.\n"
+        f"- If the passages support none of the requested information, reply exactly: {INSUFFICIENT_EVIDENCE_ANSWER}\n\n"
         f"Question:\n{question}\n\n"
         f"Source passages:\n{context.text}"
     )

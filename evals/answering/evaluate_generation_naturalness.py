@@ -94,7 +94,7 @@ def run_naturalness() -> None:
             "interaction. Penalize unnecessary report-like structure, canned phrasing, "
             "and templated fact lists on a restricted 0 to 1 scale."
         ),
-        max_concurrency=4,
+        max_concurrency=2,
     )
 
 if __name__ == "__main__":
