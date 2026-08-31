@@ -74,6 +74,24 @@ def test_build_context_pairs_each_passage_with_its_exact_anchor():
     assert context.citations["P2"].url.endswith("#S6.p3")
 
 
+def test_build_context_details_keeps_passage_ids_aligned_with_context():
+    document = _document(
+        [
+            _passage("The model achieved 28.4 BLEU."),
+            _passage("Training was substantially faster.", "#S6.p3"),
+        ]
+    )
+
+    built = retrieval.build_context_details([(document, 0.5)])
+
+    assert built.passages_by_id == {
+        "P1": "The model achieved 28.4 BLEU.",
+        "P2": "Training was substantially faster.",
+    }
+    assert "[P1]" in built.context.text
+    assert "[P2]" in built.context.text
+
+
 def test_build_context_deduplicates_exact_overlap():
     passage = _passage("Shared overlap passage.", "#S3.p2", ["Architecture"])
 

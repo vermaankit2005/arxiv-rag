@@ -5,6 +5,7 @@ from .retriever import (
     RetrievalContext,
     SourcePassage,
     build_context,
+    build_context_details,
     get_source_passage_for_a_document,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "RetrievalContext",
     "SourcePassage",
     "build_context",
+    "build_context_details",
     "get_source_passage_for_a_document",
 ]

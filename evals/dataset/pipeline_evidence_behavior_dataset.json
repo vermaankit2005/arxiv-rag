@@ -1,0 +1,65 @@
+[
+  {
+    "id": "pipeline-behavior-001",
+    "question": "How does the Transformer decoder prevent a position from using future output tokens?",
+    "metadata": {
+      "scenario": "answerable"
+    }
+  },
+  {
+    "id": "pipeline-behavior-002",
+    "question": "When BERT selects a token position for masked-language-model prediction, how often is it replaced by [MASK], by a random token, or left unchanged?",
+    "metadata": {
+      "scenario": "answerable"
+    }
+  },
+  {
+    "id": "pipeline-behavior-003",
+    "question": "How do RAG-Sequence and RAG-Token differ in which retrieved document they use while generating target tokens?",
+    "metadata": {
+      "scenario": "answerable"
+    }
+  },
+  {
+    "id": "pipeline-behavior-004",
+    "question": "How does the Transformer decoder prevent future-token access, and what exact percentage of decoder FLOPs does that masking consume?",
+    "metadata": {
+      "scenario": "partially_answerable"
+    }
+  },
+  {
+    "id": "pipeline-behavior-005",
+    "question": "What percentages of selected BERT tokens are replaced by [MASK], replaced randomly, or left unchanged, and what wall-clock time does that replacement step add per batch?",
+    "metadata": {
+      "scenario": "partially_answerable"
+    }
+  },
+  {
+    "id": "pipeline-behavior-006",
+    "question": "How do RAG-Sequence and RAG-Token differ during generation, and which one consumed fewer joules during training?",
+    "metadata": {
+      "scenario": "partially_answerable"
+    }
+  },
+  {
+    "id": "pipeline-behavior-007",
+    "question": "What context-window sizes and parameter counts are reported for the Llama 3.1 model family?",
+    "metadata": {
+      "scenario": "unsupported"
+    }
+  },
+  {
+    "id": "pipeline-behavior-008",
+    "question": "What bar-exam score does the GPT-4 technical report compare with human test takers?",
+    "metadata": {
+      "scenario": "unsupported"
+    }
+  },
+  {
+    "id": "pipeline-behavior-009",
+    "question": "How does Mamba's selective state-space mechanism make input-dependent sequence processing efficient?",
+    "metadata": {
+      "scenario": "unsupported"
+    }
+  }
+]

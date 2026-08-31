@@ -27,6 +27,12 @@ class RetrievalContext:
     citations: dict[str, Citation]
 
 
+@dataclass(frozen=True)
+class BuiltContext:
+    context: RetrievalContext
+    passages_by_id: dict[str, str]
+
+
 def get_source_passage_for_a_document(document: Document) -> list[SourcePassage]:
     """Read the original source passages stored during ingestion."""
     value = document.metadata.get("source_passages")
@@ -51,10 +57,11 @@ def _build_section_breadcrumbs(section_path: list[str]) -> str:
     return " > ".join(section_path)
 
 
-def build_context(results: list[tuple[Document, float]]) -> RetrievalContext:
+def build_context_details(results: list[tuple[Document, float]]) -> BuiltContext:
     """Expand ranked Documents into deduplicated, exactly citable passages."""
     context_passages = []
     citations = {}
+    passages_by_id = {}
     seen_passages = set()
 
     for document, _score in results:
@@ -77,16 +84,28 @@ def build_context(results: list[tuple[Document, float]]) -> RetrievalContext:
             citation_id = f"P{len(citations) + 1}"
             citations[citation_id] = Citation(label=f"{arxiv_id} — {section_bread_crumbs}", url=url)
 
+            passages_by_id[citation_id] = passage.text
+
             context_passages.append(
                 f"[{citation_id}]\n"
                 f"Section: {section_bread_crumbs}\n"
                 f"Text: {passage.text}"
             )
 
-    return RetrievalContext(
+    retrieval_context = RetrievalContext(
         text="\n\n---\n\n".join(context_passages),
         citations=citations,
     )
+
+    return BuiltContext(
+        context=retrieval_context,
+        passages_by_id=passages_by_id,
+    )
+
+
+def build_context(results: list[tuple[Document, float]]) -> RetrievalContext:
+    """Expand ranked Documents into deduplicated, exactly citable passages."""
+    return build_context_details(results).context
 
 
 class PaperRetriever:
