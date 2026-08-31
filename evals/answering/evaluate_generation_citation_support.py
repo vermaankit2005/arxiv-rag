@@ -3,7 +3,6 @@ import re
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
-from arxiv_rag.retrieval import RetrievalContext
 from evals.answering import context as evaluation_context
 from evals.answering.judges import build_judge_model
 
@@ -45,15 +44,6 @@ citation_support_judge = create_llm_as_judge(
     choices=[False, True],
 )
 
-def _build_section_breadcrumbs(section_path: list[str]) -> str:
-    return evaluation_context.build_section_breadcrumbs(section_path)
-
-
-def _build_retrieval_context(context_passages: list[dict]) -> RetrievalContext:
-    """Build generation context while preserving the dataset's stable passage IDs."""
-    return evaluation_context.build_retrieval_context(context_passages, preserve_passage_ids=True)
-
-
 def _extract_statement_citation_pairs(answer: str) -> list[tuple[str, str]]:
     """Attach each citation marker to the factual statement immediately before it."""
     pairs = []
@@ -78,10 +68,6 @@ def _extract_statement_citation_pairs(answer: str) -> list[tuple[str, str]]:
         previous_group_end = citation_group.end()
 
     return pairs
-
-
-def generate_answer_for_citation_support(inputs: dict) -> dict:
-    return evaluation_context.generate_answer_for_evaluation(inputs, _build_retrieval_context)
 
 
 def evaluate_citation_support(inputs: dict, outputs: dict) -> dict:
@@ -136,7 +122,7 @@ def run_citation_support() -> None:
     """Run citation support against the frozen generation dataset in LangSmith."""
     client = Client()
     client.evaluate(
-        generate_answer_for_citation_support,
+        evaluation_context.generate_answer_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_citation_support],
         metadata=EXPERIMENT_METADATA,

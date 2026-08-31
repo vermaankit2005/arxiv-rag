@@ -1,7 +1,7 @@
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
-from evals.answering import evaluate_generation_citation_support as citation_support
+from evals.answering import context as evaluation_context
 from evals.answering.judges import build_judge_model
 from evals.answering.references import build_fact_references
 
@@ -80,7 +80,7 @@ def run_correctness() -> None:
     """Run correctness against the frozen generation dataset in LangSmith."""
     client = Client()
     client.evaluate(
-        citation_support.generate_answer_for_citation_support,
+        evaluation_context.generate_answer_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_correctness],
         metadata=EXPERIMENT_METADATA,

@@ -1,7 +1,7 @@
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
-from evals.answering import evaluate_generation_citation_support as citation_support
+from evals.answering import context as evaluation_context
 from evals.answering.judges import build_judge_model
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
@@ -72,7 +72,7 @@ def run_naturalness() -> None:
     """Run naturalness evaluation against the frozen generation dataset."""
     client = Client()
     client.evaluate(
-        citation_support.generate_answer_for_citation_support,
+        evaluation_context.generate_answer_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_naturalness],
         metadata=EXPERIMENT_METADATA,

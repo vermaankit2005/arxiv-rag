@@ -295,6 +295,8 @@ the contract or metric changes.
   ordinal scale while explicitly excluding correctness, completeness,
   groundedness, citation quality, and answer length. Shared context, judge, and
   frozen-reference helpers now remove duplication across evaluator modules.
+  `evals/answering/context.py` preserves frozen passage IDs and owns the single
+  answer-generation target used directly by every generation eval.
 - Evaluator unit tests were removed by project policy: tests cover shipping
   implementation, while evaluator scripts are checked through real eval runs.
   The full implementation suite passes **71 tests**. No accepted LangSmith

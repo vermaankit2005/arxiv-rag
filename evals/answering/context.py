@@ -1,5 +1,3 @@
-from collections.abc import Callable
-
 from arxiv_rag import answering
 from arxiv_rag.retrieval import Citation, RetrievalContext
 
@@ -10,12 +8,13 @@ def build_section_breadcrumbs(section_path: list[str]) -> str:
     return " > ".join(section_path)
 
 
-def build_retrieval_context(context_passages: list[dict], preserve_passage_ids: bool) -> RetrievalContext:
+def build_retrieval_context(context_passages: list[dict]) -> RetrievalContext:
     citations = {}
     formatted_passages = []
 
     for passage in context_passages:
-        citation_id = passage["id"] if preserve_passage_ids else f"P{len(citations) + 1}"
+        citation_id = passage["id"]
+
         section_breadcrumbs = build_section_breadcrumbs(passage["section_path"])
         url = f"https://arxiv.org/html/{passage['arxiv_id']}{passage['location']}"
 
@@ -35,9 +34,9 @@ def build_retrieval_context(context_passages: list[dict], preserve_passage_ids: 
     )
 
 
-def generate_answer_for_evaluation(inputs: dict, context_builder: Callable[[list[dict]], RetrievalContext]) -> dict:
+def generate_answer_for_evaluation(inputs: dict) -> dict:
     question = inputs.get("question", "")
     context_passages = inputs.get("context_passages", [])
-    retrieval_context = context_builder(context_passages)
+    retrieval_context = build_retrieval_context(context_passages)
     answer = answering.generate_answer(question, retrieval_context)
     return {"answer": answer}
