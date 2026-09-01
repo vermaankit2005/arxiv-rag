@@ -56,6 +56,12 @@ Keep documentation short, practical, and easy to scan.
   in sprint, decision, experiment, or LangSmith records instead of the main guide.
 - Never edit or regenerate `docs/production-readiness.html` unless the user
   explicitly asks for that file to be changed.
+- Execute Sprint 07 in this order: build the smallest useful regression
+  pipeline, understand and add privacy-safe LangSmith tracing, then improve the
+  measured eval failures.
+- When eval-driven product improvement resumes after Sprint 07, prioritize
+  naturalness, sensitive-data/PII protection, and policy-response accuracy;
+  address citation support next.
 
 ### Sprint documents
 
