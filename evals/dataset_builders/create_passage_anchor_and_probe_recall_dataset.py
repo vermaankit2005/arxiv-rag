@@ -1,3 +1,5 @@
+"""Publish the frozen anchor-validity and probe-recall dataset to LangSmith."""
+
 import hashlib
 import json
 from pathlib import Path
@@ -7,9 +9,11 @@ from langsmith import Client  # pyright: ignore[reportMissingImports]
 
 ROOT = Path(__file__).parents[2]
 BENCHMARK_PAPERS_PATH = ROOT / "evals" / "dataset" / "papers.json"
-RECALL_PROBES_PATH = ROOT / "evals" / "dataset" / "recall_probes_dataset.json"
+RECALL_PROBES_PATH = (
+    ROOT / "evals" / "dataset" / "loading_passage_anchor_and_probe_recall_dataset.json"
+)
 CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
-LANGSMITH_DATASET_NAME = "sampled_probe_recall_dataset"
+LANGSMITH_DATASET_NAME = "loading_passage_anchor_and_probe_recall_dataset"
 
 
 def cached_html_path(arxiv_id: str) -> Path:

@@ -2,17 +2,18 @@ from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from evals.answering import context as evaluation_context
-from evals.answering.judges import build_judge_model
+from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.answering.references import build_fact_references
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_completeness"
-JUDGE_MODEL_NAME = "gemma4:26b"
 EXPERIMENT_METADATA = {
     "metric": "completeness",
     "dataset": LANGSMITH_DATASET_NAME,
     "generator_model": "gemma4:26b",
-    "judge_model": JUDGE_MODEL_NAME,
+    "judge_model": DEFAULT_JUDGE_MODEL,
+    "judge_thinking": "disabled",
+    "generator_thinking": "disabled",
 }
 
 COMPLETENESS_PROMPT = """
@@ -30,7 +31,7 @@ Generated answer:
 {outputs}
 """
 
-judge_model = build_judge_model(JUDGE_MODEL_NAME)
+judge_model = build_judge_model()
 
 completeness_judge = create_llm_as_judge(
     prompt=COMPLETENESS_PROMPT,

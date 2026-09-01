@@ -1,19 +1,20 @@
 from langsmith import Client
-from openevals.llm import create_llm_as_judge
+from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
-from evals.answering.judges import build_judge_model
+from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.pipeline import context as evaluation_context
 
 LANGSMITH_DATASET_NAME = "pipeline_required_fact_coverage_dataset"
 EXPERIMENT_PREFIX = "pipeline_required_fact_coverage"
-JUDGE_MODEL_NAME = "gemma4:26b"
 EXPERIMENT_METADATA = {
     "metric": "required_fact_coverage",
     "evaluation_level": "pipeline",
     "dataset": LANGSMITH_DATASET_NAME,
     "retriever_top_k": 5,
     "generator_model": "gemma4:26b",
-    "judge_model": JUDGE_MODEL_NAME,
+    "judge_model": DEFAULT_JUDGE_MODEL,
+    "judge_thinking": "disabled",
+    "generator_thinking": "disabled",
 }
 
 REQUIRED_FACT_COVERAGE_PROMPT = """
@@ -31,7 +32,7 @@ Final answer:
 {outputs}
 """
 
-judge_model = build_judge_model(JUDGE_MODEL_NAME)
+judge_model = build_judge_model()
 required_fact_coverage_judge = create_llm_as_judge(
     prompt=REQUIRED_FACT_COVERAGE_PROMPT,
     feedback_key="required_fact_coverage",
@@ -88,6 +89,7 @@ def run_required_fact_coverage() -> None:
             "then check each hidden required fact independently. The score is covered "
             "required facts divided by all required facts."
         ),
+        max_concurrency=1
     )
 
 

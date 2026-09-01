@@ -2,18 +2,19 @@ from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from evals.answering import context as evaluation_context
-from evals.answering.judges import build_judge_model
+from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.answering.references import build_fact_references
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_correctness"
-JUDGE_MODEL_NAME = "gemma4:26b"
 ALLOWED_SCORES = {0, 0.25, 0.5, 0.75, 1}
 EXPERIMENT_METADATA = {
     "metric": "correctness",
     "dataset": LANGSMITH_DATASET_NAME,
     "generator_model": "gemma4:26b",
-    "judge_model": JUDGE_MODEL_NAME,
+    "judge_model": DEFAULT_JUDGE_MODEL,
+    "judge_thinking": "disabled",
+    "generator_thinking": "disabled",
 }
 
 CORRECTNESS_PROMPT = """
@@ -38,7 +39,7 @@ Return one of these scores:
 - 0: entirely incorrect or directly contradicts the reference.
 """
 
-judge_model = build_judge_model(JUDGE_MODEL_NAME)
+judge_model = build_judge_model()
 
 correctness_judge = create_llm_as_judge(
     prompt=CORRECTNESS_PROMPT,

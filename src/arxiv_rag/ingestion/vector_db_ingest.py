@@ -1,12 +1,12 @@
-import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from uuid import uuid4
 
-from dotenv import load_dotenv
 from langchain_chroma import Chroma  # pyright: ignore[reportMissingImports]
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
 from langchain_ollama import OllamaEmbeddings  # pyright: ignore[reportMissingImports]
+
+from arxiv_rag.ollama_config import get_ollama_connection
 
 CHROMA_DIRECTORY = Path(__file__).parents[3] / "chroma_db"
 CHROMA_DATABASE_FILE = CHROMA_DIRECTORY / "chroma.sqlite3"
@@ -87,13 +87,10 @@ def get_vector_store(create_if_missing: bool = False, collection_name: str | Non
             f"No Chroma database found at {CHROMA_DIRECTORY}. Run ingestion first."
         )
 
-    load_dotenv()
-    base_url = os.environ.get("OLLAMA_BASE_URL")
-    if not base_url:
-        raise RuntimeError("OLLAMA_BASE_URL is not set. Add it to your .env file.")
-
+    base_url, headers = get_ollama_connection()
     embeddings = OllamaEmbeddings(
         model="qwen3-embedding:4b",
         base_url=base_url,
+        client_kwargs={"headers": headers},
     )
     return ChromaStore(embeddings, collection_name=collection_name or get_active_collection_name())

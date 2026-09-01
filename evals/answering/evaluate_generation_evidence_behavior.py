@@ -3,17 +3,18 @@ from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingIm
 
 from arxiv_rag.answering.generator import INSUFFICIENT_EVIDENCE_ANSWER
 from evals.answering import context as evaluation_context
-from evals.answering.judges import build_judge_model
+from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 
 LANGSMITH_DATASET_NAME = "generation_evidence_behavior_dataset"
 EXPERIMENT_PREFIX = "generation_evidence_behavior"
-JUDGE_MODEL_NAME = "gemma4:26b"
 ALLOWED_SCORES = {0, 0.5, 1}
 EXPERIMENT_METADATA = {
     "metric": "evidence_behavior",
     "dataset": LANGSMITH_DATASET_NAME,
     "generator_model": "gemma4:26b",
-    "judge_model": JUDGE_MODEL_NAME,
+    "judge_model": DEFAULT_JUDGE_MODEL,
+    "judge_thinking": "disabled",
+    "generator_thinking": "disabled",
 }
 
 EVIDENCE_BEHAVIOR_PROMPT = """
@@ -41,7 +42,7 @@ Generated answer:
 {outputs}
 """
 
-judge_model = build_judge_model(JUDGE_MODEL_NAME)
+judge_model = build_judge_model()
 evidence_behavior_judge = create_llm_as_judge(
     prompt=EVIDENCE_BEHAVIOR_PROMPT,
     feedback_key="evidence_behavior",

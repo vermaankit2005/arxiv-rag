@@ -2,17 +2,18 @@ from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag.answering.generator import INSUFFICIENT_EVIDENCE_ANSWER
-from evals.answering.judges import build_judge_model
+from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.pipeline import context as evaluation_context
 
 LANGSMITH_DATASET_NAME = "pipeline_evidence_behavior_dataset"
 EXPERIMENT_PREFIX = "pipeline_evidence_behavior"
-JUDGE_MODEL_NAME = "gpt-oss:20b"
 EXPERIMENT_METADATA = {
     "metric": "pipeline_evidence_behavior",
     "dataset": LANGSMITH_DATASET_NAME,
     "generator_model": "gemma4:26b",
-    "judge_model": JUDGE_MODEL_NAME,
+    "judge_model": DEFAULT_JUDGE_MODEL,
+    "judge_thinking": "disabled",
+    "generator_thinking": "disabled",
 }
 
 EVIDENCE_BEHAVIOR_PROMPT = f"""
@@ -40,7 +41,7 @@ Final answer:
 {{outputs}}
 """
 
-judge_model = build_judge_model(JUDGE_MODEL_NAME)
+judge_model = build_judge_model()
 evidence_behavior_judge = create_llm_as_judge(
     prompt=EVIDENCE_BEHAVIOR_PROMPT,
     feedback_key="pipeline_evidence_behavior",

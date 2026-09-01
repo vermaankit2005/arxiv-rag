@@ -25,9 +25,9 @@ ROOT = Path(__file__).parents[2]
 BENCHMARK_PAPERS_PATH = ROOT / "evals" / "dataset" / "papers.json"
 CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
 REFERENCE_DATASET_PATH = (
-        ROOT / "evals" / "dataset" / "html_content_retention_dataset.json"
+        ROOT / "evals" / "dataset" / "loading_html_content_retention_dataset.json"
 )
-LANGSMITH_DATASET_NAME = "html_content_retention_dataset"
+LANGSMITH_DATASET_NAME = "loading_html_content_retention_dataset"
 
 NOTE_CLASSES = {"ltx_note_content", "ltx_role_thanks", "ltx_role_footnote"}
 NUMBERING_CLASSES = {"ltx_note_mark", "ltx_tag_note", "ltx_note_type"}

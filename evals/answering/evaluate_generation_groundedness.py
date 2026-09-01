@@ -3,11 +3,10 @@ from openevals import prompts  # pyright: ignore[reportMissingImports]
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from evals.answering import context as evaluation_context
-from evals.answering.judges import build_judge_model
+from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_groundedness"
-JUDGE_MODEL_NAME = "gemma4:26b"
 
 EXPERIMENT_METADATA = {
     "metric": "groundedness",
@@ -16,10 +15,12 @@ EXPERIMENT_METADATA = {
     "embedding_model": "qwen3-embedding:4b",
     "corpus": "12-papers-384-documents",
     "vector_db": "chroma",
-    "judge_model": JUDGE_MODEL_NAME,
+    "judge_model": DEFAULT_JUDGE_MODEL,
+    "judge_thinking": "disabled",
+    "generator_thinking": "disabled",
 }
 
-judge_model = build_judge_model(JUDGE_MODEL_NAME)
+judge_model = build_judge_model()
 
 groundedness_judge = create_llm_as_judge(
     prompt=prompts.RAG_GROUNDEDNESS_PROMPT,

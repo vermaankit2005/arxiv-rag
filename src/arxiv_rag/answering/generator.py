@@ -1,15 +1,15 @@
-import os
 import re
 from abc import ABC, abstractmethod
 
-from dotenv import load_dotenv
 from langchain_ollama import ChatOllama  # pyright: ignore[reportMissingImports]
 
+from arxiv_rag.ollama_config import get_ollama_connection
 from arxiv_rag.retrieval import RetrievalContext
 
 MODEL_NAME = "gemma4:26b"
 INSUFFICIENT_EVIDENCE_ANSWER = "I don't know the answer based on the provided evidence."
-CITATION_PATTERN = re.compile(r"\[(P\d+)\]")
+CITATION_ID_PATTERN = re.compile(r"P\d+")
+CITATION_MARKER_PATTERN = re.compile(r"\[P\d+(?:\s*,\s*P\d+)*\]")
 URL_PATTERN = re.compile(r"https?://", re.IGNORECASE)
 
 
@@ -23,16 +23,27 @@ class ChatModel(ABC):
         ...
 
 def _get_chat_model() -> ChatOllama:
-    load_dotenv()
-    base_url = os.environ.get("OLLAMA_BASE_URL")
-    if not base_url:
-        raise RuntimeError("OLLAMA_BASE_URL is not set. Add it to your .env file.")
-
+    base_url, headers = get_ollama_connection()
     return ChatOllama(
         model=MODEL_NAME,
         base_url=base_url,
         temperature=0,
+        client_kwargs={"headers": headers},
+        reasoning=False,
+        num_ctx=8192,
     )
+
+
+def citation_ids_in_text(text: str) -> list[str]:
+    """Return passage IDs from [P1] and [P1, P2] markers, in order of first appearance."""
+    ids = []
+    seen = set()
+    for marker in CITATION_MARKER_PATTERN.finditer(text):
+        for citation_id in CITATION_ID_PATTERN.findall(marker.group()):
+            if citation_id not in seen:
+                seen.add(citation_id)
+                ids.append(citation_id)
+    return ids
 
 
 def _build_prompt(question: str, context: RetrievalContext) -> str:
@@ -43,8 +54,9 @@ def _build_prompt(question: str, context: RetrievalContext) -> str:
         "- Use short paragraphs, headings only when useful, and bullets for real lists.\n"
         "- Do not repeat the same point in different words.\n"
         "- Put a passage ID such as [P1] immediately after every factual sentence.\n"
+        "- When one sentence needs more than one passage, write separate markers with a space: [P1] [P2].\n"
+        "- Never combine IDs in one pair of brackets. Do not write [P1, P2] or [P1,P2].\n"
         "- Use only passage IDs that appear in the supplied passages.\n"
-        "- Use [P1] [P2] when one sentence needs more than one passage.\n"
         "- Do not write or invent URLs.\n"
         "- Never guess or fill in information that the supplied passages do not support.\n"
         "- If the passages support only part of the question, answer that part and clearly state what the evidence does not specify.\n"
@@ -61,7 +73,7 @@ def _validate_answer(answer: str, context: RetrievalContext) -> None:
     if URL_PATTERN.search(answer):
         raise RuntimeError("The generated answer must not contain model-written URLs.")
 
-    citation_ids = set(CITATION_PATTERN.findall(answer))
+    citation_ids = set(citation_ids_in_text(answer))
     if not citation_ids:
         raise RuntimeError("The generated answer must contain at least one citation.")
 

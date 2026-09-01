@@ -11,7 +11,14 @@ from arxiv_rag.loading import load_paper
 
 ROOT = Path(__file__).parents[2]
 CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
-LANGSMITH_DATASET_NAME = "sampled_probe_recall_dataset"
+LANGSMITH_DATASET_NAME = "loading_passage_anchor_and_probe_recall_dataset"
+EXPERIMENT_PREFIX = "loading_passage_anchor_and_probe_recall"
+EXPERIMENT_METADATA = {
+    "metrics": ["anchor_coverage", "text_recall"],
+    "dataset": LANGSMITH_DATASET_NAME,
+    "loader": "arxiv_rag.loading.load_paper",
+    "corpus": "12-papers-sampled-html",
+}
 
 
 def cached_html_path(arxiv_id: str) -> Path:
@@ -88,7 +95,14 @@ def run_passage_anchor_and_probe_recall_evaluation() -> None:
         load_passages_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_passage_anchor_validity_and_probe_recall],
-        experiment_prefix="sampled_probe_recall",
+        metadata=EXPERIMENT_METADATA,
+        experiment_prefix=EXPERIMENT_PREFIX,
+        description=(
+            "Check the shipping loader against the frozen HTML snapshot. Anchor "
+            "coverage is passage anchors that resolve to a real id in the source "
+            "HTML divided by all passage anchors. Text recall is sampled probes "
+            "found verbatim inside a loaded passage divided by all probes."
+        ),
     )
 
 

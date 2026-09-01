@@ -2,11 +2,10 @@ from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from evals.answering import context as evaluation_context
-from evals.answering.judges import build_judge_model
+from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_naturalness"
-JUDGE_MODEL_NAME = "gemma4:26b"
 NATURALNESS_RUBRIC_VERSION = "user-facing-v2"
 ALLOWED_SCORES = {0, 0.25, 0.5, 0.75, 1}
 EXPERIMENT_METADATA = {
@@ -15,7 +14,9 @@ EXPERIMENT_METADATA = {
     "evaluation_focus": "user-facing readability and interaction",
     "dataset": LANGSMITH_DATASET_NAME,
     "generator_model": "gemma4:26b",
-    "judge_model": JUDGE_MODEL_NAME,
+    "judge_model": DEFAULT_JUDGE_MODEL,
+    "judge_thinking": "disabled",
+    "generator_thinking": "disabled",
 }
 
 NATURALNESS_PROMPT = """
@@ -53,7 +54,7 @@ Return one of these scores:
 - 0: highly unnatural and difficult for a user to read or interact with.
 """
 
-judge_model = build_judge_model(JUDGE_MODEL_NAME)
+judge_model = build_judge_model()
 
 naturalness_judge = create_llm_as_judge(
     prompt=NATURALNESS_PROMPT,
@@ -89,7 +90,7 @@ def run_naturalness() -> None:
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=(
-            "User-facing naturalness rubric v2. Judge whether each generated answer "
+            "User-facing naturalness rubric. Judge whether each generated answer "
             "is direct, smoothly written, and pleasant to read in an assistant "
             "interaction. Penalize unnecessary report-like structure, canned phrasing, "
             "and templated fact lists on a restricted 0 to 1 scale."

@@ -3,21 +3,23 @@ import re
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
+from arxiv_rag.answering.generator import CITATION_ID_PATTERN, CITATION_MARKER_PATTERN
 from evals.answering import context as evaluation_context
-from evals.answering.judges import build_judge_model
+from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_citation_support"
-JUDGE_MODEL_NAME = "gemma4:26b"
+
 EXPERIMENT_METADATA = {
     "metric": "citation_support",
     "dataset": LANGSMITH_DATASET_NAME,
     "generator_model": "gemma4:26b",
-    "judge_model": JUDGE_MODEL_NAME,
+    "judge_model": DEFAULT_JUDGE_MODEL,
+    "judge_thinking": "disabled",
+    "generator_thinking": "disabled",
 }
 
-CITATION_PATTERN = re.compile(r"\[(P\d+)\]")
-CITATION_GROUP_PATTERN = re.compile(r"(?:\[P\d+\]\s*)+")
+CITATION_GROUP_PATTERN = re.compile(rf"(?:{CITATION_MARKER_PATTERN.pattern}\s*)+")
 STATEMENT_BOUNDARY_PATTERN = re.compile(r"[.!?](?=\s)|\n+")
 
 CITATION_SUPPORT_PROMPT = """
@@ -35,7 +37,7 @@ Cited passage:
 {outputs}
 """
 
-judge_model = build_judge_model(JUDGE_MODEL_NAME)
+judge_model = build_judge_model()
 
 citation_support_judge = create_llm_as_judge(
     prompt=CITATION_SUPPORT_PROMPT,
@@ -63,7 +65,7 @@ def _extract_statement_citation_pairs(answer: str) -> list[tuple[str, str]]:
         if not statement:
             raise ValueError("Could not find a statement before a citation marker")
 
-        citation_ids = dict.fromkeys(CITATION_PATTERN.findall(citation_group.group()))
+        citation_ids = dict.fromkeys(CITATION_ID_PATTERN.findall(citation_group.group()))
         pairs.extend((statement, citation_id) for citation_id in citation_ids)
         previous_group_end = citation_group.end()
 
@@ -132,6 +134,7 @@ def run_citation_support() -> None:
             "that exact frozen passage supports the complete statement. The score "
             "is supported statement-passage pairs divided by all cited pairs."
         ),
+        max_concurrency=3
     )
 
 

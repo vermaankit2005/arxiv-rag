@@ -1,3 +1,5 @@
+# Project guidance
+
 Read the latest relevant code and documentation before proposing work.
 
 ## How we build
@@ -8,10 +10,50 @@ Read the latest relevant code and documentation before proposing work.
   reasonably. Do not wrap them into parenthesized multiline formatting by default.
 - Any requested implementation or code change includes adding or updating the
   relevant tests and running them, unless the user explicitly says otherwise.
+- Do not create automated tests for evaluation datasets, evaluators, or eval
+  scripts unless the user explicitly requests them. Validate evals through real
+  runs and manual review. Continue testing production code normally.
+- When the user's requested scope is clear, follow it directly. Do not introduce
+  alternative designs, reinterpret settled decisions, or reopen them unless a
+  real blocker makes the requested approach impossible.
+- Keep application-level evals under `evals/application/`, with each metric's
+  evaluator in its own file. Put shared application-safety targets and helpers in
+  `evals/application/safety.py`.
+- Keep one local, versioned application-safety source dataset, then publish one
+  filtered, versioned LangSmith dataset per metric. Every safety case must use
+  controlled context and belong to exactly one metric. Every primary score uses
+  `1 = pass`; evidence abstention never counts as a safety refusal. Evaluators run
+  their uploaded metric dataset directly without fetching or filtering examples.
+- Every eval script keeps the same shape: module docstring, `LANGSMITH_DATASET_NAME`,
+  `EXPERIMENT_PREFIX`, `EXPERIMENT_METADATA`, target, evaluator, then a `run_*`
+  that passes `metadata`, `experiment_prefix`, and a `description`.
+- Name local eval datasets `<level>_<metric>_dataset.json` and give the published
+  LangSmith dataset the same basename.
+- Never change production behavior merely to make an evaluator pass. Evals must
+  measure the unchanged shipping target and expose missing capabilities honestly.
+- Generator citation markers are `[P1]` or `[P1] [P2]`. Prompt for that format
+  only. Still parse grouped `[P1, P2]` so a correct answer is not rejected.
+- Every Ollama chat, embedding, and evaluation-judge request must include the
+  Cloudflare Access service-token headers loaded from `.env`; never hard-code
+  those credentials. Ollama is the generator and semantic-judge provider.
 
 ## Documents
 
 Keep documentation short, practical, and easy to scan.
+
+### Persistent project guidance
+
+- Whenever the user makes or confirms a durable project decision, proactively
+  record it in this file during the same turn without waiting to be asked. Do not
+  rely only on the conversation to remember important instructions.
+- `docs/production-readiness.md` is the canonical record for production-readiness,
+  portfolio, safety, evaluation, and operational ideas discussed for this project.
+- Keep `docs/EVALS.md` lean, practical, and organized into component, pipeline,
+  and application-level evals. Preserve important dataset-selection principles,
+  metric contracts, accepted results, and current status; keep detailed history
+  in sprint, decision, experiment, or LangSmith records instead of the main guide.
+- Never edit or regenerate `docs/production-readiness.html` unless the user
+  explicitly asks for that file to be changed.
 
 ### Sprint documents
 
@@ -22,3 +64,6 @@ Keep documentation short, practical, and easy to scan.
 - Record measured numbers and clearly distinguish completed work, manual checks,
   open decisions, and deferred work. If the document disagrees with the code,
   the code wins and the document must be corrected.
+- Sprint 07 combines LangSmith application tracing with the evaluation regression
+  pipeline; do not build a custom tracing system. Tracing stays off by default
+  and must not export raw user, prompt, passage, answer, credential, or header content.

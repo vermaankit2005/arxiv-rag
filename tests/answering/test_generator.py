@@ -43,6 +43,22 @@ def test_generator_uses_gemma_model_name():
     assert generator.MODEL_NAME == "gemma4:26b"
 
 
+def test_chat_model_sends_cloudflare_access_headers(monkeypatch):
+    captured_options = {}
+    headers = {
+        "CF-Access-Client-Id": "client-id",
+        "CF-Access-Client-Secret": "client-secret",
+    }
+
+    monkeypatch.setattr(generator, "get_ollama_connection", lambda: ("https://ollama.test", headers))
+    monkeypatch.setattr(generator, "ChatOllama", lambda **options: captured_options.update(options) or object())
+
+    generator._get_chat_model()
+
+    assert captured_options["base_url"] == "https://ollama.test"
+    assert captured_options["client_kwargs"] == {"headers": headers}
+
+
 def test_generate_answer_returns_normal_text_with_valid_inline_citations():
     model = RecordingModel(
         "Transformers use attention [P1]. The model reached 28.4 BLEU [P2]."
@@ -56,6 +72,8 @@ def test_generate_answer_returns_normal_text_with_valid_inline_citations():
     assert "[P1]" in model.prompt
     assert "Answer directly and use clear Markdown" in model.prompt
     assert "Use only passage IDs" in model.prompt
+    assert "write separate markers with a space: [P1] [P2]" in model.prompt
+    assert "Do not write [P1, P2] or [P1,P2]" in model.prompt
 
 
 def test_generate_answer_accepts_a_supported_partial_answer_and_prompts_for_the_missing_part():
@@ -120,6 +138,17 @@ def test_generate_answer_rejects_an_uncited_answer():
         raise AssertionError("Expected an uncited answer to fail")
 
 
+def test_generate_answer_accepts_grouped_citation_markers():
+    model = RecordingModel(
+        "A selected token is replaced by [MASK] 80% of the time [P1, P2]. "
+        "The provided evidence does not specify the wall-clock time."
+    )
+
+    answer = generator.generate_answer("How often is a token masked?", _context(), model)
+
+    assert answer == model.answer
+
+
 def test_generate_answer_returns_unknown_without_calling_model_for_empty_context():
     model = RecordingModel("This must not be used.")
     context = RetrievalContext(text="", citations={})
@@ -144,6 +173,14 @@ def test_terminal_renderer_creates_a_hidden_clickable_citation():
 
     assert rendered == "Answer \033]8;;https://arxiv.org/html/paper#S1\033\\[1]\033]8;;\033\\."
     assert "Sources:" not in rendered
+
+
+def test_terminal_renderer_expands_grouped_citation_markers():
+    rendered = renderer.render_answer("Answer [P1, P2].", _context().citations, clickable=False)
+
+    assert rendered.startswith("Answer [1] [2].")
+    assert "[1] paper — Introduction\nhttps://arxiv.org/html/paper#S1" in rendered
+    assert "[2] paper — Results\nhttps://arxiv.org/html/paper#S2" in rendered
 
 
 def test_command_line_entry_asks_a_question_and_prints_the_answer(monkeypatch, capsys):
