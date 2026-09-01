@@ -1,3 +1,10 @@
+"""This runs live retrieval and generation, then checks whether the answer behaves correctly for the evidence that was actually retrieved.
+
+It should answer when the evidence is enough, limit itself when only part is
+supported, and refuse when nothing is supported. Each example gets 0, 0.5, or 1.
+The final score is the average.
+"""
+
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
@@ -5,6 +12,7 @@ from arxiv_rag.answering.generator import INSUFFICIENT_EVIDENCE_ANSWER
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.pipeline import context as evaluation_context
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "pipeline_evidence_behavior_dataset"
 EXPERIMENT_PREFIX = "pipeline_evidence_behavior"
 EXPERIMENT_METADATA = {
@@ -79,11 +87,7 @@ def run_evidence_behavior() -> None:
         evaluators=[evaluate_evidence_behavior],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "Run live retrieval and generation, determine whether the retrieved "
-            "evidence supports all, some, or none of the request, and score whether "
-            "the final answer answers, limits itself, or refuses appropriately."
-        ),
+        description=DESCRIPTION,
         max_concurrency=1,
     )
 

@@ -1,3 +1,9 @@
+"""This runs live retrieval and generation, then checks whether each citation actually supports the statement it is attached to.
+
+The formula is: supported statement-passage pairs / all cited pairs. The final
+score is the average across all questions.
+"""
+
 import re
 
 from langsmith import Client
@@ -7,6 +13,7 @@ from arxiv_rag.answering.generator import CITATION_ID_PATTERN, CITATION_MARKER_P
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.pipeline import context as evaluation_context
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "pipeline_required_fact_coverage_dataset"
 EXPERIMENT_PREFIX = "pipeline_citation_support"
 EXPERIMENT_METADATA = {
@@ -75,6 +82,7 @@ def _extract_statement_citation_pairs(answer: str) -> list[tuple[str, str]]:
 def evaluate_citation_support(inputs: dict, outputs: dict) -> dict:
     """Return the share of cited statement-passage pairs supported by that passage."""
     answer = outputs.get("answer", "")
+
     pairs = _extract_statement_citation_pairs(answer)
     if not pairs:
         return {
@@ -82,6 +90,7 @@ def evaluate_citation_support(inputs: dict, outputs: dict) -> dict:
             "score": 0.0,
             "comment": "The answer contained no statement-citation pairs.",
         }
+
     passages_by_id = outputs.get("retrieved_passages", {})
 
     unknown_ids = sorted({citation_id for _, citation_id in pairs} - passages_by_id.keys())
@@ -125,11 +134,7 @@ def run_citation_support() -> None:
         evaluators=[evaluate_citation_support],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "For every citation attached to a generated statement, judge whether "
-            "that exact retrieved passage supports the complete statement. The score "
-            "is supported statement-passage pairs divided by all cited pairs."
-        ),
+        description=DESCRIPTION,
         max_concurrency=1,
     )
 

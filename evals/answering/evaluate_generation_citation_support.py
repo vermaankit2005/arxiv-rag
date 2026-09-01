@@ -1,3 +1,9 @@
+"""This checks whether each citation actually supports the statement it is attached to.
+
+The formula is: supported statement-passage pairs / all cited pairs. The final
+score is the average across all questions.
+"""
+
 import re
 
 from langsmith import Client
@@ -7,6 +13,7 @@ from arxiv_rag.answering.generator import CITATION_ID_PATTERN, CITATION_MARKER_P
 from evals.answering import context as evaluation_context
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_citation_support"
 
@@ -129,11 +136,7 @@ def run_citation_support() -> None:
         evaluators=[evaluate_citation_support],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "For every citation attached to a generated statement, judge whether "
-            "that exact frozen passage supports the complete statement. The score "
-            "is supported statement-passage pairs divided by all cited pairs."
-        ),
+        description=DESCRIPTION,
         max_concurrency=3
     )
 

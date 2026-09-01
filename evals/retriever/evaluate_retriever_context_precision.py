@@ -1,7 +1,10 @@
+"""This checks how much of the source-passage context from the top 5 Documents directly matches the required evidence. The formula is: relevant unique source passages / all unique source passages. Higher means less unrelated context was retrieved."""
+
 from langsmith import Client
 
 from arxiv_rag import retrieval
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "retrieval_evidence_dataset"
 EXPERIMENT_PREFIX = "retriever-context-precision-at-5"
 EXPERIMENT_METADATA = {
@@ -92,12 +95,7 @@ def run_context_precision() -> None:
         evaluators=[evaluate_context_precision],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "This checks how much of the source-passage context from the top 5 "
-            "Documents directly matches the required evidence. The formula is: "
-            "relevant unique source passages / all unique source passages. Higher "
-            "means less unrelated context was retrieved."
-        ),
+        description=DESCRIPTION,
     )
 
 

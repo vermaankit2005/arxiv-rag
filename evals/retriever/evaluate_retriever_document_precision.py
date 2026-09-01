@@ -1,7 +1,10 @@
+"""This checks how many of the top 5 retrieved Documents contain required evidence. The formula is: relevant Documents / 5. We use Documents as the unit because the passage-level metric treated useful neighbouring passages as noise when they were not part of the minimal answer key."""
+
 from langsmith import Client
 
 from arxiv_rag import retrieval
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "retrieval_evidence_dataset"
 EXPERIMENT_PREFIX = "retriever-document-precision-at-5"
 EXPERIMENT_METADATA = {
@@ -83,12 +86,7 @@ def run_document_precision() -> None:
         evaluators=[evaluate_document_precision],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "This checks how many of the top 5 retrieved Documents contain required "
-            "evidence. The formula is: relevant Documents / 5. We use Documents as "
-            "the unit because the passage-level metric treated useful neighbouring "
-            "passages as noise when they were not part of the minimal answer key."
-        ),
+        description=DESCRIPTION,
     )
 
 

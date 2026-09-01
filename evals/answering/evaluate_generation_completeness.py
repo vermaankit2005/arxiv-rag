@@ -1,3 +1,9 @@
+"""This checks whether the generated answer covers every required fact.
+
+For each question, the formula is: covered required facts / all required facts.
+The final score is the average across all questions.
+"""
+
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
@@ -5,6 +11,7 @@ from evals.answering import context as evaluation_context
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.answering.references import build_fact_references
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_completeness"
 EXPERIMENT_METADATA = {
@@ -84,11 +91,7 @@ def run_completeness() -> None:
         evaluators=[evaluate_completeness],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "Check each frozen required fact independently against the generated answer. "
-            "The score is the number of covered required facts divided by the total "
-            "number of required facts."
-        ),
+        description=DESCRIPTION,
         max_concurrency=4
     )
 

@@ -1,3 +1,10 @@
+"""This checks whether the generated answer is factually correct.
+
+It uses the required facts and their supporting passages. Missing facts are not
+counted against the score here. Each answer gets 0, 0.25, 0.5, 0.75, or 1. The
+final score is the average across all questions.
+"""
+
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
@@ -5,6 +12,7 @@ from evals.answering import context as evaluation_context
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.answering.references import build_fact_references
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_correctness"
 ALLOWED_SCORES = {0, 0.25, 0.5, 0.75, 1}
@@ -86,12 +94,7 @@ def run_correctness() -> None:
         evaluators=[evaluate_correctness],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "Judge whether each generated answer is factually consistent with the "
-            "frozen required facts and their supporting passages. Scores are restricted "
-            "to 0, 0.25, 0.5, 0.75, or 1. Missing facts are not penalized here because "
-            "they are measured by completeness."
-        ),
+        description=DESCRIPTION,
         max_concurrency=4
     )
 

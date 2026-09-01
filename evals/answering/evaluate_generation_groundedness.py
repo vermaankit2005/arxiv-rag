@@ -1,3 +1,9 @@
+"""This checks whether every factual claim in the generated answer is supported by the given passages.
+
+It penalizes claims that are not backed by the supplied context. Each answer
+gets 0, 0.25, 0.5, 0.75, or 1. The final score is the average across all questions.
+"""
+
 from langsmith import Client
 from openevals import prompts  # pyright: ignore[reportMissingImports]
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
@@ -5,6 +11,7 @@ from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingIm
 from evals.answering import context as evaluation_context
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_groundedness"
 
@@ -52,9 +59,7 @@ def run_groundedness() -> None:
         evaluators=[evaluate_groundedness],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "Evaluate the groundedness of generated answers by comparing them to reference evidence units."
-        ),
+        description=DESCRIPTION,
         max_concurrency=4
     )
 

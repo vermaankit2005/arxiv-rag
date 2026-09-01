@@ -1,8 +1,11 @@
+"""This checks how early the first useful Document appears in the top 5. For each question, the formula is: 1 / rank of the first Document containing required evidence. The score is 0 when no evidence appears in the top 5, and the final score is the average across all questions."""
+
 from dotenv import load_dotenv
 from langsmith import Client
 
 from arxiv_rag import retrieval
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "retrieval_evidence_dataset"
 EXPERIMENT_PREFIX = "retriever-mrr-at-5"
 EXPERIMENT_METADATA = {
@@ -75,12 +78,7 @@ def run_mrr() -> None:
         evaluators=[evaluate_mrr],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "This checks how early the first useful Document appears in the top 5. "
-            "For each question, the formula is: 1 / rank of the first Document "
-            "containing required evidence. The score is 0 when no evidence appears "
-            "in the top 5, and the final score is the average across all questions."
-        ),
+        description=DESCRIPTION,
     )
 
 

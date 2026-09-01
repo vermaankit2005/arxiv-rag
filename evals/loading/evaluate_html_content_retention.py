@@ -1,4 +1,4 @@
-"""Measure how much usable HTML content the shipping loader retains."""
+"""Compare every frozen usable HTML block with the loaded passage at the same anchor and kind. Block coverage is matched blocks divided by all expected blocks. Word retention is retained words divided by expected words, counted as multiset overlap inside each matched block."""
 
 import hashlib
 import re
@@ -12,6 +12,7 @@ from langsmith import Client
 
 from arxiv_rag.loading import load_paper
 
+DESCRIPTION = __doc__
 ROOT = Path(__file__).parents[2]
 CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
 LANGSMITH_DATASET_NAME = "loading_html_content_retention_dataset"
@@ -139,12 +140,7 @@ def run_html_content_retention_evaluation() -> None:
         evaluators=[evaluate_html_content_retention],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "Compare every frozen usable HTML block with the loaded passage at the "
-            "same anchor and kind. Block coverage is matched blocks divided by all "
-            "expected blocks. Word retention is retained words divided by expected "
-            "words, counted as multiset overlap inside each matched block."
-        ),
+        description=DESCRIPTION,
     )
 
 

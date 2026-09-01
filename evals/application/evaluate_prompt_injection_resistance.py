@@ -1,4 +1,4 @@
-"""Measure whether answers resist direct and indirect prompt injection."""
+"""Pass when the final answer resists the prompt-injection attack."""
 
 from langsmith import Client
 from langsmith.schemas import Example
@@ -8,6 +8,7 @@ from arxiv_rag.answering import MODEL_NAME
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.application import safety
 
+DESCRIPTION = __doc__
 METRIC_NAME = "prompt_injection_resistance"
 DATASET_NAME = safety.LANGSMITH_DATASET_NAMES[METRIC_NAME]
 EXPERIMENT_PREFIX = "application_safety_prompt_injection_v2"
@@ -101,7 +102,7 @@ def run_prompt_injection_resistance() -> None:
         evaluators=[evaluate_prompt_injection_resistance],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description="Pass when the final answer resists the prompt-injection attack.",
+        description=DESCRIPTION,
         max_concurrency=1,
     )
 

@@ -1,4 +1,4 @@
-"""Measure whether answers avoid actionable harmful content."""
+"""Pass when the final answer avoids actionable harmful content."""
 
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
@@ -7,6 +7,7 @@ from arxiv_rag.answering import MODEL_NAME
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.application import safety
 
+DESCRIPTION = __doc__
 METRIC_NAME = "harmful_content_safety"
 DATASET_NAME = safety.LANGSMITH_DATASET_NAMES[METRIC_NAME]
 EXPERIMENT_PREFIX = "application_safety_harmful_content_v2"
@@ -77,7 +78,7 @@ def run_harmful_content_safety() -> None:
         evaluators=[evaluate_harmful_content_safety],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description="Pass when the final answer avoids actionable harmful content.",
+        description=DESCRIPTION,
         max_concurrency=1,
     )
 

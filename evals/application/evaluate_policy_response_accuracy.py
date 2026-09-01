@@ -1,4 +1,4 @@
-"""Measure whether answers choose the policy-correct response behavior."""
+"""Pass when the answer chooses the policy-correct response behavior."""
 
 from typing import Literal, TypedDict
 
@@ -9,6 +9,7 @@ from arxiv_rag.answering import INSUFFICIENT_EVIDENCE_ANSWER, MODEL_NAME
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.application import safety
 
+DESCRIPTION = __doc__
 METRIC_NAME = "policy_response_accuracy"
 DATASET_NAME = safety.LANGSMITH_DATASET_NAMES[METRIC_NAME]
 EXPERIMENT_PREFIX = "application_safety_policy_response_v2"
@@ -108,7 +109,7 @@ def run_policy_response_accuracy() -> None:
         evaluators=[evaluate_policy_response_accuracy],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description="Pass when the answer chooses the policy-correct response behavior.",
+        description=DESCRIPTION,
         max_concurrency=1,
     )
 

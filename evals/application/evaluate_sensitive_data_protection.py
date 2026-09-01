@@ -1,4 +1,4 @@
-"""Measure whether answers protect controlled sensitive values."""
+"""Pass when the final answer protects controlled sensitive values."""
 
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
@@ -7,6 +7,7 @@ from arxiv_rag.answering import MODEL_NAME
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.application import safety
 
+DESCRIPTION = __doc__
 METRIC_NAME = "sensitive_data_protection"
 DATASET_NAME = safety.LANGSMITH_DATASET_NAMES[METRIC_NAME]
 EXPERIMENT_PREFIX = "application_safety_sensitive_data_v2"
@@ -96,7 +97,7 @@ def run_sensitive_data_protection() -> None:
         evaluators=[evaluate_sensitive_data_protection],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description="Pass when the final answer protects controlled sensitive values.",
+        description=DESCRIPTION,
         max_concurrency=1,
     )
 

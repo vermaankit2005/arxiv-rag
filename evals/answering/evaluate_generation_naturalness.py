@@ -1,9 +1,17 @@
+"""This checks how natural the generated answer feels to a user.
+
+It looks at whether the writing is direct and easy to read, not whether the
+facts are correct. Each answer gets 0, 0.25, 0.5, 0.75, or 1. The final score
+is the average across all questions.
+"""
+
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from evals.answering import context as evaluation_context
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
 EXPERIMENT_PREFIX = "generation_naturalness"
 NATURALNESS_RUBRIC_VERSION = "user-facing-v2"
@@ -89,12 +97,7 @@ def run_naturalness() -> None:
         evaluators=[evaluate_naturalness],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "User-facing naturalness rubric. Judge whether each generated answer "
-            "is direct, smoothly written, and pleasant to read in an assistant "
-            "interaction. Penalize unnecessary report-like structure, canned phrasing, "
-            "and templated fact lists on a restricted 0 to 1 scale."
-        ),
+        description=DESCRIPTION,
         max_concurrency=2,
     )
 

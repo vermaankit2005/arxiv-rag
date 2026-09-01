@@ -1,7 +1,10 @@
+"""This checks how much of the evidence needed for each question appears in the top 5 Documents. For each question, the formula is: covered evidence units / total evidence units. The final score is the average across all questions."""
+
 from langsmith import Client
 
 from arxiv_rag import retrieval
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "retrieval_evidence_dataset"
 EXPERIMENT_PREFIX = "retriever-evidence-recall-at-5"
 EXPERIMENT_METADATA = {
@@ -86,12 +89,7 @@ def run_evidence_recall() -> None:
         evaluators=[evaluate_evidence_recall],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "This checks how much of the evidence needed for each question appears "
-            "in the top 5 Documents. For each question, the formula is: covered "
-            "evidence units / total evidence units. The final score is the average "
-            "across all questions."
-        ),
+        description=DESCRIPTION,
     )
 
 

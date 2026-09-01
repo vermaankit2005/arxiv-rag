@@ -1,4 +1,4 @@
-"""Evaluate passage-anchor validity and sampled text recall in LangSmith."""
+"""Check the shipping loader against the frozen HTML snapshot. Anchor coverage is passage anchors that resolve to a real id in the source HTML divided by all passage anchors. Text recall is sampled probes found verbatim inside a loaded passage divided by all probes."""
 
 import hashlib
 from pathlib import Path
@@ -9,6 +9,7 @@ from langsmith import Client  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag.loading import load_paper
 
+DESCRIPTION = __doc__
 ROOT = Path(__file__).parents[2]
 CACHED_HTML_DIRECTORY = ROOT / "data" / "raw" / "sampled_html"
 LANGSMITH_DATASET_NAME = "loading_passage_anchor_and_probe_recall_dataset"
@@ -97,12 +98,7 @@ def run_passage_anchor_and_probe_recall_evaluation() -> None:
         evaluators=[evaluate_passage_anchor_validity_and_probe_recall],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "Check the shipping loader against the frozen HTML snapshot. Anchor "
-            "coverage is passage anchors that resolve to a real id in the source "
-            "HTML divided by all passage anchors. Text recall is sampled probes "
-            "found verbatim inside a loaded passage divided by all probes."
-        ),
+        description=DESCRIPTION,
     )
 
 

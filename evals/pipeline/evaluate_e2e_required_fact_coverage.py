@@ -1,9 +1,16 @@
+"""This runs live retrieval and generation, then checks whether the final answer covers each hidden required fact.
+
+The formula is: covered required facts / all required facts. The final score is
+the average across all questions.
+"""
+
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 from evals.pipeline import context as evaluation_context
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "pipeline_required_fact_coverage_dataset"
 EXPERIMENT_PREFIX = "pipeline_required_fact_coverage"
 EXPERIMENT_METADATA = {
@@ -84,11 +91,7 @@ def run_required_fact_coverage() -> None:
         evaluators=[evaluate_required_fact_coverage],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "Run each question through live production retrieval and answer generation, "
-            "then check each hidden required fact independently. The score is covered "
-            "required facts divided by all required facts."
-        ),
+        description=DESCRIPTION,
         max_concurrency=1
     )
 

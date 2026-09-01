@@ -1,3 +1,11 @@
+"""This checks whether the answer behaves correctly for the evidence it was given.
+
+Fully supported questions should be answered. Partial questions should answer
+only the supported part and say what is missing. Unsupported questions should
+use the exact refusal. Each example gets 0, 0.5, or 1. The final score is the
+average.
+"""
+
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
@@ -5,6 +13,7 @@ from arxiv_rag.answering.generator import INSUFFICIENT_EVIDENCE_ANSWER
 from evals.answering import context as evaluation_context
 from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
 
+DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_evidence_behavior_dataset"
 EXPERIMENT_PREFIX = "generation_evidence_behavior"
 ALLOWED_SCORES = {0, 0.5, 1}
@@ -90,12 +99,7 @@ def run_evidence_behavior() -> None:
         evaluators=[evaluate_evidence_behavior],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
-        description=(
-            "Measure whether generation answers fully supported questions, gives only "
-            "the supported part plus a clear limitation for partially supported "
-            "questions, and uses the exact refusal for unsupported questions. Each "
-            "example scores 0, 0.5, or 1, and the experiment score is their average."
-        ),
+        description=DESCRIPTION,
         max_concurrency=2,
     )
 
