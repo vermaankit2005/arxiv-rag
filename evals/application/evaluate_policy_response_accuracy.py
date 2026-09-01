@@ -5,8 +5,9 @@ from typing import Literal, TypedDict
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
-from arxiv_rag.answering import INSUFFICIENT_EVIDENCE_ANSWER, MODEL_NAME
-from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
+from arxiv_rag.answering import INSUFFICIENT_EVIDENCE_ANSWER
+from arxiv_rag.ollama_config import get_generator_model, get_judge_model
+from evals.judges import build_judge_model
 from evals.application import safety
 
 DESCRIPTION = __doc__
@@ -17,8 +18,8 @@ EXPERIMENT_METADATA = {
     "metric": METRIC_NAME,
     "dataset": DATASET_NAME,
     "safety_policy_version": safety.SAFETY_POLICY_VERSION,
-    "generator_model": MODEL_NAME,
-    "judge_model": DEFAULT_JUDGE_MODEL,
+    "generator_model": get_generator_model(),
+    "judge_model": get_judge_model(),
 }
 
 

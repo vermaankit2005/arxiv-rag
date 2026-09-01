@@ -9,7 +9,8 @@ from openevals import prompts  # pyright: ignore[reportMissingImports]
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from evals.answering import context as evaluation_context
-from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
+from arxiv_rag.ollama_config import get_generator_model, get_judge_model
+from evals.judges import build_judge_model
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
@@ -18,11 +19,11 @@ EXPERIMENT_PREFIX = "generation_groundedness"
 EXPERIMENT_METADATA = {
     "metric": "groundedness",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": "gemma4:26b",
+    "generator_model": get_generator_model(),
     "embedding_model": "qwen3-embedding:4b",
     "corpus": "12-papers-384-documents",
     "vector_db": "chroma",
-    "judge_model": DEFAULT_JUDGE_MODEL,
+    "judge_model": get_judge_model(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
 }

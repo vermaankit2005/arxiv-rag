@@ -3,10 +3,8 @@ from abc import ABC, abstractmethod
 
 from langchain_ollama import ChatOllama  # pyright: ignore[reportMissingImports]
 
-from arxiv_rag.ollama_config import get_ollama_connection
+from arxiv_rag.ollama_config import get_generator_model, get_ollama_connection
 from arxiv_rag.retrieval import RetrievalContext
-
-MODEL_NAME = "gemma4:26b"
 INSUFFICIENT_EVIDENCE_ANSWER = "I don't know the answer based on the provided evidence."
 CITATION_ID_PATTERN = re.compile(r"P\d+")
 CITATION_MARKER_PATTERN = re.compile(r"\[P\d+(?:\s*,\s*P\d+)*\]")
@@ -25,7 +23,7 @@ class ChatModel(ABC):
 def _get_chat_model() -> ChatOllama:
     base_url, headers = get_ollama_connection()
     return ChatOllama(
-        model=MODEL_NAME,
+        model=get_generator_model(),
         base_url=base_url,
         temperature=0,
         client_kwargs={"headers": headers},

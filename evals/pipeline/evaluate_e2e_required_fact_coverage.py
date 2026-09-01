@@ -7,7 +7,8 @@ the average across all questions.
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
-from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
+from arxiv_rag.ollama_config import get_generator_model, get_judge_model
+from evals.judges import build_judge_model
 from evals.pipeline import context as evaluation_context
 
 DESCRIPTION = __doc__
@@ -18,8 +19,8 @@ EXPERIMENT_METADATA = {
     "evaluation_level": "pipeline",
     "dataset": LANGSMITH_DATASET_NAME,
     "retriever_top_k": 5,
-    "generator_model": "gemma4:26b",
-    "judge_model": DEFAULT_JUDGE_MODEL,
+    "generator_model": get_generator_model(),
+    "judge_model": get_judge_model(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
 }

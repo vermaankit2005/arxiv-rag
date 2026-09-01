@@ -1,7 +1,7 @@
 from evals import judges
 
 
-def test_build_judge_model_uses_default_model_and_cloudflare_headers(monkeypatch):
+def test_build_judge_model_uses_env_model_and_cloudflare_headers(monkeypatch):
     captured_options = {}
     expected_model = object()
     headers = {
@@ -9,6 +9,7 @@ def test_build_judge_model_uses_default_model_and_cloudflare_headers(monkeypatch
         "CF-Access-Client-Secret": "client-secret",
     }
 
+    monkeypatch.setenv("JUDGE_MODEL", "judge-from-env")
     monkeypatch.setattr(judges, "get_ollama_connection", lambda: ("https://ollama.test", headers))
     monkeypatch.setattr(
         judges,
@@ -20,7 +21,7 @@ def test_build_judge_model_uses_default_model_and_cloudflare_headers(monkeypatch
 
     assert model is expected_model
     assert captured_options == {
-        "model": judges.DEFAULT_JUDGE_MODEL,
+        "model": "judge-from-env",
         "base_url": "https://ollama.test",
         "temperature": 0,
         "client_kwargs": {"headers": headers},

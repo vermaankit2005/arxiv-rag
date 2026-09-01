@@ -36,6 +36,8 @@ Read the latest relevant code and documentation before proposing work.
 - Every Ollama chat, embedding, and evaluation-judge request must include the
   Cloudflare Access service-token headers loaded from `.env`; never hard-code
   those credentials. Ollama is the generator and semantic-judge provider.
+- Read `GENERATOR_MODEL` and `JUDGE_MODEL` from `.env`. Do not hard-code chat
+  model names in generator, judge, or eval metadata.
 
 ## Documents
 

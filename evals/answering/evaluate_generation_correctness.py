@@ -9,7 +9,8 @@ from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from evals.answering import context as evaluation_context
-from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
+from arxiv_rag.ollama_config import get_generator_model, get_judge_model
+from evals.judges import build_judge_model
 from evals.answering.references import build_fact_references
 
 DESCRIPTION = __doc__
@@ -19,8 +20,8 @@ ALLOWED_SCORES = {0, 0.25, 0.5, 0.75, 1}
 EXPERIMENT_METADATA = {
     "metric": "correctness",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": "gemma4:26b",
-    "judge_model": DEFAULT_JUDGE_MODEL,
+    "generator_model": get_generator_model(),
+    "judge_model": get_judge_model(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
 }

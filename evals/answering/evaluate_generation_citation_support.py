@@ -10,8 +10,9 @@ from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag.answering.generator import CITATION_ID_PATTERN, CITATION_MARKER_PATTERN
+from arxiv_rag.ollama_config import get_generator_model, get_judge_model
 from evals.answering import context as evaluation_context
-from evals.judges import DEFAULT_JUDGE_MODEL, build_judge_model
+from evals.judges import build_judge_model
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
@@ -20,8 +21,8 @@ EXPERIMENT_PREFIX = "generation_citation_support"
 EXPERIMENT_METADATA = {
     "metric": "citation_support",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": "gemma4:26b",
-    "judge_model": DEFAULT_JUDGE_MODEL,
+    "generator_model": get_generator_model(),
+    "judge_model": get_judge_model(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
 }

@@ -39,22 +39,20 @@ def _context() -> RetrievalContext:
     )
 
 
-def test_generator_uses_gemma_model_name():
-    assert generator.MODEL_NAME == "gemma4:26b"
-
-
-def test_chat_model_sends_cloudflare_access_headers(monkeypatch):
+def test_chat_model_uses_env_model_and_cloudflare_headers(monkeypatch):
     captured_options = {}
     headers = {
         "CF-Access-Client-Id": "client-id",
         "CF-Access-Client-Secret": "client-secret",
     }
 
+    monkeypatch.setenv("GENERATOR_MODEL", "generator-from-env")
     monkeypatch.setattr(generator, "get_ollama_connection", lambda: ("https://ollama.test", headers))
     monkeypatch.setattr(generator, "ChatOllama", lambda **options: captured_options.update(options) or object())
 
     generator._get_chat_model()
 
+    assert captured_options["model"] == "generator-from-env"
     assert captured_options["base_url"] == "https://ollama.test"
     assert captured_options["client_kwargs"] == {"headers": headers}
 
