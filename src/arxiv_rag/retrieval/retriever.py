@@ -4,8 +4,11 @@ from dataclasses import dataclass
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag.ingestion.vector_db_ingest import VectorStore, get_vector_store
+from arxiv_rag.logging import get_logger
 
 DEFAULT_TOP_K = 5
+
+log = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -97,6 +100,11 @@ def build_context_details(results: list[tuple[Document, float]]) -> BuiltContext
         citations=citations,
     )
 
+    if not citations:
+        log.warning("no citable passages found in %d retrieved documents", len(results))
+    else:
+        log.info("built context: %d passages from %d documents", len(citations), len(results))
+
     return BuiltContext(
         context=retrieval_context,
         passages_by_id=passages_by_id,
@@ -121,10 +129,9 @@ class PaperRetriever:
         question = question.strip()
         if not question:
             raise ValueError("question must not be empty")
-        return self._vector_store.similarity_search_with_score(
-            question,
-            k=self._top_k,
-        )
+        results = self._vector_store.similarity_search_with_score(question, k=self._top_k)
+        log.info("retrieved %d documents (top_k=%d)", len(results), self._top_k)
+        return results
 
     def retrieve_context(self, question: str) -> RetrievalContext:
         """Retrieve and expand a question into exact source-passage context."""

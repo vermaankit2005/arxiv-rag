@@ -3,8 +3,12 @@ from abc import ABC, abstractmethod
 
 from langchain_ollama import ChatOllama  # pyright: ignore[reportMissingImports]
 
+from arxiv_rag.logging import get_logger
 from arxiv_rag.ollama_config import get_generator_model, get_ollama_connection
 from arxiv_rag.retrieval import RetrievalContext
+
+log = get_logger(__name__)
+
 INSUFFICIENT_EVIDENCE_ANSWER = "I don't know the answer based on the provided evidence."
 CITATION_ID_PATTERN = re.compile(r"P\d+")
 CITATION_MARKER_PATTERN = re.compile(r"\[P\d+(?:\s*,\s*P\d+)*\]")
@@ -88,14 +92,17 @@ def generate_answer(question: str, context: RetrievalContext, model: ChatModel |
         raise ValueError("question must not be empty")
 
     if not context.text.strip() or not context.citations:
+        log.warning("no evidence in context, answering with the insufficient-evidence reply")
         return INSUFFICIENT_EVIDENCE_ANSWER
 
     chat_model = model or _get_chat_model()
 
+    log.info("generating answer from %d passages", len(context.citations))
     response = chat_model.invoke(_build_prompt(question, context))
 
     answer = response.content.strip()
 
     _validate_answer(answer, context)
+    log.info("answer generated: %d characters, %d citations", len(answer), len(citation_ids_in_text(answer)))
 
     return answer

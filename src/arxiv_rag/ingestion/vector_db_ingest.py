@@ -6,12 +6,15 @@ from langchain_chroma import Chroma  # pyright: ignore[reportMissingImports]
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
 from langchain_ollama import OllamaEmbeddings  # pyright: ignore[reportMissingImports]
 
+from arxiv_rag.logging import get_logger
 from arxiv_rag.ollama_config import get_ollama_connection
 
 CHROMA_DIRECTORY = Path(__file__).parents[3] / "chroma_db"
 CHROMA_DATABASE_FILE = CHROMA_DIRECTORY / "chroma.sqlite3"
 CHROMA_COLLECTION_NAME = "arxiv_papers"
 ACTIVE_COLLECTION_FILE = CHROMA_DIRECTORY / "active_collection.txt"
+
+log = get_logger(__name__)
 
 
 class VectorStore(ABC):
@@ -93,4 +96,6 @@ def get_vector_store(create_if_missing: bool = False, collection_name: str | Non
         base_url=base_url,
         client_kwargs={"headers": headers},
     )
-    return ChromaStore(embeddings, collection_name=collection_name or get_active_collection_name())
+    name = collection_name or get_active_collection_name()
+    log.info("opening Chroma collection %s", name)
+    return ChromaStore(embeddings, collection_name=name)
