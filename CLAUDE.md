@@ -63,9 +63,12 @@ Keep documentation short, practical, and easy to scan.
 - Execute Sprint 07 in this order: build the smallest useful regression
   pipeline, understand and add privacy-safe LangSmith tracing, then improve the
   measured eval failures.
-- The priority regression suite uses one fixed, balanced 12-of-24 generation
-  subset; the full suite uses all frozen examples. Local runs do not upload to
-  LangSmith unless `--upload` is explicit.
+- Keep the regression pipeline deliberately small: plain dictionaries and direct
+  functions, no report/config dataclass layers. Print only safe example IDs,
+  scores, completion, average, and status. For now, every regression metric uses
+  a temporary minimum score of `0.75`. The priority suite uses one fixed 12-of-24
+  generation subset; the full suite uses all frozen examples. Local runs do not
+  upload to LangSmith unless `--upload` is explicit.
 - When eval-driven product improvement resumes after Sprint 07, prioritize
   naturalness, sensitive-data/PII protection, and policy-response accuracy;
   address citation support next.

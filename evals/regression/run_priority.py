@@ -1,9 +1,8 @@
 # pyright: reportMissingImports=false
 
 """Run urgent evals with the fixed balanced 12-case generation subset."""
-
-from .runner import parse_upload_flag, run_suite
-from .suites import priority_specs
+from evals.regression.runner import parse_upload_flag, run_suite
+from evals.regression.suites import priority_specs
 
 
 def main() -> int:

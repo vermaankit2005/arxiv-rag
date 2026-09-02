@@ -25,7 +25,9 @@ class ChatModel(ABC):
         ...
 
 def _get_chat_model() -> ChatOllama:
+
     base_url, headers = get_ollama_connection()
+
     return ChatOllama(
         model=get_generator_model(),
         base_url=base_url,
@@ -40,11 +42,13 @@ def citation_ids_in_text(text: str) -> list[str]:
     """Return passage IDs from [P1] and [P1, P2] markers, in order of first appearance."""
     ids = []
     seen = set()
+
     for marker in CITATION_MARKER_PATTERN.finditer(text):
         for citation_id in CITATION_ID_PATTERN.findall(marker.group()):
             if citation_id not in seen:
                 seen.add(citation_id)
                 ids.append(citation_id)
+
     return ids
 
 
@@ -97,12 +101,11 @@ def generate_answer(question: str, context: RetrievalContext, model: ChatModel |
 
     chat_model = model or _get_chat_model()
 
-    log.info("generating answer from %d passages", len(context.citations))
     response = chat_model.invoke(_build_prompt(question, context))
-
     answer = response.content.strip()
 
     _validate_answer(answer, context)
-    log.info("answer generated: %d characters, %d citations", len(answer), len(citation_ids_in_text(answer)))
 
+    cited = ", ".join(citation_ids_in_text(answer))
+    log.info("generated answer from %d passages, cited %s", len(context.citations), cited)
     return answer

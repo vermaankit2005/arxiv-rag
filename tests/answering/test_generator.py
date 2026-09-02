@@ -74,6 +74,22 @@ def test_generate_answer_returns_normal_text_with_valid_inline_citations():
     assert "Do not write [P1, P2] or [P1,P2]" in model.prompt
 
 
+def test_generate_answer_logs_one_summary(caplog):
+    model = RecordingModel(
+        "Transformers use attention [P1]. The model reached 28.4 BLEU [P2]."
+    )
+
+    with caplog.at_level("INFO", logger="arxiv_rag"):
+        generator.generate_answer("How does it work?", _context(), model)
+
+    messages = [record.getMessage() for record in caplog.records]
+    summary = [message for message in messages if message.startswith("generated answer")]
+    assert len(summary) == 1
+    assert "from 2 passages" in summary[0]
+    assert "cited P1, P2" in summary[0]
+    assert not any(message.startswith("generating answer") for message in messages)
+
+
 def test_generate_answer_accepts_a_supported_partial_answer_and_prompts_for_the_missing_part():
     model = RecordingModel(
         "The model reached 28.4 BLEU [P2]. The provided evidence does not specify its training cost."
