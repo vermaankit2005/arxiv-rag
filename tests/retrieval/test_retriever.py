@@ -82,7 +82,7 @@ def test_build_context_details_keeps_passage_ids_aligned_with_context():
         ]
     )
 
-    built = retrieval.build_context_details([(document, 0.5)])
+    built = retrieval.build_context_with_details([(document, 0.5)])
 
     assert built.passages_by_id == {
         "P1": "The model achieved 28.4 BLEU.",

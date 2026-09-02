@@ -60,8 +60,9 @@ def _build_section_breadcrumbs(section_path: list[str]) -> str:
     return " > ".join(section_path)
 
 
-def build_context_details(results: list[tuple[Document, float]]) -> BuiltContext:
+def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltContext:
     """Expand ranked Documents into deduplicated, exactly citable passages."""
+
     context_passages = []
     citations = {}
     passages_by_id = {}
@@ -113,7 +114,7 @@ def build_context_details(results: list[tuple[Document, float]]) -> BuiltContext
 
 def build_context(results: list[tuple[Document, float]]) -> RetrievalContext:
     """Expand ranked Documents into deduplicated, exactly citable passages."""
-    return build_context_details(results).context
+    return build_context_with_details(results).context
 
 
 class PaperRetriever:
@@ -129,12 +130,15 @@ class PaperRetriever:
         question = question.strip()
         if not question:
             raise ValueError("question must not be empty")
+
         results = self._vector_store.similarity_search_with_score(question, k=self._top_k)
         log.info("retrieved %d documents (top_k=%d)", len(results), self._top_k)
+
         return results
 
     def retrieve_context(self, question: str) -> RetrievalContext:
         """Retrieve and expand a question into exact source-passage context."""
+
         retrieved_docs_with_rank = self.retrieve(question)
         return build_context(retrieved_docs_with_rank)
 
