@@ -1,10 +1,7 @@
 import re
-from abc import ABC, abstractmethod
 
-from langchain_ollama import ChatOllama  # pyright: ignore[reportMissingImports]
-
+from arxiv_rag.answering.chat_model import ChatModel, get_chat_model
 from arxiv_rag.logging import get_logger
-from arxiv_rag.ollama_config import get_generator_model, get_ollama_connection
 from arxiv_rag.retrieval import RetrievalContext
 
 log = get_logger(__name__)
@@ -13,29 +10,6 @@ INSUFFICIENT_EVIDENCE_ANSWER = "I don't know the answer based on the provided ev
 CITATION_ID_PATTERN = re.compile(r"P\d+")
 CITATION_MARKER_PATTERN = re.compile(r"\[P\d+(?:\s*,\s*P\d+)*\]")
 URL_PATTERN = re.compile(r"https?://", re.IGNORECASE)
-
-
-class ChatResponse:
-    content: str
-
-
-class ChatModel(ABC):
-    @abstractmethod
-    def invoke(self, prompt: str) -> ChatResponse:
-        ...
-
-def _get_chat_model() -> ChatOllama:
-
-    base_url, headers = get_ollama_connection()
-
-    return ChatOllama(
-        model=get_generator_model(),
-        base_url=base_url,
-        temperature=0,
-        client_kwargs={"headers": headers},
-        reasoning=False,
-        num_ctx=8192,
-    )
 
 
 def citation_ids_in_text(text: str) -> list[str]:
@@ -99,7 +73,7 @@ def generate_answer(question: str, context: RetrievalContext, model: ChatModel |
         log.warning("no evidence in context, answering with the insufficient-evidence reply")
         return INSUFFICIENT_EVIDENCE_ANSWER
 
-    chat_model = model or _get_chat_model()
+    chat_model = model or get_chat_model()
 
     response = chat_model.invoke(_build_prompt(question, context))
     answer = response.content.strip()

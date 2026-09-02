@@ -1,23 +1,16 @@
-from dataclasses import dataclass
-
-from arxiv_rag.answering import __main__ as answering_cli
+from arxiv_rag.answering import __main__ as answering_cli, chat_model
 from arxiv_rag.answering import generator, renderer
 from arxiv_rag.retrieval import Citation, RetrievalContext
 
 
-@dataclass
-class FakeResponse(generator.ChatResponse):
-    content: str
-
-
-class RecordingModel(generator.ChatModel):
+class RecordingModel(chat_model.ChatModel):
     def __init__(self, answer: str):
         self.answer = answer
         self.prompt = None
 
-    def invoke(self, prompt: str) -> FakeResponse:
+    def invoke(self, prompt: str) -> chat_model.ChatResponse:
         self.prompt = prompt
-        return FakeResponse(self.answer)
+        return chat_model.ChatResponse(content=self.answer)
 
 
 def _context() -> RetrievalContext:
@@ -47,10 +40,10 @@ def test_chat_model_uses_env_model_and_cloudflare_headers(monkeypatch):
     }
 
     monkeypatch.setenv("GENERATOR_MODEL", "generator-from-env")
-    monkeypatch.setattr(generator, "get_ollama_connection", lambda: ("https://ollama.test", headers))
-    monkeypatch.setattr(generator, "ChatOllama", lambda **options: captured_options.update(options) or object())
+    monkeypatch.setattr(chat_model, "get_ollama_connection", lambda: ("https://ollama.test", headers))
+    monkeypatch.setattr(chat_model, "ChatOllama", lambda **options: captured_options.update(options) or object())
 
-    generator._get_chat_model()
+    chat_model.OllamaChatModel._get_chat_model()
 
     assert captured_options["model"] == "generator-from-env"
     assert captured_options["base_url"] == "https://ollama.test"
