@@ -95,7 +95,11 @@ def generate_answer(question: str, context: RetrievalContext, model: ChatModel |
     response = chat_model.invoke(_build_prompt(question, context))
     answer = response.content.strip()
 
-    _validate_answer(answer, context)
+    try:
+        _validate_answer(answer, context)
+    except RuntimeError as error:
+        log.warning("rejected generated answer: %s", error)
+        raise
 
     cited = ", ".join(citation_ids_in_text(answer))
     log.info("generated answer from %d passages, cited %s", len(context.citations), cited)

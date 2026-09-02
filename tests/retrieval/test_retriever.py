@@ -125,18 +125,51 @@ def test_build_context_keeps_different_parts_from_the_same_anchor():
     assert context.citations["P1"].url == context.citations["P2"].url
 
 
-def test_build_context_rejects_missing_source_passage_metadata():
-    document = Document(
+def test_build_context_skips_a_malformed_document_and_keeps_valid_evidence():
+    malformed = Document(
         page_content="Legacy combined text",
         metadata={"arxiv_id": "1706.03762v7"},
     )
+    valid = _document([_passage("The model achieved 28.4 BLEU.")])
+
+    context = retrieval.build_context([(malformed, 0.4), (valid, 0.5)])
+
+    assert "The model achieved 28.4 BLEU." in context.text
+    assert list(context.citations) == ["P1"]
+
+
+def test_build_context_stops_when_all_documents_are_malformed():
+    missing_arxiv_id = _document([_passage("Passage")], arxiv_id="")
+    empty_passage = _document([_passage("", location="")])
 
     try:
-        retrieval.build_context([(document, 0.5)])
+        retrieval.build_context([(missing_arxiv_id, 0.4), (empty_passage, 0.5)])
     except RuntimeError as error:
-        assert "source-passage metadata is invalid" in str(error)
+        assert str(error) == "Retrieved evidence is invalid."
     else:
-        raise AssertionError("Expected missing source metadata to fail")
+        raise AssertionError("Expected corrupt retrieval evidence to fail")
+
+
+def test_retrieval_failure_is_logged_and_chained_to_a_runtime_error(caplog):
+    class FailingStore(RecordingStore):
+        def similarity_search_with_score(self, query, k=4):
+            raise OSError("database unavailable")
+
+    paper_retriever = retrieval.PaperRetriever(FailingStore(), top_k=3)
+    question = "How does attention work?"
+
+    with caplog.at_level("ERROR", logger="arxiv_rag"):
+        try:
+            paper_retriever.retrieve(question)
+        except RuntimeError as error:
+            assert str(error) == "Could not retrieve evidence."
+            assert isinstance(error.__cause__, OSError)
+        else:
+            raise AssertionError("Expected retrieval to fail")
+
+    messages = [record.getMessage() for record in caplog.records]
+    assert "evidence retrieval failed (top_k=3)" in messages
+    assert not any(question in message for message in messages)
 
 
 def test_traceable_retrieve_still_returns_ranked_documents():

@@ -5,7 +5,10 @@ from dataclasses import dataclass
 from langsmith import traceable
 
 from arxiv_rag.answering import generate_answer, render_answer
+from arxiv_rag.logging import get_logger
 from arxiv_rag.retrieval import BuiltContext, PaperRetriever, RetrievalContext
+
+log = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -16,19 +19,26 @@ class AnsweredQuestion:
     passages_by_id: dict[str, str]
 
 
-def main() -> None:
+def main() -> int:
     reconfigure = getattr(sys.stdout, "reconfigure", None)
     if reconfigure:
         reconfigure(encoding="utf-8")
 
-    question = input("Question: ").strip()
-    if not question:
-        return
+    try:
+        question = input("Question: ").strip()
+        if not question:
+            return 0
 
-    result = answer_question(question)
-
-    print("\n ---- Answer ----\n")
-    print(render_answer(result.answer, result.context.citations, clickable=sys.stdout.isatty()))
+        result = answer_question(question)
+        print("\n ---- Answer ----\n")
+        print(render_answer(result.answer, result.context.citations, clickable=sys.stdout.isatty()))
+    except (FileNotFoundError, RuntimeError, ValueError) as error:
+        log.error("could not answer question: %s", error)
+        return 1
+    except Exception:
+        log.exception("could not answer question because of an unexpected failure")
+        return 1
+    return 0
 
 
 def answer_question(question: str, thread_id: str | None = None, retriever: PaperRetriever | None = None) -> AnsweredQuestion:
@@ -63,4 +73,4 @@ def _answer_question(question: str, thread_id: str, retriever: PaperRetriever | 
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -111,15 +111,20 @@ def test_generate_answer_accepts_the_exact_refusal_when_no_passage_supports_the_
     assert "support none of the requested information" in model.prompt
 
 
-def test_generate_answer_rejects_an_unknown_citation_id():
+def test_generate_answer_logs_and_rejects_an_unknown_citation_id(caplog):
     model = RecordingModel("The model reached 28.4 BLEU [P9].")
 
-    try:
-        generator.generate_answer("What score did it reach?", _context(), model)
-    except RuntimeError as error:
-        assert "unknown citation IDs: P9" in str(error)
-    else:
-        raise AssertionError("Expected an unknown citation ID to fail")
+    with caplog.at_level("WARNING", logger="arxiv_rag"):
+        try:
+            generator.generate_answer("What score did it reach?", _context(), model)
+        except RuntimeError as error:
+            assert "unknown citation IDs: P9" in str(error)
+        else:
+            raise AssertionError("Expected an unknown citation ID to fail")
+
+    messages = [record.getMessage() for record in caplog.records]
+    assert any(message.startswith("rejected generated answer") for message in messages)
+    assert not any(model.answer in message for message in messages)
 
 
 def test_generate_answer_rejects_model_written_urls_case_insensitively():
@@ -261,6 +266,17 @@ def test_answer_question_uses_a_supplied_retriever(monkeypatch):
 
     assert supplied.questions == ["How does it work?"]
     assert result.context is supplied.built.context
+
+
+def test_answering_cli_returns_failure_status_for_an_operational_error(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda prompt: "How does it work?")
+    monkeypatch.setattr(
+        answering_cli,
+        "answer_question",
+        lambda question: (_ for _ in ()).throw(RuntimeError("model unavailable")),
+    )
+
+    assert answering_cli.main() == 1
 
 
 def test_traceable_wrappers_still_return_plain_application_values():

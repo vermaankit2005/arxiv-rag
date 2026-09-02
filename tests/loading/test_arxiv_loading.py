@@ -315,12 +315,12 @@ def test_a_paper_known_to_have_no_html_is_not_asked_for_twice(cache):
     assert client.get.call_count == 1
 
 
-def test_arxiv_being_unreachable_does_not_stop_the_run(cache):
-    """One unreachable paper must not take the other eleven down with it."""
+def test_arxiv_being_unreachable_is_reported_to_the_ingestion_pipeline(cache):
     client = Mock()
     client.get.side_effect = httpx.ConnectError("no route to host")
 
-    assert _fetch_arxiv_html("1706.03762v7", client) is None
+    with pytest.raises(httpx.ConnectError, match="no route to host"):
+        _fetch_arxiv_html("1706.03762v7", client)
 
 
 def test_arxiv_being_unreachable_is_not_recorded_as_no_html(cache):
@@ -330,10 +330,28 @@ def test_arxiv_being_unreachable_is_not_recorded_as_no_html(cache):
     client = Mock()
     client.get.side_effect = httpx.ConnectError("no route to host")
 
-    _fetch_arxiv_html("1706.03762v7", client)
+    with pytest.raises(httpx.ConnectError):
+        _fetch_arxiv_html("1706.03762v7", client)
     assert not (cache / "1706.03762v7.html").exists()
 
     # Network comes back: the paper is fetched, not skipped forever.
     client.get.side_effect = None
     client.get.return_value = fake_response(200, REAL_PAGE)
     assert _fetch_arxiv_html("1706.03762v7", client) == REAL_PAGE
+
+
+@pytest.mark.parametrize("status", [403, 429, 500])
+def test_http_failures_are_not_cached_as_missing_html(cache, status):
+    client = Mock()
+    response = fake_response(status, "temporary failure")
+    response.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "temporary failure",
+        request=httpx.Request("GET", "https://arxiv.org/html/1706.03762v7"),
+        response=httpx.Response(status),
+    )
+    client.get.return_value = response
+
+    with pytest.raises(httpx.HTTPStatusError):
+        _fetch_arxiv_html("1706.03762v7", client)
+
+    assert not (cache / "1706.03762v7.html").exists()

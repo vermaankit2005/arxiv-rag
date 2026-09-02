@@ -42,15 +42,27 @@ def get_source_passage_for_a_document(document: Document) -> list[SourcePassage]
     value = document.metadata.get("source_passages")
 
     try:
+        if not isinstance(value, str):
+            raise TypeError("source_passages must be JSON text")
         items = json.loads(value)
-        return [
-            SourcePassage(
-                text=item["text"],
-                location=item["location"],
-                section_path=item["section_path"],
-            )
-            for item in items
-        ]
+        if not isinstance(items, list):
+            raise TypeError("source_passages must contain a list")
+
+        passages = []
+        for item in items:
+            if not isinstance(item, dict):
+                raise TypeError("each source passage must be an object")
+            text = item["text"]
+            location = item["location"]
+            section_path = item["section_path"]
+            if not isinstance(text, str) or not text.strip():
+                raise TypeError("passage text must be non-empty text")
+            if not isinstance(location, str) or not location.strip():
+                raise TypeError("passage location must be non-empty text")
+            if not isinstance(section_path, list) or not all(isinstance(section, str) for section in section_path):
+                raise TypeError("section_path must be a list of text values")
+            passages.append(SourcePassage(text=text, location=location, section_path=section_path))
+        return passages
     except (json.JSONDecodeError, KeyError, TypeError) as error:
         raise RuntimeError("Retrieved source-passage metadata is invalid.") from error
 
@@ -76,12 +88,19 @@ def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltCo
     citations = {}
     passages_by_id = {}
     seen_passages = set()
+    valid_documents = 0
 
     for document, _score in results:
-        arxiv_id = document.metadata.get("arxiv_id")
+        try:
+            arxiv_id = document.metadata.get("arxiv_id")
+            if not isinstance(arxiv_id, str) or not arxiv_id.strip():
+                raise RuntimeError("Retrieved arXiv metadata is invalid.")
+            source_passage_doc = get_source_passage_for_a_document(document)
+        except RuntimeError:
+            log.exception("skipping malformed retrieved document %s", document.id)
+            continue
 
-        source_passage_doc = get_source_passage_for_a_document(document)
-
+        valid_documents += 1
         for passage in source_passage_doc:
 
             source_key = (arxiv_id, passage.location, passage.text)
@@ -104,6 +123,9 @@ def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltCo
                 f"Section: {section_bread_crumbs}\n"
                 f"Text: {passage.text}"
             )
+
+    if results and valid_documents == 0:
+        raise RuntimeError("Retrieved evidence is invalid.")
 
     retrieval_context = RetrievalContext(
         text="\n\n---\n\n".join(context_passages),
@@ -144,7 +166,11 @@ class PaperRetriever:
         if not question:
             raise ValueError("question must not be empty")
 
-        results = self._vector_store.similarity_search_with_score(question, k=self._top_k)
+        try:
+            results = self._vector_store.similarity_search_with_score(question, k=self._top_k)
+        except Exception as error:
+            log.exception("evidence retrieval failed (top_k=%d)", self._top_k)
+            raise RuntimeError("Could not retrieve evidence.") from error
 
         log.info("retrieved %d documents (top_k=%d)", len(results), self._top_k)
 

@@ -117,4 +117,6 @@ def get_logger(name: str | None = None) -> logging.Logger:
     setup()
     if not name or name == "__main__":
         return logging.getLogger(ROOT_NAME)
+    if name == ROOT_NAME or name.startswith(f"{ROOT_NAME}."):
+        return logging.getLogger(name)
     return logging.getLogger(f"{ROOT_NAME}.{name}")

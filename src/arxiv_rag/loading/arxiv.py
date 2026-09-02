@@ -23,14 +23,14 @@ def _fetch_arxiv_html(arxiv_id: str, client: httpx.Client) -> str | None:
         text = cached.read_text(encoding="utf-8", errors="ignore")
         return None if text == "" else text
 
-    try:
-        r = client.get(f"https://arxiv.org/html/{arxiv_id}", timeout=60.0)
-    except httpx.RequestError as e:
-        log.error("Error fetching arXiv %s: %s", arxiv_id, e)
-        return None
+    r = client.get(f"https://arxiv.org/html/{arxiv_id}", timeout=60.0)
+
+    if r.status_code != 200:
+        r.raise_for_status()
+        raise RuntimeError(f"Unexpected response from arXiv: HTTP {r.status_code}")
 
     # arXiv answers with a "no HTML for this paper" stub, not a 404.
-    missing = r.status_code != 200 or "ltx_page_main" not in r.text
+    missing = "ltx_page_main" not in r.text
 
     cached.write_text("" if missing else r.text, encoding="utf-8")
     return None if missing else r.text

@@ -21,14 +21,28 @@ def ingest_documents() -> VectorStore:
     loader = ArxivSampleHTMLLoader()
     docs_name = loader.get_docs_name()
     log.info("found %d papers", len(docs_name))
+    if not docs_name:
+        raise RuntimeError("No papers were found for ingestion.")
 
     papers_and_documents = []
+    failed_papers = []
     with httpx.Client(follow_redirects=True) as http_client:
         for doc_name in docs_name:
             arxiv_id = doc_name.removesuffix(".html")
-            loaded_paper = load_paper(arxiv_id, http_client)
-            documents = convert_loaded_paper_to_documents(loaded_paper)
+            try:
+                loaded_paper = load_paper(arxiv_id, http_client)
+                documents = convert_loaded_paper_to_documents(loaded_paper)
+            except Exception:
+                log.exception("failed to prepare arXiv paper %s", arxiv_id)
+                failed_papers.append(arxiv_id)
+                continue
             papers_and_documents.append((arxiv_id, documents))
+
+    if failed_papers:
+        failed = ", ".join(failed_papers)
+        raise RuntimeError(f"Could not prepare all papers for ingestion: {failed}.")
+    if not any(documents for _, documents in papers_and_documents):
+        raise RuntimeError("No documents were prepared for ingestion.")
 
     collection_name = f"{CHROMA_COLLECTION_NAME}_staging_{uuid4().hex}"
     vector_store = get_vector_store(create_if_missing=True, collection_name=collection_name)
@@ -47,6 +61,11 @@ def ingest_documents() -> VectorStore:
             log.info("[%d/%d] stored %s", index, len(docs_name), arxiv_id)
         activate_collection(collection_name)
     except Exception:
+        log.exception(
+            "failed to build staging collection %s after adding %d documents",
+            collection_name,
+            added,
+        )
         try:
             vector_store.delete()
         except Exception:
@@ -58,5 +77,17 @@ def ingest_documents() -> VectorStore:
     return vector_store
 
 
+def main() -> int:
+    try:
+        ingest_documents()
+    except RuntimeError as error:
+        log.error("ingestion stopped: %s", error)
+        return 1
+    except Exception:
+        log.exception("ingestion stopped unexpectedly")
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
-    ingest_documents()
+    raise SystemExit(main())
