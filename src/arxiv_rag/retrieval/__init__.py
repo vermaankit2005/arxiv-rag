@@ -1,5 +1,6 @@
 from .retriever import (
     DEFAULT_TOP_K,
+    BuiltContext,
     Citation,
     PaperRetriever,
     RetrievalContext,
@@ -11,6 +12,7 @@ from .retriever import (
 
 __all__ = [
     "DEFAULT_TOP_K",
+    "BuiltContext",
     "Citation",
     "PaperRetriever",
     "RetrievalContext",

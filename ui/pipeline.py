@@ -2,7 +2,8 @@
 
 import streamlit as st
 
-from arxiv_rag.retrieval import PaperRetriever, build_context_with_details
+from arxiv_rag.answering.__main__ import AnsweredQuestion, answer_question
+from arxiv_rag.retrieval import PaperRetriever
 
 
 @st.cache_resource(show_spinner=False)
@@ -11,11 +12,6 @@ def get_retriever(top_k: int) -> PaperRetriever:
     return PaperRetriever(top_k=top_k)
 
 
-def retrieve_evidence(question: str, top_k: int):
-    """Retrieve passages, keeping both the model context and the passage text.
-
-    PaperRetriever.retrieve_context drops the passage text, and the UI needs it
-    to show what each citation actually says.
-    """
-    results = get_retriever(top_k).retrieve(question)
-    return build_context_with_details(results)
+def answer_in_conversation(question: str, top_k: int, thread_id: str) -> AnsweredQuestion:
+    """Run the same backend entry point the CLI uses, inside this chat's thread."""
+    return answer_question(question, thread_id=thread_id, retriever=get_retriever(top_k))

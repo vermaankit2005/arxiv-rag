@@ -56,6 +56,16 @@ def test_retriever_uses_the_configured_top_k():
     assert store.k == 5
 
 
+def test_retrieve_context_with_details_keeps_the_passage_text():
+    document = _document([_passage("The model achieved 28.4 BLEU.")])
+    store = RecordingStore([(document, 0.5)])
+
+    built = retrieval.PaperRetriever(store).retrieve_context_with_details("How good is it?")
+
+    assert "[P1]" in built.context.text
+    assert built.passages_by_id == {"P1": "The model achieved 28.4 BLEU."}
+
+
 def test_build_context_pairs_each_passage_with_its_exact_anchor():
     document = _document(
         [
@@ -127,3 +137,21 @@ def test_build_context_rejects_missing_source_passage_metadata():
         assert "source-passage metadata is invalid" in str(error)
     else:
         raise AssertionError("Expected missing source metadata to fail")
+
+
+def test_traceable_retrieve_still_returns_ranked_documents():
+    document = _document([_passage("The model achieved 28.4 BLEU.")])
+    store = RecordingStore(results=[(document, 0.2)])
+    results = retrieval.PaperRetriever(store).retrieve("How does attention work?")
+
+    assert results == [(document, 0.2)]
+    assert not isinstance(results, dict)
+
+
+def test_traceable_build_context_still_returns_retrieval_context():
+    document = _document([_passage("The model achieved 28.4 BLEU.")])
+    context = retrieval.build_context([(document, 0.5)])
+
+    assert context.text.startswith("[P1]")
+    assert list(context.citations) == ["P1"]
+    assert not hasattr(context, "context")

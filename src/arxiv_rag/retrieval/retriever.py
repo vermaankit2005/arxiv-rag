@@ -2,6 +2,7 @@ import json
 from dataclasses import dataclass
 
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
+from langsmith import traceable
 
 from arxiv_rag.ingestion.vector_db_ingest import VectorStore, get_vector_store
 from arxiv_rag.logging import get_logger
@@ -60,6 +61,14 @@ def _build_section_breadcrumbs(section_path: list[str]) -> str:
     return " > ".join(section_path)
 
 
+@traceable(
+    name="build_context",
+    process_inputs=lambda inputs: {},
+    process_outputs=lambda outputs: {
+        "passages": outputs.context.text,
+        "citation_ids": list(outputs.context.citations),
+    },
+)
 def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltContext:
     """Expand ranked Documents into deduplicated, exactly citable passages."""
 
@@ -113,7 +122,7 @@ def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltCo
 
 
 def build_context(results: list[tuple[Document, float]]) -> RetrievalContext:
-    """Expand ranked Documents into deduplicated, exactly citable passages."""
+    """Expand ranked Documents into citable passages, without the passage text."""
     return build_context_with_details(results).context
 
 
@@ -125,6 +134,10 @@ class PaperRetriever:
         self._vector_store = vector_store or get_vector_store()
         self._top_k = top_k
 
+    @traceable(
+        name="retrieve",
+        process_outputs=lambda outputs: {"num_documents": len(outputs)},
+    )
     def retrieve(self, question: str) -> list[tuple[Document, float]]:
         """Return ranked retrieval Documents for a non-empty question."""
         question = question.strip()
@@ -132,15 +145,19 @@ class PaperRetriever:
             raise ValueError("question must not be empty")
 
         results = self._vector_store.similarity_search_with_score(question, k=self._top_k)
+
         log.info("retrieved %d documents (top_k=%d)", len(results), self._top_k)
 
         return results
 
+    def retrieve_context_with_details(self, question: str) -> BuiltContext:
+        """Retrieve context and keep the passage text callers need to show evidence."""
+        retrieved_docs_with_rank = self.retrieve(question)
+        return build_context_with_details(retrieved_docs_with_rank)
+
     def retrieve_context(self, question: str) -> RetrievalContext:
         """Retrieve and expand a question into exact source-passage context."""
-
-        retrieved_docs_with_rank = self.retrieve(question)
-        return build_context(retrieved_docs_with_rank)
+        return self.retrieve_context_with_details(question).context
 
 
 if __name__ == "__main__":

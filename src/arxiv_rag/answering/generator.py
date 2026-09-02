@@ -1,5 +1,7 @@
 import re
 
+from langsmith import traceable
+
 from arxiv_rag.answering.chat_model import ChatModel, get_chat_model
 from arxiv_rag.logging import get_logger
 from arxiv_rag.retrieval import RetrievalContext
@@ -26,11 +28,16 @@ def citation_ids_in_text(text: str) -> list[str]:
     return ids
 
 
+@traceable(
+    name="build_prompt",
+    process_inputs=lambda inputs: {},
+    process_outputs=lambda outputs: {"prompt": outputs},
+)
 def _build_prompt(question: str, context: RetrievalContext) -> str:
     return (
         "Answer the question using only the supplied source passages.\n\n"
         "Rules:\n"
-        "- Answer directly and use clear Markdown.\n"
+        "- Answer directly and reply in a clear and formatted Markdown.\n"
         "- Use short paragraphs, headings only when useful, and bullets for real lists.\n"
         "- Do not repeat the same point in different words.\n"
         "- Put a passage ID such as [P1] immediately after every factual sentence.\n"
@@ -46,6 +53,11 @@ def _build_prompt(question: str, context: RetrievalContext) -> str:
     )
 
 
+@traceable(
+    name="validate_answer",
+    process_inputs=lambda inputs: {},
+    process_outputs=lambda outputs: {"valid": True},
+)
 def _validate_answer(answer: str, context: RetrievalContext) -> None:
     if answer == INSUFFICIENT_EVIDENCE_ANSWER:
         return
@@ -63,6 +75,11 @@ def _validate_answer(answer: str, context: RetrievalContext) -> None:
         raise RuntimeError(f"The generated answer used unknown citation IDs: {unknown}.")
 
 
+@traceable(
+    name="generate_answer",
+    process_inputs=lambda inputs: {},
+    process_outputs=lambda outputs: {"answer": outputs},
+)
 def generate_answer(question: str, context: RetrievalContext, model: ChatModel | None = None) -> str:
     """Generate normal answer text containing validated inline passage IDs."""
     question = question.strip()

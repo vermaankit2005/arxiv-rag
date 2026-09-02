@@ -61,7 +61,7 @@ Keep documentation short, practical, and easy to scan.
   implement the feature or create files unless the user explicitly asks for
   implementation. Agree on the exact scope before editing.
 - Execute Sprint 07 in this order: build the smallest useful regression
-  pipeline, understand and add privacy-safe LangSmith tracing, then improve the
+  pipeline, understand and add LangSmith tracing, then improve the
   measured eval failures.
 - Keep the regression pipeline deliberately small: plain dictionaries and direct
   functions, no report/config dataclass layers. Print only safe example IDs,
@@ -72,6 +72,18 @@ Keep documentation short, practical, and easy to scan.
 - When eval-driven product improvement resumes after Sprint 07, prioritize
   naturalness, sensitive-data/PII protection, and policy-response accuracy;
   address citation support next.
+- LangSmith tracing is owned by the backend only (`src/arxiv_rag/`). The
+  Streamlit UI holds no tracing code: it never creates a traced root and never
+  builds context or calls the generator itself.
+- `answer_question` in `src/arxiv_rag/answering/__main__.py` is the single entry
+  point for one question. Every caller goes through it: the CLI, the UI, and any
+  future FastAPI layer.
+- `answer_question` takes an optional `thread_id`. A caller that keeps one
+  conversation together passes the same ID for every question in it; the UI
+  mints one per chat and starts a new one on "Clear conversation". A caller that
+  leaves it out, such as the CLI or an eval run, gets a fresh thread per
+  question. The `thread_id` groups traces only; it does not give the model any
+  conversation history.
 
 ### Sprint documents
 
@@ -83,5 +95,6 @@ Keep documentation short, practical, and easy to scan.
   open decisions, and deferred work. If the document disagrees with the code,
   the code wins and the document must be corrected.
 - Sprint 07 combines LangSmith application tracing with the evaluation regression
-  pipeline; do not build a custom tracing system. Tracing stays off by default
-  and must not export raw user, prompt, passage, answer, credential, or header content.
+  pipeline; do not build a custom tracing system. Tracing stays off by default.
+  Traces should include questions, prompts, passages, and answers. Do not export
+  credentials or headers.

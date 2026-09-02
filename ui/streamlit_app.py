@@ -6,13 +6,13 @@ Run it from the project root so the pipeline finds .env and chroma_db:
 """
 
 import time
+import uuid
 
 import streamlit as st
 
-from arxiv_rag.answering import generate_answer
 from arxiv_rag.retrieval import DEFAULT_TOP_K
 from citations import build_sources, link_citation_markers
-from pipeline import retrieve_evidence
+from pipeline import answer_in_conversation
 
 # Missing .env keys, a missing Chroma database and a rejected answer all reach
 # the UI as one of these, and all of them are worth showing the reader.
@@ -25,6 +25,12 @@ SUGGESTIONS = {
 }
 
 st.set_page_config(page_title="arXiv reading assistant", page_icon=":material/menu_book:")
+
+
+def start_conversation() -> None:
+    """Empty the chat and start a new trace thread for the next questions."""
+    st.session_state.messages = []
+    st.session_state.thread_id = str(uuid.uuid4())
 
 
 def render_sources(sources: list[dict]) -> None:
@@ -44,14 +50,14 @@ with st.sidebar:
     top_k = st.slider("Papers searched per question", min_value=1, max_value=10, value=DEFAULT_TOP_K)
     st.caption("Each paper contributes several passages, so the answer usually cites more sources than this.")
     if st.button("Clear conversation", icon=":material/delete_sweep:", width="stretch"):
-        st.session_state.messages = []
+        start_conversation()
         st.rerun()
 
 st.title("arXiv reading assistant")
 st.caption("Answers come only from the ingested papers. Every claim links to the passage it came from.")
 
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    start_conversation()
 
 question = st.chat_input("Ask about the papers", submit_mode="disable")
 
@@ -75,21 +81,17 @@ if question:
         started = time.perf_counter()
         try:
             with st.status(":shimmer[Reading the papers]", type="compact") as status:
-                with st.status("Searching for passages", type="step"):
-                    evidence = retrieve_evidence(question, top_k)
-                    st.write(f"Found {len(evidence.context.citations)} passages.")
-
-                with st.status("Writing a grounded answer", type="step"):
-                    answer = generate_answer(question, evidence.context)
+                result = answer_in_conversation(question, top_k, st.session_state.thread_id)
+                st.write(f"Found {len(result.context.citations)} passages.")
 
                 elapsed = time.perf_counter() - started
                 status.update(label=f"Read the papers in {elapsed:.0f}s", state="complete")
         except PIPELINE_ERRORS as error:
             st.error(str(error), icon=":material/error:")
         else:
-            citations = evidence.context.citations
-            linked_answer = link_citation_markers(answer, citations)
-            sources = build_sources(answer, citations, evidence.passages_by_id)
+            citations = result.context.citations
+            linked_answer = link_citation_markers(result.answer, citations)
+            sources = build_sources(result.answer, citations, result.passages_by_id)
 
             st.markdown(linked_answer)
             render_sources(sources)

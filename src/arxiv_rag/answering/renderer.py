@@ -1,7 +1,17 @@
+from langsmith import traceable
+
 from .generator import CITATION_ID_PATTERN, CITATION_MARKER_PATTERN
 from arxiv_rag.retrieval import Citation
 
 
+@traceable(
+    name="render_answer",
+    process_inputs=lambda inputs: {
+        "answer": inputs["answer"],
+        "clickable": inputs["clickable"],
+    },
+    process_outputs=lambda outputs: {"rendered": outputs},
+)
 def render_answer(answer: str, citations: dict[str, Citation], clickable: bool) -> str:
     """Replace passage IDs with compact trusted citations."""
     used_ids = []

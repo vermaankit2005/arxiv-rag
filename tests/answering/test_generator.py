@@ -1,6 +1,6 @@
 from arxiv_rag.answering import __main__ as answering_cli, chat_model
 from arxiv_rag.answering import generator, renderer
-from arxiv_rag.retrieval import Citation, RetrievalContext
+from arxiv_rag.retrieval import BuiltContext, Citation, RetrievalContext
 
 
 class RecordingModel(chat_model.ChatModel):
@@ -61,7 +61,7 @@ def test_generate_answer_returns_normal_text_with_valid_inline_citations():
     assert model.prompt is not None
     assert "Question:\nHow does it work?" in model.prompt
     assert "[P1]" in model.prompt
-    assert "Answer directly and use clear Markdown" in model.prompt
+    assert "Answer directly and reply in a clear and formatted Markdown" in model.prompt
     assert "Use only passage IDs" in model.prompt
     assert "write separate markers with a space: [P1] [P2]" in model.prompt
     assert "Do not write [P1, P2] or [P1,P2]" in model.prompt
@@ -190,20 +190,85 @@ def test_terminal_renderer_expands_grouped_citation_markers():
     assert "[2] paper — Results\nhttps://arxiv.org/html/paper#S2" in rendered
 
 
-def test_command_line_entry_asks_a_question_and_prints_the_answer(monkeypatch, capsys):
-    context = _context()
+class FakeRetriever:
+    def __init__(self, built: BuiltContext):
+        self.built = built
+        self.questions = []
 
-    class FakeRetriever:
-        def retrieve_context(self, question: str) -> RetrievalContext:
-            assert question == "How does it work?"
-            return context
+    def retrieve_context_with_details(self, question: str) -> BuiltContext:
+        self.questions.append(question)
+        return self.built
 
-    monkeypatch.setattr("builtins.input", lambda _: "How does it work?")
-    monkeypatch.setattr(answering_cli, "PaperRetriever", FakeRetriever)
+
+def _built_context() -> BuiltContext:
+    return BuiltContext(
+        context=_context(),
+        passages_by_id={"P1": "Transformers use attention.", "P2": "The model reached 28.4 BLEU."},
+    )
+
+
+def _fake_pipeline(monkeypatch) -> FakeRetriever:
+    retriever = FakeRetriever(_built_context())
+    monkeypatch.setattr(answering_cli, "PaperRetriever", lambda: retriever)
     monkeypatch.setattr(answering_cli, "generate_answer", lambda question, supplied_context: "Answer [P1].")
+    return retriever
+
+
+def test_command_line_entry_asks_a_question_and_prints_the_answer(monkeypatch, capsys):
+    _fake_pipeline(monkeypatch)
+    monkeypatch.setattr("builtins.input", lambda _: "How does it work?")
 
     answering_cli.main()
 
     output = capsys.readouterr().out
     assert "Answer [1]." in output
     assert "Sources:\n[1] paper — Introduction\nhttps://arxiv.org/html/paper#S1" in output
+
+
+def test_answer_question_returns_the_answer_with_its_evidence(monkeypatch):
+    retriever = _fake_pipeline(monkeypatch)
+
+    result = answering_cli.answer_question("How does it work?")
+
+    assert retriever.questions == ["How does it work?"]
+    assert result.answer == "Answer [P1]."
+    assert result.context is retriever.built.context
+    assert result.passages_by_id == retriever.built.passages_by_id
+
+
+def test_answer_question_mints_a_new_thread_id_for_every_question(monkeypatch):
+    _fake_pipeline(monkeypatch)
+
+    first = answering_cli.answer_question("How does it work?")
+    second = answering_cli.answer_question("How does it work?")
+
+    assert first.thread_id != second.thread_id
+
+
+def test_answer_question_keeps_a_supplied_thread_id(monkeypatch):
+    _fake_pipeline(monkeypatch)
+
+    result = answering_cli.answer_question("How does it work?", thread_id="conversation-1")
+
+    assert result.thread_id == "conversation-1"
+
+
+def test_answer_question_uses_a_supplied_retriever(monkeypatch):
+    _fake_pipeline(monkeypatch)
+    supplied = FakeRetriever(_built_context())
+
+    result = answering_cli.answer_question("How does it work?", retriever=supplied)
+
+    assert supplied.questions == ["How does it work?"]
+    assert result.context is supplied.built.context
+
+
+def test_traceable_wrappers_still_return_plain_application_values():
+    model = RecordingModel("Transformers use attention [P1].")
+    context = _context()
+
+    answer = generator.generate_answer("How does it work?", context, model)
+    rendered = renderer.render_answer(answer, context.citations, clickable=False)
+
+    assert answer == model.answer
+    assert rendered.startswith("Transformers use attention [1].")
