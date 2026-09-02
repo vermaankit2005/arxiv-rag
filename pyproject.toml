@@ -21,6 +21,8 @@ extract = ["pypdf>=6.0", "pymupdf>=1.24", "pymupdf4llm>=0.0.30"]
 # docling ships ~1GB of layout models. Separate group so it is opted into, not
 # dragged in by every sync.
 extract-docling = ["docling>=2.60"]
+# The Streamlit UI.
+ui = ["streamlit>=1.57"]
 dev = [
     "langsmith>=0.11.1",
     "lxml>=6.1",
@@ -35,7 +37,7 @@ build-backend = "hatchling.build"
 packages = ["src/arxiv_rag"]
 
 [tool.uv]
-default-groups = ["dev"]
+default-groups = ["dev", "ui"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

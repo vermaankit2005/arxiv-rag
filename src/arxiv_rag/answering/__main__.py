@@ -15,7 +15,13 @@ def main() -> None:
 
     context = PaperRetriever().retrieve_context(question)
     answer = generate_answer(question, context)
+    print("\n ---- Answer ----\n")
     print(render_answer(answer, context.citations, clickable=sys.stdout.isatty()))
+
+
+def answer_question(question: str) -> dict:
+    context = PaperRetriever().retrieve_context(question)
+    return generate_answer(question, context)
 
 
 if __name__ == "__main__":
