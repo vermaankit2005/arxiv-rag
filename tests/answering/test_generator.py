@@ -1,5 +1,5 @@
-from arxiv_rag.answering import __main__ as answering_cli, chat_model
-from arxiv_rag.answering import generator, renderer
+from arxiv_rag.answering import chat_model, generator, renderer
+from arxiv_rag.answering import __main__ as answering_cli
 from arxiv_rag.retrieval import BuiltContext, Citation, RetrievalContext
 
 
@@ -139,15 +139,12 @@ def test_generate_answer_rejects_model_written_urls_case_insensitively():
             raise AssertionError(f"Expected model-written URL to fail: {url}")
 
 
-def test_generate_answer_rejects_an_uncited_answer():
-    model = RecordingModel("Transformers use attention.")
+def test_generate_answer_accepts_an_answer_without_citation_markers():
+    model = RecordingModel("I can only answer from the supplied passages.")
 
-    try:
-        generator.generate_answer("How do Transformers work?", _context(), model)
-    except RuntimeError as error:
-        assert "must contain at least one citation" in str(error)
-    else:
-        raise AssertionError("Expected an uncited answer to fail")
+    answer = generator.generate_answer("How do Transformers work?", _context(), model)
+
+    assert answer == model.answer
 
 
 def test_generate_answer_accepts_grouped_citation_markers():
@@ -262,7 +259,7 @@ def test_answer_question_uses_a_supplied_retriever(monkeypatch):
     _fake_pipeline(monkeypatch)
     supplied = FakeRetriever(_built_context())
 
-    result = answering_cli.answer_question("How does it work?", retriever=supplied)
+    result = answering_cli.answer_question("How does it work?", retriever=supplied)  # pyright: ignore[reportArgumentType]
 
     assert supplied.questions == ["How does it work?"]
     assert result.context is supplied.built.context

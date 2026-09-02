@@ -45,6 +45,7 @@ def _build_prompt(question: str, context: RetrievalContext) -> str:
         "- Never combine IDs in one pair of brackets. Do not write [P1, P2] or [P1,P2].\n"
         "- Use only passage IDs that appear in the supplied passages.\n"
         "- Do not write or invent URLs.\n"
+        "- Answer the question directly. Do NOT add statements like - Based on the given/retrieved context .....\n"
         "- Never guess or fill in information that the supplied passages do not support.\n"
         "- If the passages support only part of the question, answer that part and clearly state what the evidence does not specify.\n"
         f"- If the passages support none of the requested information, reply exactly: {INSUFFICIENT_EVIDENCE_ANSWER}\n\n"
@@ -65,11 +66,12 @@ def _validate_answer(answer: str, context: RetrievalContext) -> None:
     if URL_PATTERN.search(answer):
         raise RuntimeError("The generated answer must not contain model-written URLs.")
 
-    citation_ids = set(citation_ids_in_text(answer))
-    if not citation_ids:
-        raise RuntimeError("The generated answer must contain at least one citation.")
+    # DISABLED FOR NOW TO ALLOW TEXT IN ANSWER WITHOUT CITATIONS
+    # citation_ids = set(citation_ids_in_text(answer))
+    # if not citation_ids:
+    #     raise RuntimeError("The generated answer must contain at least one citation.")
 
-    unknown_ids = citation_ids - context.citations.keys()
+    unknown_ids = set(citation_ids_in_text(answer)) - context.citations.keys()
     if unknown_ids:
         unknown = ", ".join(sorted(unknown_ids))
         raise RuntimeError(f"The generated answer used unknown citation IDs: {unknown}.")
