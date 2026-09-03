@@ -1,16 +1,28 @@
+import pytest  # pyright: ignore[reportMissingImports]
+from langchain_core.language_models.fake_chat_models import (  # pyright: ignore[reportMissingImports]
+    FakeListChatModel,
+)
+
 from arxiv_rag.answering import __main__ as answering_cli
-from arxiv_rag.answering import chat_model, generator, renderer
+from arxiv_rag.answering import generator, renderer
 from arxiv_rag.retrieval import BuiltContext, Citation, RetrievalContext
 
 
-class RecordingModel(chat_model.ChatModel):
-    def __init__(self, answer: str):
-        self.answer = answer
-        self.prompt = None
+class RecordingModel(FakeListChatModel):
+    answer: str
+    prompt: str | None = None
 
-    def invoke(self, prompt: str) -> chat_model.ChatResponse:
+    def __init__(self, answer: str):
+        super().__init__(responses=[answer], answer=answer)
+
+    def invoke(self, prompt, config=None, *, stop=None, **kwargs):
         self.prompt = prompt
-        return chat_model.ChatResponse(content=self.answer)
+        return super().invoke(prompt, config, stop=stop, **kwargs)
+
+
+class FailingModel(FakeListChatModel):
+    def invoke(self, prompt, config=None, *, stop=None, **kwargs):
+        raise OSError("offline")
 
 
 def _context() -> RetrievalContext:
@@ -32,22 +44,27 @@ def _context() -> RetrievalContext:
     )
 
 
-def test_chat_model_uses_env_model_and_cloudflare_headers(monkeypatch):
-    captured_options = {}
-    headers = {
-        "CF-Access-Client-Id": "client-id",
-        "CF-Access-Client-Secret": "client-secret",
-    }
+def test_generate_answer_wraps_model_failures_without_logging_the_prompt(caplog):
+    prompt = "private prompt"
+    model = FailingModel(responses=["unused"])
 
-    monkeypatch.setenv("GENERATOR_MODEL", "generator-from-env")
-    monkeypatch.setattr(chat_model, "get_ollama_connection", lambda: ("https://ollama.test", headers))
-    monkeypatch.setattr(chat_model, "ChatOllama", lambda **options: captured_options.update(options) or object())
+    with caplog.at_level("ERROR", logger="arxiv_rag"), pytest.raises(
+        RuntimeError, match="Could not generate an answer"
+    ) as raised:
+        generator.generate_answer(prompt, _context(), model)
 
-    chat_model.OllamaChatModel._get_chat_model()
+    assert isinstance(raised.value.__cause__, OSError)
+    messages = [record.getMessage() for record in caplog.records]
+    assert "Ollama answer generation failed" in messages
+    assert not any(prompt in message for message in messages)
 
-    assert captured_options["model"] == "generator-from-env"
-    assert captured_options["base_url"] == "https://ollama.test"
-    assert captured_options["client_kwargs"] == {"headers": headers}
+
+@pytest.mark.parametrize("content", ["", "   "])
+def test_generate_answer_rejects_empty_model_content(content):
+    model = FakeListChatModel(responses=[content])
+
+    with pytest.raises(RuntimeError, match="Could not generate an answer"):
+        generator.generate_answer("What happened?", _context(), model)
 
 
 def test_generate_answer_returns_normal_text_with_valid_inline_citations():
@@ -227,16 +244,6 @@ def test_terminal_renderer_expands_grouped_citation_markers():
     assert "[2] paper — Results\nhttps://arxiv.org/html/paper#S2" in rendered
 
 
-class FakeRetriever:
-    def __init__(self, built: BuiltContext):
-        self.built = built
-        self.questions = []
-
-    def retrieve_context_with_details(self, question: str) -> BuiltContext:
-        self.questions.append(question)
-        return self.built
-
-
 def _built_context() -> BuiltContext:
     return BuiltContext(
         context=_context(),
@@ -244,19 +251,20 @@ def _built_context() -> BuiltContext:
     )
 
 
-def _fake_pipeline(monkeypatch) -> FakeRetriever:
-    retriever = FakeRetriever(_built_context())
-    monkeypatch.setattr(answering_cli, "PaperRetriever", lambda: retriever)
-    monkeypatch.setattr(
-        answering_cli,
-        "generate_answer",
-        lambda question, supplied_context, answer_mode="standard": "Answer [P1].",
-    )
-    return retriever
+def _stub_graph(monkeypatch, captured: dict | None = None) -> BuiltContext:
+    built = _built_context()
+
+    def fake_invoke(question, thread_id, answer_mode="standard"):
+        if captured is not None:
+            captured.update(question=question, thread_id=thread_id, answer_mode=answer_mode)
+        return {"answer": "Answer [P1].", "current_built_context": built}
+
+    monkeypatch.setattr(answering_cli, "invoke_workflow_graph", fake_invoke)
+    return built
 
 
 def test_command_line_entry_asks_a_question_and_prints_the_answer(monkeypatch, capsys):
-    _fake_pipeline(monkeypatch)
+    _stub_graph(monkeypatch)
     monkeypatch.setattr("builtins.input", lambda _: "How does it work?")
 
     answering_cli.main()
@@ -267,34 +275,29 @@ def test_command_line_entry_asks_a_question_and_prints_the_answer(monkeypatch, c
 
 
 def test_answer_question_returns_the_answer_with_its_evidence(monkeypatch):
-    retriever = _fake_pipeline(monkeypatch)
+    captured = {}
+    built = _stub_graph(monkeypatch, captured)
 
     result = answering_cli.answer_question("How does it work?")
 
-    assert retriever.questions == ["How does it work?"]
+    assert captured["question"] == "How does it work?"
     assert result.answer == "Answer [P1]."
-    assert result.context is retriever.built.context
-    assert result.passages_by_id == retriever.built.passages_by_id
+    assert result.context is built.context
+    assert result.passages_by_id == built.passages_by_id
 
 
-def test_answer_question_passes_easy_mode_to_generation(monkeypatch):
-    retriever = _fake_pipeline(monkeypatch)
+def test_answer_question_passes_easy_mode_to_the_workflow_graph(monkeypatch):
     captured = {}
+    _stub_graph(monkeypatch, captured)
 
-    def generate_with_mode(question, supplied_context, answer_mode="standard"):
-        captured["answer_mode"] = answer_mode
-        return "Easy answer [P1]."
+    result = answering_cli.answer_question("How does it work?", answer_mode="easy")
 
-    monkeypatch.setattr(answering_cli, "generate_answer", generate_with_mode)
-
-    result = answering_cli.answer_question("How does it work?", retriever=retriever, answer_mode="easy")  # pyright: ignore[reportArgumentType]
-
-    assert result.answer == "Easy answer [P1]."
+    assert result.answer == "Answer [P1]."
     assert captured["answer_mode"] == "easy"
 
 
 def test_answer_question_mints_a_new_thread_id_for_every_question(monkeypatch):
-    _fake_pipeline(monkeypatch)
+    _stub_graph(monkeypatch)
 
     first = answering_cli.answer_question("How does it work?")
     second = answering_cli.answer_question("How does it work?")
@@ -303,21 +306,13 @@ def test_answer_question_mints_a_new_thread_id_for_every_question(monkeypatch):
 
 
 def test_answer_question_keeps_a_supplied_thread_id(monkeypatch):
-    _fake_pipeline(monkeypatch)
+    captured = {}
+    _stub_graph(monkeypatch, captured)
 
     result = answering_cli.answer_question("How does it work?", thread_id="conversation-1")
 
     assert result.thread_id == "conversation-1"
-
-
-def test_answer_question_uses_a_supplied_retriever(monkeypatch):
-    _fake_pipeline(monkeypatch)
-    supplied = FakeRetriever(_built_context())
-
-    result = answering_cli.answer_question("How does it work?", retriever=supplied)  # pyright: ignore[reportArgumentType]
-
-    assert supplied.questions == ["How does it work?"]
-    assert result.context is supplied.built.context
+    assert captured["thread_id"] == "conversation-1"
 
 
 def test_answering_cli_returns_failure_status_for_an_operational_error(monkeypatch):
