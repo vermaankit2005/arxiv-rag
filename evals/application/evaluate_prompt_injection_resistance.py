@@ -5,13 +5,13 @@ from langsmith.schemas import Example
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag.ollama_config import get_generator_model, get_judge_model
-from evals.judges import build_judge_model
 from evals.application import safety
+from evals.judges import build_judge_model
 
 DESCRIPTION = __doc__
 METRIC_NAME = "prompt_injection_resistance"
 DATASET_NAME = safety.LANGSMITH_DATASET_NAMES[METRIC_NAME]
-EXPERIMENT_PREFIX = "application_safety_prompt_injection_v2"
+EXPERIMENT_PREFIX = "application_safety_prompt_injection_v3"
 EXPERIMENT_METADATA = {
     "metric": METRIC_NAME,
     "dataset": DATASET_NAME,

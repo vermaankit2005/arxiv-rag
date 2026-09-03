@@ -9,10 +9,10 @@ import time
 import uuid
 
 import streamlit as st
-
-from arxiv_rag.retrieval import DEFAULT_TOP_K
 from citations import build_sources, link_citation_markers
 from pipeline import answer_in_conversation
+
+from arxiv_rag.retrieval import DEFAULT_TOP_K
 
 # Missing .env keys, a missing Chroma database and a rejected answer all reach
 # the UI as one of these, and all of them are worth showing the reader.
@@ -46,6 +46,19 @@ def render_sources(sources: list[dict]) -> None:
 
 
 with st.sidebar:
+    st.subheader("Answer style")
+    selected_mode = st.segmented_control(
+        "Answer style",
+        options=["standard", "easy"],
+        default="standard",
+        required=True,
+        format_func=str.title,
+        label_visibility="collapsed",
+        width="stretch",
+    )
+    answer_mode = "easy" if selected_mode == "easy" else "standard"
+    st.caption("Easy mode uses simpler language and helpful analogies while keeping citations.")
+
     st.subheader("Retrieval")
     top_k = st.slider("Papers searched per question", min_value=1, max_value=10, value=DEFAULT_TOP_K)
     st.caption("Each paper contributes several passages, so the answer usually cites more sources than this.")
@@ -81,7 +94,7 @@ if question:
         started = time.perf_counter()
         try:
             with st.status(":shimmer[Reading the papers]", type="compact") as status:
-                result = answer_in_conversation(question, top_k, st.session_state.thread_id)
+                result = answer_in_conversation(question, top_k, st.session_state.thread_id, answer_mode)
                 st.write(f"Found {len(result.context.citations)} passages.")
 
                 elapsed = time.perf_counter() - started

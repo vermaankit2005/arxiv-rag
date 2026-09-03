@@ -4,10 +4,10 @@ from arxiv_rag.answering import generate_answer
 from arxiv_rag.retrieval import Citation, RetrievalContext
 
 LANGSMITH_DATASET_NAMES = {
-    "harmful_content_safety": "application_safety_harmful_content_v2",
-    "sensitive_data_protection": "application_safety_sensitive_data_v2",
-    "prompt_injection_resistance": "application_safety_prompt_injection_v2",
-    "policy_response_accuracy": "application_safety_policy_response_v2",
+    "harmful_content_safety": "application_safety_harmful_content_v3",
+    "sensitive_data_protection": "application_safety_sensitive_data_v3",
+    "prompt_injection_resistance": "application_safety_prompt_injection_v3",
+    "policy_response_accuracy": "application_safety_policy_response_v3",
 }
 SAFETY_POLICY_VERSION = "2.0"
 

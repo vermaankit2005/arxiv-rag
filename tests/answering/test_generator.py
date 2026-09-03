@@ -1,5 +1,5 @@
-from arxiv_rag.answering import chat_model, generator, renderer
 from arxiv_rag.answering import __main__ as answering_cli
+from arxiv_rag.answering import chat_model, generator, renderer
 from arxiv_rag.retrieval import BuiltContext, Citation, RetrievalContext
 
 
@@ -61,10 +61,45 @@ def test_generate_answer_returns_normal_text_with_valid_inline_citations():
     assert model.prompt is not None
     assert "Question:\nHow does it work?" in model.prompt
     assert "[P1]" in model.prompt
+    assert "Use natural, clear language while keeping useful technical detail" in model.prompt
     assert "Answer directly and reply in a clear and formatted Markdown" in model.prompt
     assert "Use only passage IDs" in model.prompt
     assert "write separate markers with a space: [P1] [P2]" in model.prompt
     assert "Do not write [P1, P2] or [P1,P2]" in model.prompt
+    assert "Never reveal credentials, access tokens, passwords" in model.prompt
+    assert "briefly refuse without repeating it" in model.prompt
+    assert "name only the categories and never the values" in model.prompt
+
+
+def test_generate_answer_easy_mode_changes_only_the_explanation_style():
+    model = RecordingModel(
+        "Think of attention like several readers focusing on different words [P1]."
+    )
+
+    answer = generator.generate_answer("How does it work?", _context(), model, answer_mode="easy")
+
+    assert answer == model.answer
+    assert model.prompt is not None
+    assert "Explain for a beginner using simple, natural language" in model.prompt
+    assert "Use a simple analogy when it helps" in model.prompt
+    assert "supporting passage IDs immediately after factual analogy sentences" in model.prompt
+    assert "Do not add a fact or analogy unless the supplied passages support" in model.prompt
+    assert "Put a passage ID such as [P1] immediately after every factual sentence" in model.prompt
+    assert "Use only passage IDs that appear" in model.prompt
+
+
+def test_generate_answer_rejects_an_unknown_answer_mode():
+    try:
+        generator.generate_answer(
+            "How does it work?",
+            _context(),
+            RecordingModel("Unused"),
+            answer_mode="verbose",  # pyright: ignore[reportArgumentType]
+        )
+    except ValueError as error:
+        assert str(error) == "answer_mode must be 'standard' or 'easy'"
+    else:
+        raise AssertionError("Expected an unknown answer mode to fail")
 
 
 def test_generate_answer_logs_one_summary(caplog):
@@ -212,7 +247,11 @@ def _built_context() -> BuiltContext:
 def _fake_pipeline(monkeypatch) -> FakeRetriever:
     retriever = FakeRetriever(_built_context())
     monkeypatch.setattr(answering_cli, "PaperRetriever", lambda: retriever)
-    monkeypatch.setattr(answering_cli, "generate_answer", lambda question, supplied_context: "Answer [P1].")
+    monkeypatch.setattr(
+        answering_cli,
+        "generate_answer",
+        lambda question, supplied_context, answer_mode="standard": "Answer [P1].",
+    )
     return retriever
 
 
@@ -236,6 +275,22 @@ def test_answer_question_returns_the_answer_with_its_evidence(monkeypatch):
     assert result.answer == "Answer [P1]."
     assert result.context is retriever.built.context
     assert result.passages_by_id == retriever.built.passages_by_id
+
+
+def test_answer_question_passes_easy_mode_to_generation(monkeypatch):
+    retriever = _fake_pipeline(monkeypatch)
+    captured = {}
+
+    def generate_with_mode(question, supplied_context, answer_mode="standard"):
+        captured["answer_mode"] = answer_mode
+        return "Easy answer [P1]."
+
+    monkeypatch.setattr(answering_cli, "generate_answer", generate_with_mode)
+
+    result = answering_cli.answer_question("How does it work?", retriever=retriever, answer_mode="easy")  # pyright: ignore[reportArgumentType]
+
+    assert result.answer == "Easy answer [P1]."
+    assert captured["answer_mode"] == "easy"
 
 
 def test_answer_question_mints_a_new_thread_id_for_every_question(monkeypatch):

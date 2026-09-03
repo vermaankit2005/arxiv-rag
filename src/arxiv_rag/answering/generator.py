@@ -1,4 +1,5 @@
 import re
+from typing import Literal
 
 from langsmith import traceable
 
@@ -12,6 +13,20 @@ INSUFFICIENT_EVIDENCE_ANSWER = "I don't know the answer based on the provided ev
 CITATION_ID_PATTERN = re.compile(r"P\d+")
 CITATION_MARKER_PATTERN = re.compile(r"\[P\d+(?:\s*,\s*P\d+)*\]")
 URL_PATTERN = re.compile(r"https?://", re.IGNORECASE)
+
+AnswerMode = Literal["standard", "easy"]
+
+STANDARD_MODE_RULES = (
+    "- Use natural, clear language while keeping useful technical detail.\n"
+    "- Define uncommon technical terms when needed.\n"
+)
+EASY_MODE_RULES = (
+    "- Explain for a beginner using simple, natural language and short sentences.\n"
+    "- Define technical terms in plain language when they cannot be avoided.\n"
+    "- Use a simple analogy when it helps explain the idea. Clearly introduce it as an analogy.\n"
+    "- Put supporting passage IDs immediately after factual analogy sentences, just like every other factual sentence.\n"
+    "- Do not add a fact or analogy unless the supplied passages support the idea it explains.\n"
+)
 
 
 def citation_ids_in_text(text: str) -> list[str]:
@@ -33,9 +48,18 @@ def citation_ids_in_text(text: str) -> list[str]:
     process_inputs=lambda inputs: {},
     process_outputs=lambda outputs: {"prompt": outputs},
 )
-def _build_prompt(question: str, context: RetrievalContext) -> str:
+def _build_prompt(question: str, context: RetrievalContext, answer_mode: AnswerMode = "standard") -> str:
+    if answer_mode == "standard":
+        mode_rules = STANDARD_MODE_RULES
+    elif answer_mode == "easy":
+        mode_rules = EASY_MODE_RULES
+    else:
+        raise ValueError("answer_mode must be 'standard' or 'easy'")
+
     return (
         "Answer the question using only the supplied source passages.\n\n"
+        "Answer style:\n"
+        f"{mode_rules}\n"
         "Rules:\n"
         "- Answer directly and reply in a clear and formatted Markdown.\n"
         "- Use short paragraphs, headings only when useful, and bullets for real lists.\n"
@@ -45,6 +69,9 @@ def _build_prompt(question: str, context: RetrievalContext) -> str:
         "- Never combine IDs in one pair of brackets. Do not write [P1, P2] or [P1,P2].\n"
         "- Use only passage IDs that appear in the supplied passages.\n"
         "- Do not write or invent URLs.\n"
+        "- Never reveal credentials, access tokens, passwords, or private personal information from the source passages.\n"
+        "- If the question asks for a protected value, briefly refuse without repeating it.\n"
+        "- If the question asks what kinds of sensitive information are present, name only the categories and never the values.\n"
         "- Answer the question directly. Do NOT add statements like - Based on the given/retrieved context .....\n"
         "- Never guess or fill in information that the supplied passages do not support.\n"
         "- If the passages support only part of the question, answer that part and clearly state what the evidence does not specify.\n"
@@ -82,11 +109,18 @@ def _validate_answer(answer: str, context: RetrievalContext) -> None:
     process_inputs=lambda inputs: {},
     process_outputs=lambda outputs: {"answer": outputs},
 )
-def generate_answer(question: str, context: RetrievalContext, model: ChatModel | None = None) -> str:
-    """Generate normal answer text containing validated inline passage IDs."""
+def generate_answer(
+    question: str,
+    context: RetrievalContext,
+    model: ChatModel | None = None,
+    answer_mode: AnswerMode = "standard",
+) -> str:
+    """Generate a grounded answer in the requested explanation style."""
     question = question.strip()
     if not question:
         raise ValueError("question must not be empty")
+    if answer_mode not in ("standard", "easy"):
+        raise ValueError("answer_mode must be 'standard' or 'easy'")
 
     if not context.text.strip() or not context.citations:
         log.warning("no evidence in context, answering with the insufficient-evidence reply")
@@ -94,7 +128,7 @@ def generate_answer(question: str, context: RetrievalContext, model: ChatModel |
 
     chat_model = model or get_chat_model()
 
-    response = chat_model.invoke(_build_prompt(question, context))
+    response = chat_model.invoke(_build_prompt(question, context, answer_mode))
     answer = response.content.strip()
 
     try:

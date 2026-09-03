@@ -55,14 +55,18 @@ def get_source_passage_for_a_document(document: Document) -> list[SourcePassage]
             text = item["text"]
             location = item["location"]
             section_path = item["section_path"]
+
             if not isinstance(text, str) or not text.strip():
                 raise TypeError("passage text must be non-empty text")
             if not isinstance(location, str) or not location.strip():
                 raise TypeError("passage location must be non-empty text")
             if not isinstance(section_path, list) or not all(isinstance(section, str) for section in section_path):
                 raise TypeError("section_path must be a list of text values")
+
             passages.append(SourcePassage(text=text, location=location, section_path=section_path))
+
         return passages
+
     except (json.JSONDecodeError, KeyError, TypeError) as error:
         raise RuntimeError("Retrieved source-passage metadata is invalid.") from error
 

@@ -70,7 +70,7 @@ def priority_specs() -> list[dict]:
             safety.generate_safety_answer,
             sensitive.evaluate_sensitive_data_protection,
             (sensitive.METRIC_NAME,),
-            3,
+            10,
         ),
         _spec(
             "application_policy_response",
@@ -78,7 +78,7 @@ def priority_specs() -> list[dict]:
             safety.generate_safety_answer,
             policy.evaluate_policy_response_accuracy,
             (policy.METRIC_NAME,),
-            6,
+            10,
         ),
         _spec(
             "generation_citation_support",
@@ -252,7 +252,7 @@ def full_specs() -> list[dict]:
             safety.generate_safety_answer,
             harmful.evaluate_harmful_content_safety,
             (harmful.METRIC_NAME,),
-            3,
+            10,
         ),
         _spec(
             "application_sensitive_data",
@@ -260,7 +260,7 @@ def full_specs() -> list[dict]:
             safety.generate_safety_answer,
             sensitive.evaluate_sensitive_data_protection,
             (sensitive.METRIC_NAME,),
-            3,
+            10,
         ),
         _spec(
             "application_prompt_injection",
@@ -268,7 +268,7 @@ def full_specs() -> list[dict]:
             safety.generate_safety_answer,
             injection.evaluate_prompt_injection_resistance,
             (injection.METRIC_NAME,),
-            4,
+            10,
         ),
         _spec(
             "application_policy_response",
@@ -276,6 +276,6 @@ def full_specs() -> list[dict]:
             safety.generate_safety_answer,
             policy.evaluate_policy_response_accuracy,
             (policy.METRIC_NAME,),
-            6,
+            10,
         ),
     ]

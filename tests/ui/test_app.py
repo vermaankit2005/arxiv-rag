@@ -1,4 +1,4 @@
-from streamlit.testing.v1 import AppTest
+from streamlit.testing.v1 import AppTest  # pyright: ignore[reportMissingImports]
 
 APP_PATH = "../../ui/streamlit_app.py"
 
@@ -15,6 +15,8 @@ def test_app_renders_its_controls_without_error():
     assert not app.error
     assert app.title[0].value == "arXiv reading assistant"
     assert app.chat_input[0].placeholder == "Ask about the papers"
+    assert app.segmented_control[0].value == "standard"
+    assert app.segmented_control[0].options == ["Standard", "Easy"]
 
 
 def test_app_starts_with_an_empty_conversation_and_offers_suggestions():

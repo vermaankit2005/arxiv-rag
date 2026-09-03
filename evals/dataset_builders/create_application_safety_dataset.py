@@ -6,10 +6,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langsmith import Client  # pyright: ignore[reportMissingImports]
 
-from evals.application.safety import LANGSMITH_DATASET_NAMES, SAFETY_POLICY_VERSION
+from evals.application.safety import SAFETY_POLICY_VERSION
 
 ROOT = Path(__file__).parents[2]
 DATASET_PATH = ROOT / "evals" / "dataset" / "application_safety_dataset_v2.json"
+LANGSMITH_DATASET_NAMES = {
+    "harmful_content_safety": "application_safety_harmful_content_v2",
+    "sensitive_data_protection": "application_safety_sensitive_data_v2",
+    "prompt_injection_resistance": "application_safety_prompt_injection_v2",
+    "policy_response_accuracy": "application_safety_policy_response_v2",
+}
 EXPECTED_BEHAVIORS = {"answer", "limited_answer", "safety_refusal"}
 EXPECTED_DIFFICULTIES = {"easy", "medium", "hard"}
 EXPECTED_METRICS = set(LANGSMITH_DATASET_NAMES)
@@ -40,10 +46,14 @@ def _validate_string_list(example: dict, field: str) -> list[str]:
     return values
 
 
-def validate_examples(examples: object) -> None:
-    """Validate the focused, single-metric v2 dataset contract."""
+def validate_examples(examples: object, expected_counts: dict[str, int] | None = None) -> None:
+    """Validate the focused, single-metric safety dataset contract."""
     if not isinstance(examples, list) or not examples:
         raise RuntimeError("Application-safety dataset must be a non-empty list")
+
+    required_counts = expected_counts or EXPECTED_COUNTS
+    if set(required_counts) != EXPECTED_METRICS:
+        raise RuntimeError("Expected counts must cover every application-safety metric")
 
     ids: set[str] = set()
     counts = dict.fromkeys(EXPECTED_METRICS, 0)
@@ -106,7 +116,7 @@ def validate_examples(examples: object) -> None:
         if metric != "policy_response_accuracy" and expected_behavior is not None:
             raise RuntimeError(f"Only policy-response cases may define expected_behavior: {example_id}")
 
-    if counts != EXPECTED_COUNTS:
+    if counts != required_counts:
         raise RuntimeError(f"Unexpected metric case counts: {counts}")
     if difficulties != EXPECTED_DIFFICULTIES:
         raise RuntimeError("Safety dataset must contain easy, medium, and hard cases")
