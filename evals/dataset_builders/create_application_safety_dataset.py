@@ -1,41 +1,15 @@
-"""Create metric-specific application-safety v2 datasets in LangSmith."""
+"""Shared validation and LangSmith example-building for application-safety datasets.
 
-import json
-from pathlib import Path
+The v2 datasets these were originally written for have been deprecated in
+LangSmith. `create_application_safety_dataset_v3.py` reuses `validate_examples`
+and `build_langsmith_examples` below to publish the current v3 datasets.
+"""
 
-from dotenv import load_dotenv
-from langsmith import Client  # pyright: ignore[reportMissingImports]
+from evals.application.safety import LANGSMITH_DATASET_NAMES, SAFETY_POLICY_VERSION
 
-from evals.application.safety import SAFETY_POLICY_VERSION
-
-ROOT = Path(__file__).parents[2]
-DATASET_PATH = ROOT / "evals" / "dataset" / "application_safety_dataset_v2.json"
-LANGSMITH_DATASET_NAMES = {
-    "harmful_content_safety": "application_safety_harmful_content_v2",
-    "sensitive_data_protection": "application_safety_sensitive_data_v2",
-    "prompt_injection_resistance": "application_safety_prompt_injection_v2",
-    "policy_response_accuracy": "application_safety_policy_response_v2",
-}
 EXPECTED_BEHAVIORS = {"answer", "limited_answer", "safety_refusal"}
 EXPECTED_DIFFICULTIES = {"easy", "medium", "hard"}
 EXPECTED_METRICS = set(LANGSMITH_DATASET_NAMES)
-EXPECTED_COUNTS = {
-    "harmful_content_safety": 3,
-    "sensitive_data_protection": 3,
-    "prompt_injection_resistance": 4,
-    "policy_response_accuracy": 6,
-}
-
-
-def load_examples() -> list[dict]:
-    """Read and validate the local v2 safety cases."""
-    try:
-        examples = json.loads(DATASET_PATH.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        raise RuntimeError(f"Could not read {DATASET_PATH}") from error
-
-    validate_examples(examples)
-    return examples
 
 
 def _validate_string_list(example: dict, field: str) -> list[str]:
@@ -46,13 +20,12 @@ def _validate_string_list(example: dict, field: str) -> list[str]:
     return values
 
 
-def validate_examples(examples: object, expected_counts: dict[str, int] | None = None) -> None:
+def validate_examples(examples: object, expected_counts: dict[str, int]) -> None:
     """Validate the focused, single-metric safety dataset contract."""
     if not isinstance(examples, list) or not examples:
         raise RuntimeError("Application-safety dataset must be a non-empty list")
 
-    required_counts = expected_counts or EXPECTED_COUNTS
-    if set(required_counts) != EXPECTED_METRICS:
+    if set(expected_counts) != EXPECTED_METRICS:
         raise RuntimeError("Expected counts must cover every application-safety metric")
 
     ids: set[str] = set()
@@ -116,7 +89,7 @@ def validate_examples(examples: object, expected_counts: dict[str, int] | None =
         if metric != "policy_response_accuracy" and expected_behavior is not None:
             raise RuntimeError(f"Only policy-response cases may define expected_behavior: {example_id}")
 
-    if counts != required_counts:
+    if counts != expected_counts:
         raise RuntimeError(f"Unexpected metric case counts: {counts}")
     if difficulties != EXPECTED_DIFFICULTIES:
         raise RuntimeError("Safety dataset must contain easy, medium, and hard cases")
@@ -146,34 +119,3 @@ def build_langsmith_examples(examples: list[dict], metric: str) -> list[dict]:
             }
         )
     return langsmith_examples
-
-
-def create_application_safety_datasets(client: Client | None = None) -> None:
-    """Publish four immutable v2 metric datasets."""
-    load_dotenv()
-    langsmith_client = client or Client()
-
-    existing_names = [
-        name
-        for name in LANGSMITH_DATASET_NAMES.values()
-        if langsmith_client.has_dataset(dataset_name=name)
-    ]
-    if existing_names:
-        raise RuntimeError(
-            f"LangSmith dataset(s) already exist: {', '.join(existing_names)}. "
-            "Publish changes under new versioned names."
-        )
-
-    examples = load_examples()
-    for metric, dataset_name in LANGSMITH_DATASET_NAMES.items():
-        metric_examples = build_langsmith_examples(examples, metric)
-        langsmith_client.create_dataset(
-            dataset_name,
-            description=f"Safety policy v2 controlled cases for {metric}; 1 means pass.",
-        )
-        langsmith_client.create_examples(dataset_name=dataset_name, examples=metric_examples)
-        print(f"Created LangSmith dataset: {dataset_name} ({len(metric_examples)} examples)")
-
-
-if __name__ == "__main__":
-    create_application_safety_datasets()

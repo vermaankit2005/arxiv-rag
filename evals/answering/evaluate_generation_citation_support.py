@@ -1,13 +1,14 @@
 """This checks whether each citation actually supports the statement it is attached to.
 
-The formula is: supported statement-passage pairs / all cited pairs. The final
+A trailing citation attaches to every statement in the group before it. The
+formula is: supported statement-passage pairs / all cited pairs. The final
 score is the average across all questions.
 """
 
 import re
 
 from langsmith import Client
-from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
+from openevals.llm import create_llm_as_judge
 
 from arxiv_rag.answering.generator import CITATION_ID_PATTERN, CITATION_MARKER_PATTERN
 from arxiv_rag.ollama_config import get_generator_model, get_judge_model
@@ -25,6 +26,7 @@ EXPERIMENT_METADATA = {
     "judge_model": get_judge_model(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
+    "statement_citation_pairing": "all_statements_in_citation_group",
 }
 
 CITATION_GROUP_PATTERN = re.compile(rf"(?:{CITATION_MARKER_PATTERN.pattern}\s*)+")
@@ -54,27 +56,34 @@ citation_support_judge = create_llm_as_judge(
     choices=[False, True],
 )
 
+def _split_statements(span: str) -> list[str]:
+    """Split a citation group's preceding text into factual statements."""
+    statements = []
+    start = 0
+    for boundary in STATEMENT_BOUNDARY_PATTERN.finditer(span):
+        piece = span[start:boundary.start()].strip(" \t\r\n-*#>.;:")
+        if piece:
+            statements.append(piece)
+        start = boundary.end()
+    tail = span[start:].strip(" \t\r\n-*#>.;:")
+    if tail:
+        statements.append(tail)
+    return statements
+
+
 def _extract_statement_citation_pairs(answer: str) -> list[tuple[str, str]]:
-    """Attach each citation marker to the factual statement immediately before it."""
+    """Attach each citation marker to every factual statement in the group before it."""
     pairs = []
     previous_group_end = 0
 
     for citation_group in CITATION_GROUP_PATTERN.finditer(answer):
-
-        statement_text = answer[previous_group_end:citation_group.start()]
-        boundaries = list(STATEMENT_BOUNDARY_PATTERN.finditer(statement_text))
-
-        for boundary in reversed(boundaries):
-            if statement_text[boundary.end():].strip():
-                statement_text = statement_text[boundary.end():]
-                break
-
-        statement = statement_text.strip(" \t\r\n-*#>.;:")
-        if not statement:
+        statements = _split_statements(answer[previous_group_end:citation_group.start()])
+        if not statements:
             raise ValueError("Could not find a statement before a citation marker")
 
         citation_ids = dict.fromkeys(CITATION_ID_PATTERN.findall(citation_group.group()))
-        pairs.extend((statement, citation_id) for citation_id in citation_ids)
+        for statement in statements:
+            pairs.extend((statement, citation_id) for citation_id in citation_ids)
         previous_group_end = citation_group.end()
 
     return pairs
@@ -138,7 +147,7 @@ def run_citation_support() -> None:
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
-        max_concurrency=3
+        max_concurrency=1
     )
 
 
