@@ -1,14 +1,14 @@
 # State typedict for the workflow graph
 from typing import TypedDict, Annotated, Literal
 
-from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
+from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.constants import START, END
 from langgraph.graph import add_messages, StateGraph
 from pydantic import Field, BaseModel
 
 from arxiv_rag.answering import AnswerMode, generate_answer
-from arxiv_rag.answering.chat_model import get_groq_chat_model
+from arxiv_rag.answering.chat_model import get_chat_model
 from arxiv_rag.graph.prompts import ROUTER_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT
 from arxiv_rag.logging import get_logger
 from arxiv_rag.retrieval import BuiltContext, PaperRetriever
@@ -37,7 +37,7 @@ class RouterNodeOutput(BaseModel):
     rewritten_question: str | None = Field(..., description="The rewritten question only when the route is 'rag'")
 
 
-def route_node(state: WorkflowGraphState) -> RouterNodeOutput:
+def route_node(state: WorkflowGraphState) -> dict:
     user_prompt = f"""
     Conversation history:                                                                                                                                                                                                 <conversation>                                                                                                                                                                                                 
        {state['messages']}                                                                                                                                                                                         
@@ -49,7 +49,13 @@ def route_node(state: WorkflowGraphState) -> RouterNodeOutput:
                                                                                                                                                                                                                   
    Classify the current user message.
     """
-    llm = get_groq_chat_model().with_structured_output(RouterNodeOutput)
+    llm = get_chat_model()
+
+    if llm is not None:
+        llm = llm.with_structured_output(RouterNodeOutput)
+    else:
+        raise RuntimeError("Could not get chat model.")
+
     try:
         response = llm.invoke([SystemMessage(content=ROUTER_SYSTEM_PROMPT), HumanMessage(content=user_prompt)])
     except Exception as error:
@@ -66,7 +72,7 @@ def route_node(state: WorkflowGraphState) -> RouterNodeOutput:
     }
 
 
-def chat_node(state: WorkflowGraphState) -> str:
+def chat_node(state: WorkflowGraphState) -> dict:
     user_prompt = f"""                                                                                                                                                                                         
     Conversation history:                                                                                                                                                                                  
        <conversation>
@@ -80,22 +86,26 @@ def chat_node(state: WorkflowGraphState) -> str:
     Reply to the current user message.                                                                                                                                                                             
    """
 
-    llm = get_groq_chat_model()
+    llm = get_chat_model()
+    if llm is None:
+        raise RuntimeError("Could not get chat model.")
     try:
         response = llm.invoke([SystemMessage(content=CHAT_SYSTEM_PROMPT), HumanMessage(content=user_prompt)])
     except Exception as error:
         log.exception("Ollama answer generation failed")
         raise RuntimeError("Could not generate an answer.") from error
 
-    messages = [HumanMessage(content=state["original_question"]), SystemMessage(content=response.content)]
+    messages = [HumanMessage(content=state["original_question"]), AIMessage(content=response.content)]
 
     return {
         "messages": messages,
-        "answer": response.content
+        "answer": response.content,
+        "current_built_context": None,
     }
 
 
 def route_edge(state: WorkflowGraphState) -> Literal["chat_node", "rag_node"]:
+    log.debug("Routing to %s", state["route"])
     if state["route"] == "chat":
         return "chat_node"
     elif state["route"] == "rag":
@@ -104,7 +114,7 @@ def route_edge(state: WorkflowGraphState) -> Literal["chat_node", "rag_node"]:
         raise ValueError(f"Invalid route: {state['route']}")
 
 
-def rag_node(state: WorkflowGraphState) -> str:
+def rag_node(state: WorkflowGraphState) -> dict:
     if state["rewritten_question"] is None:
         raise ValueError("rewritten_question must not be None for RAG route")
 
@@ -112,7 +122,7 @@ def rag_node(state: WorkflowGraphState) -> str:
     answer = generate_answer(state["rewritten_question"], built.context, answer_mode=state["answer_mode"])
 
     return {
-        "messages": [HumanMessage(content=state["rewritten_question"]), SystemMessage(content=answer)],
+        "messages": [HumanMessage(content=state["original_question"]), AIMessage(content=answer)],
         "answer": answer,
         "current_built_context": built,
     }
@@ -129,7 +139,6 @@ graph.add_conditional_edges("route_node", route_edge, {"chat_node": "chat_node",
 graph.add_edge("chat_node", END)  # Loop back to route_node for next user message
 
 workflow_graph = graph.compile(checkpointer=InMemorySaver())
-
 
 def invoke_workflow_graph(question: str, thread_id: str, answer_mode: AnswerMode = "standard") -> WorkflowGraphState:
     config = {

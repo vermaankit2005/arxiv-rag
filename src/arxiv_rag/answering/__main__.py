@@ -98,12 +98,17 @@ def answer_question(question: str, thread_id: str | None = None,
 def _answer_question(question: str, thread_id: str, answer_mode: AnswerMode) -> AnsweredQuestion:
 
     workflow_result = invoke_workflow_graph(question, thread_id, answer_mode=answer_mode)
+    built_context = workflow_result.get("current_built_context")
+
+    log.info("Original question: %s", question)
+    if workflow_result["route"] == "rag":
+        log.info("RAG route selected. Rewritten question: %s", workflow_result["rewritten_question"])
 
     return AnsweredQuestion(
         thread_id=thread_id,
         answer=workflow_result["answer"],
-        context=workflow_result["current_built_context"].context if "current_built_context" in workflow_result else RetrievalContext(text="", citations={}),
-        passages_by_id=workflow_result["current_built_context"].passages_by_id if "current_built_context" in workflow_result else {},
+        context=built_context.context if built_context  else RetrievalContext(text="", citations={}),
+        passages_by_id=built_context.passages_by_id if built_context else {},
         answer_type= workflow_result["route"]
     )
 

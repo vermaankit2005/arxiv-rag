@@ -7,7 +7,7 @@ from langsmith import traceable
 from arxiv_rag.ingestion.vector_db_ingest import VectorStore, get_vector_store
 from arxiv_rag.logging import get_logger
 
-DEFAULT_TOP_K = 5
+DEFAULT_TOP_K = 8
 
 log = get_logger(__name__)
 
