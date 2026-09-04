@@ -97,8 +97,9 @@ def test_generate_answer_easy_mode_changes_only_the_explanation_style():
 
     assert answer == model.answer
     assert model.prompt is not None
-    assert "Explain for a beginner using simple, natural language" in model.prompt
-    assert "Use a simple analogy when it helps" in model.prompt
+    assert "Write like a patient, friendly teacher" in model.prompt
+    assert "Avoid formulas, symbols, variable names" in model.prompt
+    assert "Use one familiar everyday analogy when it helps" in model.prompt
     assert "supporting passage IDs immediately after factual analogy sentences" in model.prompt
     assert "Do not add a fact or analogy unless the supplied passages support" in model.prompt
     assert "Put a passage ID such as [P1] immediately after every factual sentence" in model.prompt

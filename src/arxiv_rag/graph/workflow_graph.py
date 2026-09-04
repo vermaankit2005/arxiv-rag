@@ -23,6 +23,7 @@ class WorkflowGraphState(TypedDict):
 
     route: Literal["chat", "rag"]
     rewritten_question: str | None
+    retrieval_query: str | None
 
     answer_mode: Literal["standard", "easy"]
     current_evidence: BuiltContext | None
@@ -35,6 +36,7 @@ class WorkflowGraphState(TypedDict):
 class RouterNodeOutput(BaseModel):
     route: Literal["chat", "rag"] = Field(..., description="The route to take: 'chat' or 'rag'")
     rewritten_question: str | None = Field(..., description="The rewritten question only when the route is 'rag'")
+    retrieval_query: str | None = Field(..., description="The topic-only search query when the route is 'rag'")
     style_override: Literal["easy"] | None = Field(..., description=("Use 'easy' when the user explicitly requests "
                                                                      "beginner-friendly wording"), )
 
@@ -84,10 +86,12 @@ def route_node(state: WorkflowGraphState) -> dict:
     log.info("Original question: %s", state["original_question"])
     if response.route == "rag":
         log.info("RAG route selected. Rewritten question: %s", response.rewritten_question)
+        log.info("Retrieval query: %s", response.retrieval_query)
 
     return {
         "route": response.route,
         "rewritten_question": response.rewritten_question,
+        "retrieval_query": response.retrieval_query,
         "answer_mode": effective_mode,
     }
 
@@ -141,8 +145,10 @@ def route_edge(state: WorkflowGraphState) -> Literal["chat_node", "rag_node"]:
 def rag_node(state: WorkflowGraphState) -> dict:
     if state["rewritten_question"] is None:
         raise ValueError("rewritten_question must not be None for RAG route")
+    if state["retrieval_query"] is None:
+        raise ValueError("retrieval_query must not be None for RAG route")
 
-    built = PaperRetriever().retrieve_context_with_details(state["rewritten_question"])
+    built = PaperRetriever().retrieve_context_with_details(state["retrieval_query"])
     answer = generate_answer(
         state["rewritten_question"], built.context, answer_mode=state["answer_mode"]
     )
