@@ -5,10 +5,10 @@ from typing import Literal
 
 from langsmith import traceable
 
-from arxiv_rag.answering import AnswerMode, generate_answer, render_answer
-from arxiv_rag.logging import get_logger
-from arxiv_rag.retrieval import BuiltContext, PaperRetriever, RetrievalContext
+from arxiv_rag.answering import AnswerMode, render_answer
 from arxiv_rag.graph.workflow_graph import invoke_workflow_graph
+from arxiv_rag.logging import get_logger
+from arxiv_rag.retrieval import RetrievalContext
 
 log = get_logger(__name__)
 
@@ -96,17 +96,17 @@ def answer_question(question: str, thread_id: str | None = None,
     },
 )
 def _answer_question(question: str, thread_id: str, answer_mode: AnswerMode) -> AnsweredQuestion:
-
     workflow_result = invoke_workflow_graph(question, thread_id, answer_mode=answer_mode)
     built_context = workflow_result.get("current_built_context")
 
     return AnsweredQuestion(
         thread_id=thread_id,
         answer=workflow_result["answer"],
-        context=built_context.context if built_context  else RetrievalContext(text="", citations={}),
+        context=built_context.context if built_context else RetrievalContext(text="", citations={}),
         passages_by_id=built_context.passages_by_id if built_context else {},
-        answer_type= workflow_result["route"]
+        answer_type=workflow_result["route"]
     )
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

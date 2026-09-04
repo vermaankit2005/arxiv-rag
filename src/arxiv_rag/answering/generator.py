@@ -23,16 +23,18 @@ STANDARD_MODE_RULES = (
     "- Use natural, clear language while keeping useful technical detail.\n"
     "- Define uncommon technical terms when needed.\n"
 )
+# Previous Easy-mode citation rule, kept here for quick rollback:
+# "- Put supporting passage IDs immediately after factual analogy sentences, just like every other factual sentence.\n"
 EASY_MODE_RULES = (
     "- Write like a patient, friendly teacher speaking to someone learning the topic for the first time. Never sound academic or talk down to the user.\n"
     "- Begin with the main idea in one plain-language sentence before giving any details.\n"
-    "- Use common everyday words, short sentences, and short paragraphs.\n"
+    "- Use common everyday words.\n"
     "- Avoid formulas, symbols, variable names, unexplained abbreviations, and specialist jargon unless the user explicitly asks for technical detail.\n"
     "- If a technical term cannot be avoided, explain it immediately in simple words.\n"
     "- Focus on the main idea and why it matters. Leave out implementation details and secondary findings unless they are needed to answer the question.\n"
     "- Rephrase academic source wording naturally instead of copying its technical tone.\n"
     "- Use one familiar everyday analogy when it helps. Clearly introduce it as an analogy.\n"
-    "- Put supporting passage IDs immediately after factual analogy sentences, just like every other factual sentence.\n"
+    "- A clearly introduced analogy does not need a citation. Cite the factual idea that the analogy explains.\n"
     "- Do not add a fact or analogy unless the supplied passages support the idea it explains.\n"
 )
 
@@ -72,7 +74,10 @@ def _build_prompt(question: str, context: RetrievalContext, answer_mode: AnswerM
         "- Answer directly and reply in a clear and formatted Markdown.\n"
         "- Use short paragraphs, headings only when useful, and bullets for real lists.\n"
         "- Do not repeat the same point in different words.\n"
-        "- Put a passage ID such as [P1] immediately after every factual sentence.\n"
+        # Previous citation rule, kept here for quick rollback:
+        # "- Put a passage ID such as [P1] immediately after every factual sentence.\n"
+        "- Cite each distinct factual claim supported by the papers.\n"
+        "- Closely related sentences supported by the same passage may share one citation at the end of that group.\n"
         "- When one sentence needs more than one passage, write separate markers with a space: [P1] [P2].\n"
         "- Never combine IDs in one pair of brackets. Do not write [P1, P2] or [P1,P2].\n"
         "- Use only passage IDs that appear in the supplied passages.\n"

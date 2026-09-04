@@ -23,7 +23,7 @@ def _state(answer_mode: AnswerMode) -> workflow_graph.WorkflowGraphState:
         "original_question": "Explain this in simple words.",
         "messages": [],
         "route": "rag",
-        "rewritten_question": None,
+        "answer_request": None,
         "retrieval_query": None,
         "answer_mode": answer_mode,
         "current_evidence": None,
@@ -49,7 +49,7 @@ def test_router_applies_only_an_easy_style_override(
     model = FakeRouterModel(
         workflow_graph.RouterNodeOutput(
             route="rag",
-            rewritten_question="Explain multi-head attention in simple terms.",
+            answer_request="Explain multi-head attention in simple terms.",
             retrieval_query="What is multi-head attention?",
             style_override=style_override,
         )
@@ -59,4 +59,5 @@ def test_router_applies_only_an_easy_style_override(
     result = workflow_graph.route_node(_state(selected_mode))
 
     assert result["answer_mode"] == expected_mode
+    assert result["answer_request"] == "Explain multi-head attention in simple terms."
     assert result["retrieval_query"] == "What is multi-head attention?"

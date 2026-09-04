@@ -22,7 +22,7 @@ class WorkflowGraphState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
     route: Literal["chat", "rag"]
-    rewritten_question: str | None
+    answer_request: str | None
     retrieval_query: str | None
 
     answer_mode: Literal["standard", "easy"]
@@ -35,10 +35,10 @@ class WorkflowGraphState(TypedDict):
 # Pydantic model for the output of the router node
 class RouterNodeOutput(BaseModel):
     route: Literal["chat", "rag"] = Field(..., description="The route to take: 'chat' or 'rag'")
-    rewritten_question: str | None = Field(..., description="The rewritten question only when the route is 'rag'")
+    answer_request: str | None = Field(..., description="The answer request only when the route is 'rag'")
     retrieval_query: str | None = Field(..., description="The topic-only search query when the route is 'rag'")
-    style_override: Literal["easy"] | None = Field(..., description=("Use 'easy' when the user explicitly requests "
-                                                                     "beginner-friendly wording"), )
+    style_override: Literal["easy"] | None = (
+        Field(..., description="Use 'easy' when the user explicitly requests beginner-friendly wording"))
 
 
 def route_node(state: WorkflowGraphState) -> dict:
@@ -85,15 +85,26 @@ def route_node(state: WorkflowGraphState) -> dict:
 
     log.info("Original question: %s", state["original_question"])
     if response.route == "rag":
-        log.info("RAG route selected. Rewritten question: %s", response.rewritten_question)
+        log.info("RAG route selected. Answer request: %s", response.answer_request)
         log.info("Retrieval query: %s", response.retrieval_query)
+        log.info("Answer mode: %s", effective_mode)
 
     return {
         "route": response.route,
-        "rewritten_question": response.rewritten_question,
+        "answer_request": response.answer_request,
         "retrieval_query": response.retrieval_query,
         "answer_mode": effective_mode,
     }
+
+
+def route_edge(state: WorkflowGraphState) -> Literal["chat_node", "rag_node"]:
+    log.debug("Routing to %s", state["route"])
+    if state["route"] == "chat":
+        return "chat_node"
+    elif state["route"] == "rag":
+        return "rag_node"
+    else:
+        raise ValueError(f"Invalid route: {state['route']}")
 
 
 def chat_node(state: WorkflowGraphState) -> dict:
@@ -132,26 +143,14 @@ def chat_node(state: WorkflowGraphState) -> dict:
     }
 
 
-def route_edge(state: WorkflowGraphState) -> Literal["chat_node", "rag_node"]:
-    log.debug("Routing to %s", state["route"])
-    if state["route"] == "chat":
-        return "chat_node"
-    elif state["route"] == "rag":
-        return "rag_node"
-    else:
-        raise ValueError(f"Invalid route: {state['route']}")
-
-
 def rag_node(state: WorkflowGraphState) -> dict:
-    if state["rewritten_question"] is None:
-        raise ValueError("rewritten_question must not be None for RAG route")
+    if state["answer_request"] is None:
+        raise ValueError("answer_request must not be None for RAG route")
     if state["retrieval_query"] is None:
         raise ValueError("retrieval_query must not be None for RAG route")
 
     built = PaperRetriever().retrieve_context_with_details(state["retrieval_query"])
-    answer = generate_answer(
-        state["rewritten_question"], built.context, answer_mode=state["answer_mode"]
-    )
+    answer = generate_answer(state["answer_request"], built.context, answer_mode=state["answer_mode"])
 
     return {
         "messages": [HumanMessage(content=state["original_question"]), AIMessage(content=answer)],
@@ -190,7 +189,6 @@ def invoke_workflow_graph(question: str, thread_id: str, answer_mode: AnswerMode
 
 
 if __name__ == "__main__":
-    # Example usage
     thread_id = "example_thread_id"
     answer_mode = "standard"
 

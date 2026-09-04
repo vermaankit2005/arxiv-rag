@@ -80,6 +80,8 @@ def test_generate_answer_returns_normal_text_with_valid_inline_citations():
     assert "[P1]" in model.prompt
     assert "Use natural, clear language while keeping useful technical detail" in model.prompt
     assert "Answer directly and reply in a clear and formatted Markdown" in model.prompt
+    assert "Cite each distinct factual claim supported by the papers" in model.prompt
+    assert "Closely related sentences supported by the same passage may share one citation" in model.prompt
     assert "Use only passage IDs" in model.prompt
     assert "write separate markers with a space: [P1] [P2]" in model.prompt
     assert "Do not write [P1, P2] or [P1,P2]" in model.prompt
@@ -100,9 +102,9 @@ def test_generate_answer_easy_mode_changes_only_the_explanation_style():
     assert "Write like a patient, friendly teacher" in model.prompt
     assert "Avoid formulas, symbols, variable names" in model.prompt
     assert "Use one familiar everyday analogy when it helps" in model.prompt
-    assert "supporting passage IDs immediately after factual analogy sentences" in model.prompt
+    assert "A clearly introduced analogy does not need a citation" in model.prompt
     assert "Do not add a fact or analogy unless the supplied passages support" in model.prompt
-    assert "Put a passage ID such as [P1] immediately after every factual sentence" in model.prompt
+    assert "Cite each distinct factual claim supported by the papers" in model.prompt
     assert "Use only passage IDs that appear" in model.prompt
 
 
@@ -262,7 +264,7 @@ def _stub_graph(monkeypatch, captured: dict | None = None) -> BuiltContext:
             "answer": "Answer [P1].",
             "current_built_context": built,
             "route": "rag",
-            "rewritten_question": question,
+            "answer_request": question,
         }
 
     monkeypatch.setattr(answering_cli, "invoke_workflow_graph", fake_invoke)
