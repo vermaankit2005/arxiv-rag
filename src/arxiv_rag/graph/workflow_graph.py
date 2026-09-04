@@ -81,6 +81,10 @@ def route_node(state: WorkflowGraphState) -> dict:
         else "standard"
     )
 
+    log.info("Original question: %s", state["original_question"])
+    if response.route == "rag":
+        log.info("RAG route selected. Rewritten question: %s", response.rewritten_question)
+
     return {
         "route": response.route,
         "rewritten_question": response.rewritten_question,
