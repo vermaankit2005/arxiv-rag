@@ -39,7 +39,6 @@ class FigureImage:
 @dataclass
 class LoadedPaper:
     arxiv_id: str
-    sections: list[str]               # headings in document order
     passages: list[Passage]
     note: str = ""
     images: list[FigureImage] = field(default_factory=list)

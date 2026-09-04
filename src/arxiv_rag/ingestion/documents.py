@@ -96,6 +96,7 @@ def _process_oversize_passages(passage: Passage) -> list[Passage]:
 
 
 def _group_passages(loaded_paper: LoadedPaper) -> list[list[Passage]]:
+
     """Group passages by section path."""
     groups = []
     # We will build the current group then add it to the groups list.
@@ -105,16 +106,15 @@ def _group_passages(loaded_paper: LoadedPaper) -> list[list[Passage]]:
     for passage in loaded_paper.passages:
 
         # This looks complicated, but it's just splitting up passages that are too long into smaller passages.
+        # Split if the passage is too long, otherwise just return the passage as a list of one.
         passage_list = _process_oversize_passages(passage)
 
         for _passage in passage_list:
             if not _should_include(_passage):
                 continue
 
-            main_section_changed = (
-                    current_group
-                    and _main_section(_passage) != _main_section(current_group[0])
-            )
+            main_section_changed = current_group and _main_section(_passage) != _main_section(current_group[0])
+
             would_be_too_long = current_words + _word_count(_passage) > MAX_WORDS
 
             if current_group and (main_section_changed or would_be_too_long):
@@ -139,14 +139,12 @@ def _overlap_group_passages(groups: list[list[Passage]]) -> list[list[Passage]]:
     overlapped_groups = [groups[0]]
 
     for i in range(1, len(groups)):
+
         previous_group = groups[i - 1]
         current_group = groups[i]
 
-        same_main_section = (
-                previous_group
-                and current_group
-                and _main_section(previous_group[-1]) == _main_section(current_group[0])
-        )
+        same_main_section =  previous_group and current_group and _main_section(previous_group[-1]) == _main_section(current_group[0])
+
         if same_main_section:
             overlapped_groups.append([previous_group[-1]] + current_group)
         else:
@@ -163,6 +161,7 @@ def convert_loaded_paper_to_documents(loaded_paper: LoadedPaper) -> list[Documen
     grouped_passages = _overlap_group_passages(_group_passages(loaded_paper))
 
     for group in grouped_passages:
+
         locations = [passage.location for passage in group]
         # Preserve the original passage text, location, section path, and kind in the metadata for each passage.
         # !!! Important for retrieval and context building.
@@ -177,6 +176,7 @@ def convert_loaded_paper_to_documents(loaded_paper: LoadedPaper) -> list[Documen
         ]
 
         doc_content = _build_page_content(group)
+
         doc = Document(
             id=_document_id(loaded_paper.arxiv_id, "|".join(locations), doc_content),
             page_content=doc_content,

@@ -11,7 +11,6 @@ from arxiv_rag.loading.models import LoadedPaper, Passage
 def _documents():
     paper = LoadedPaper(
         arxiv_id="test-paper",
-        sections=[],
         passages=[
             Passage(
                 order=1,

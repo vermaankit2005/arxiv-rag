@@ -35,7 +35,7 @@ def fetch_docs_for_evaluation(inputs: dict) -> dict | None:
                 "text": source_passage.text,
                 "location": source_passage.location,
             }
-            for source_passage in retrieval.get_source_passage_for_a_document(doc)
+            for source_passage in retrieval.get_source_passages_for_a_document(doc)
         ]
         documents.append({"source_passages": source_passages})
 

@@ -42,9 +42,13 @@ def test_load_paper_returns_content_when_fetch_returns_html():
         mock_fetch_html.assert_called_once_with("test_html", client)
 
         assert loaded.arxiv_id == "test_html"
-        assert len(loaded.sections) == 31
         # 69 prose passages + 9 captions + 4 serialised data tables.
         assert len(loaded.passages) == 82
+        assert any(
+            passage.section_path
+            == ["Model Architecture", "Attention", "Multi-Head Attention"]
+            for passage in loaded.passages
+        )
 
 
 def test_load_paper_returns_empty_loaded_paper_when_fetch_returns_none():
@@ -56,7 +60,6 @@ def test_load_paper_returns_empty_loaded_paper_when_fetch_returns_none():
         mock_fetch_html.assert_called_once_with("dummy_arxiv_id", client)
 
         assert loaded.arxiv_id == "dummy_arxiv_id"
-        assert loaded.sections == []
         assert loaded.passages == []
         assert loaded.note == "no arXiv HTML published"
 

@@ -30,7 +30,7 @@ def fetch_docs_for_evaluation(inputs: dict) -> dict | None:
     source_passage_list = []
 
     for doc, _ in retrieved_doc_list:
-        for source_passage in retrieval.get_source_passage_for_a_document(doc):
+        for source_passage in retrieval.get_source_passages_for_a_document(doc):
             source_key = (
                 doc.metadata.get("arxiv_id"),
                 source_passage.location,

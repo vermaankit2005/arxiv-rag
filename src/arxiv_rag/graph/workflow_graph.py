@@ -1,4 +1,5 @@
 # State typedict for the workflow graph
+# pyright: reportMissingImports=false
 from typing import Annotated, Literal, TypedDict
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -21,7 +22,7 @@ class WorkflowGraphState(TypedDict):
     original_question: str
     messages: Annotated[list[BaseMessage], add_messages]
 
-    route: Literal["chat", "rag"]
+    route: Literal["chat", "rag"] | None
     answer_request: str | None
     retrieval_query: str | None
 
@@ -47,7 +48,7 @@ def route_node(state: WorkflowGraphState) -> dict:
         <conversation>
         {state["messages"]}
         </conversation>
-    
+
     Current user message:
         <current_message>
         {state["original_question"]}
@@ -113,7 +114,7 @@ def chat_node(state: WorkflowGraphState) -> dict:
         <conversation>
         {state["messages"]}
         </conversation>
-    
+
     Current user message:
         <current_message>
         {state["original_question"]}
@@ -175,12 +176,19 @@ workflow_graph = graph.compile(checkpointer=InMemorySaver())
 
 
 def invoke_workflow_graph(question: str, thread_id: str, answer_mode: AnswerMode = "standard") -> WorkflowGraphState:
+
     config = {"configurable": {"thread_id": thread_id}}
 
     final_state = workflow_graph.invoke(
         input={
             "original_question": question,
+            "route": None,
+            "answer_request": None,
+            "retrieval_query": None,
             "answer_mode": answer_mode,
+            "current_evidence": None,
+            "current_built_context": None,
+            "answer": "",
         },
         config=config,
     )

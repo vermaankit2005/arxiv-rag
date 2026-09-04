@@ -129,7 +129,6 @@ class ArxivHtmlParser(HTMLParser):
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.titles: list[str] = []  # every heading, in order
         self.passages: list[Passage] = []
         self.images: list[FigureImage] = []
         self.pending: list[Passage] = []  # notes, emitted after their host
@@ -354,8 +353,6 @@ class ArxivHtmlParser(HTMLParser):
             return
         if self.sections:
             self.sections[-1].title = title
-        if title not in self.titles:
-            self.titles.append(title)
 
     def emit(self, capture: Capture) -> None:
         # A note with no id cannot be cited. LaTeXML gives author "thanks"

@@ -7,7 +7,7 @@ from .retriever import (
     SourcePassage,
     build_context,
     build_context_with_details,
-    get_source_passage_for_a_document,
+    get_source_passages_for_a_document,
 )
 
 __all__ = [
@@ -19,5 +19,5 @@ __all__ = [
     "SourcePassage",
     "build_context",
     "build_context_with_details",
-    "get_source_passage_for_a_document",
+    "get_source_passages_for_a_document",
 ]

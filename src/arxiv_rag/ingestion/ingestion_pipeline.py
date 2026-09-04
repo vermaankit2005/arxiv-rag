@@ -20,18 +20,23 @@ def ingest_documents() -> VectorStore:
     """Build a complete corpus separately, then make it active in one step."""
     loader = ArxivSampleHTMLLoader()
     docs_name = loader.get_docs_name()
+
     log.info("found %d papers", len(docs_name))
+
     if not docs_name:
         raise RuntimeError("No papers were found for ingestion.")
 
     papers_and_documents = []
     failed_papers = []
+
     with httpx.Client(follow_redirects=True) as http_client:
         for doc_name in docs_name:
             arxiv_id = doc_name.removesuffix(".html")
             try:
                 loaded_paper = load_paper(arxiv_id, http_client)
+
                 documents = convert_loaded_paper_to_documents(loaded_paper)
+
             except Exception:
                 log.exception("failed to prepare arXiv paper %s", arxiv_id)
                 failed_papers.append(arxiv_id)

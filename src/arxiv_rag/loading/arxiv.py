@@ -42,13 +42,13 @@ def load_paper(arxiv_id: str, client: httpx.Client) -> LoadedPaper:
 
     if html is None:
         log.warning("arXiv %s has no HTML published", arxiv_id)
-        return LoadedPaper(arxiv_id, [], [], note="no arXiv HTML published")
+        return LoadedPaper(arxiv_id, [], note="no arXiv HTML published")
 
-    return load_paper_from_html(arxiv_id, html)
+    return _load_paper_from_html(arxiv_id, html)
 
 
 # Fetch and parse an arXiv paper into the application's loading model.
-def load_paper_from_html(arxiv_id: str, arxiv_html: str) -> LoadedPaper:
+def _load_paper_from_html(arxiv_id: str, arxiv_html: str) -> LoadedPaper:
     parser = ArxivHtmlParser()
     parser.feed(arxiv_html)
     parser.passages.extend(parser.pending)
@@ -58,7 +58,6 @@ def load_paper_from_html(arxiv_id: str, arxiv_html: str) -> LoadedPaper:
 
     return LoadedPaper(
         arxiv_id,
-        parser.titles,
         parser.passages,
         images=parser.images,
     )
@@ -67,7 +66,6 @@ def load_paper_from_html(arxiv_id: str, arxiv_html: str) -> LoadedPaper:
 if __name__ == "__main__":
     with httpx.Client() as client:
         paper = load_paper("1706.03762v7", client)
-        print(f"\n=== {paper.arxiv_id}  {len(paper.sections)} sections  "
-              f"{len(paper.passages)} passages  {paper.note}")
+        print(f"\n=== {paper.arxiv_id}  {len(paper.passages)} passages  {paper.note}")
         for p in paper.passages:
             print(f"  [{p.location or '-'}] ({p.section}) {p.text}")

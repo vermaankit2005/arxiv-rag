@@ -37,7 +37,7 @@ class BuiltContext:
     passages_by_id: dict[str, str]
 
 
-def get_source_passage_for_a_document(document: Document) -> list[SourcePassage]:
+def get_source_passages_for_a_document(document: Document) -> list[SourcePassage]:
     """Read the original source passages stored during ingestion."""
     value = document.metadata.get("source_passages")
 
@@ -88,7 +88,7 @@ def _build_section_breadcrumbs(section_path: list[str]) -> str:
 def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltContext:
     """Expand ranked Documents into deduplicated, exactly citable passages."""
 
-    context_passages = []
+    context_blocks = []
     citations = {}
     passages_by_id = {}
     seen_passages = set()
@@ -99,40 +99,43 @@ def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltCo
             arxiv_id = document.metadata.get("arxiv_id")
             if not isinstance(arxiv_id, str) or not arxiv_id.strip():
                 raise RuntimeError("Retrieved arXiv metadata is invalid.")
-            source_passage_doc = get_source_passage_for_a_document(document)
+
+            source_passage_list = get_source_passages_for_a_document(document)
+
         except RuntimeError:
             log.exception("skipping malformed retrieved document %s", document.id)
             continue
 
         valid_documents += 1
-        for passage in source_passage_doc:
 
-            source_key = (arxiv_id, passage.location, passage.text)
+        for source_passage in source_passage_list:
+
+            source_key = (arxiv_id, source_passage.location, source_passage.text)
             if source_key in seen_passages:
                 continue
             # this is check is required to avoid duplicate passages in the context, especially when multiple documents have overlapping passages
             seen_passages.add(source_key)
 
-            section_bread_crumbs = _build_section_breadcrumbs(passage.section_path)
+            section_bread_crumbs = _build_section_breadcrumbs(source_passage.section_path)
 
-            url = f"https://arxiv.org/html/{arxiv_id}{passage.location}"
+            url = f"https://arxiv.org/html/{arxiv_id}{source_passage.location}"
 
             citation_id = f"P{len(citations) + 1}"
             citations[citation_id] = Citation(label=f"{arxiv_id} — {section_bread_crumbs}", url=url)
 
-            passages_by_id[citation_id] = passage.text
+            passages_by_id[citation_id] = source_passage.text
 
-            context_passages.append(
+            context_blocks.append(
                 f"[{citation_id}]\n"
                 f"Section: {section_bread_crumbs}\n"
-                f"Text: {passage.text}"
+                f"Text: {source_passage.text}"
             )
 
     if results and valid_documents == 0:
         raise RuntimeError("Retrieved evidence is invalid.")
 
     retrieval_context = RetrievalContext(
-        text="\n\n---\n\n".join(context_passages),
+        text="\n\n---\n\n".join(context_blocks),
         citations=citations,
     )
 

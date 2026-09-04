@@ -20,6 +20,7 @@ class AnsweredQuestion:
     context: RetrievalContext
     passages_by_id: dict[str, str]
     answer_type: Literal["chat", "rag"]
+    answer_mode: AnswerMode
 
 
 def main() -> int:
@@ -52,8 +53,6 @@ def answer_question(question: str, thread_id: str | None = None,
     thread_id every time, so the traces group together. Callers that leave it
     out, such as the CLI and eval runs, get a fresh thread per question.
 
-    retriever is accepted for backward compatibility only; retrieval now
-    happens inside the workflow graph.
     """
     thread_id = thread_id or str(uuid.uuid4())
     return _answer_question(
@@ -96,15 +95,22 @@ def answer_question(question: str, thread_id: str | None = None,
     },
 )
 def _answer_question(question: str, thread_id: str, answer_mode: AnswerMode) -> AnsweredQuestion:
+
     workflow_result = invoke_workflow_graph(question, thread_id, answer_mode=answer_mode)
+
     built_context = workflow_result.get("current_built_context")
+
+    answer_type = workflow_result["route"]
+    if answer_type is None:
+        raise RuntimeError("The workflow completed without selecting an answer route.")
 
     return AnsweredQuestion(
         thread_id=thread_id,
         answer=workflow_result["answer"],
         context=built_context.context if built_context else RetrievalContext(text="", citations={}),
         passages_by_id=built_context.passages_by_id if built_context else {},
-        answer_type=workflow_result["route"]
+        answer_type=answer_type,
+        answer_mode=workflow_result["answer_mode"],
     )
 
 

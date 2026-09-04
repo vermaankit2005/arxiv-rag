@@ -265,6 +265,7 @@ def _stub_graph(monkeypatch, captured: dict | None = None) -> BuiltContext:
             "current_built_context": built,
             "route": "rag",
             "answer_request": question,
+            "answer_mode": answer_mode,
         }
 
     monkeypatch.setattr(answering_cli, "invoke_workflow_graph", fake_invoke)
@@ -273,7 +274,11 @@ def _stub_graph(monkeypatch, captured: dict | None = None) -> BuiltContext:
 
 def _stub_chat_graph(monkeypatch) -> None:
     def fake_invoke(question, thread_id, answer_mode="standard"):
-        return {"answer": "Hi, I help you read the ingested papers.", "route": "chat"}
+        return {
+            "answer": "Hi, I help you read the ingested papers.",
+            "route": "chat",
+            "answer_mode": answer_mode,
+        }
 
     monkeypatch.setattr(answering_cli, "invoke_workflow_graph", fake_invoke)
 
@@ -300,6 +305,7 @@ def test_answer_question_returns_the_answer_with_its_evidence(monkeypatch):
     assert result.context is built.context
     assert result.passages_by_id == built.passages_by_id
     assert result.answer_type == "rag"
+    assert result.answer_mode == "standard"
 
 
 def test_answer_question_returns_a_chat_reply_with_no_evidence(monkeypatch):
@@ -311,6 +317,7 @@ def test_answer_question_returns_a_chat_reply_with_no_evidence(monkeypatch):
     assert result.answer == "Hi, I help you read the ingested papers."
     assert result.context.citations == {}
     assert result.passages_by_id == {}
+    assert result.answer_mode == "standard"
 
 
 def test_answer_question_passes_easy_mode_to_the_workflow_graph(monkeypatch):
@@ -320,7 +327,26 @@ def test_answer_question_passes_easy_mode_to_the_workflow_graph(monkeypatch):
     result = answering_cli.answer_question("How does it work?", answer_mode="easy")
 
     assert result.answer == "Answer [P1]."
+    assert result.answer_mode == "easy"
     assert captured["answer_mode"] == "easy"
+
+
+def test_answer_question_returns_the_effective_mode_from_the_workflow(monkeypatch):
+    built = _built_context()
+
+    def fake_invoke(question, thread_id, answer_mode="standard"):
+        return {
+            "answer": "Simple answer [P1].",
+            "current_built_context": built,
+            "route": "rag",
+            "answer_mode": "easy",
+        }
+
+    monkeypatch.setattr(answering_cli, "invoke_workflow_graph", fake_invoke)
+
+    result = answering_cli.answer_question("Explain it simply")
+
+    assert result.answer_mode == "easy"
 
 
 def test_answer_question_mints_a_new_thread_id_for_every_question(monkeypatch):

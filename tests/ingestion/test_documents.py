@@ -24,7 +24,7 @@ def _passage(order: int, section_path: list[str], words: int = 2) -> Passage:
 
 
 def _paper(passages: list[Passage]) -> LoadedPaper:
-    return LoadedPaper(arxiv_id="test-paper", sections=[], passages=passages)
+    return LoadedPaper(arxiv_id="test-paper", passages=passages)
 
 
 def test_page_content_adds_each_section_breadcrumb_once():
@@ -253,7 +253,7 @@ def test_document_ids_are_stable_and_change_with_the_paper():
 
     first_id = convert_loaded_paper_to_documents(_paper(passages))[0].id
     repeated_id = convert_loaded_paper_to_documents(_paper(passages))[0].id
-    other_paper = LoadedPaper(arxiv_id="other-paper", sections=[], passages=passages)
+    other_paper = LoadedPaper(arxiv_id="other-paper", passages=passages)
     other_id = convert_loaded_paper_to_documents(other_paper)[0].id
 
     assert first_id == repeated_id
