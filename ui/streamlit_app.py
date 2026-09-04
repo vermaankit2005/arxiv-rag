@@ -12,8 +12,6 @@ import streamlit as st
 from citations import build_sources, link_citation_markers
 from pipeline import answer_in_conversation
 
-from arxiv_rag.retrieval import DEFAULT_TOP_K
-
 # Missing .env keys, a missing Chroma database and a rejected answer all reach
 # the UI as one of these, and all of them are worth showing the reader.
 PIPELINE_ERRORS = (FileNotFoundError, RuntimeError, ValueError)
@@ -59,9 +57,6 @@ with st.sidebar:
     answer_mode = "easy" if selected_mode == "easy" else "standard"
     st.caption("Easy mode uses simpler language and helpful analogies while keeping citations.")
 
-    st.subheader("Retrieval")
-    top_k = st.slider("Papers searched per question", min_value=1, max_value=10, value=DEFAULT_TOP_K)
-    st.caption("Each paper contributes several passages, so the answer usually cites more sources than this.")
     if st.button("Clear conversation", icon=":material/delete_sweep:", width="stretch"):
         start_conversation()
         st.rerun()
@@ -94,17 +89,24 @@ if question:
         started = time.perf_counter()
         try:
             with st.status(":shimmer[Reading the papers]", type="compact") as status:
-                result = answer_in_conversation(question, top_k, st.session_state.thread_id, answer_mode)
-                st.write(f"Found {len(result.context.citations)} passages.")
-
+                result = answer_in_conversation(question, st.session_state.thread_id, answer_mode)
                 elapsed = time.perf_counter() - started
-                status.update(label=f"Read the papers in {elapsed:.0f}s", state="complete")
+
+                if result.answer_type == "rag":
+                    st.write(f"Found {len(result.context.citations)} passages.")
+                    status.update(label=f"Read the papers in {elapsed:.0f}s", state="complete")
+                else:
+                    status.update(label=f"Answered in {elapsed:.0f}s", state="complete")
         except PIPELINE_ERRORS as error:
             st.error(str(error), icon=":material/error:")
         else:
-            citations = result.context.citations
-            linked_answer = link_citation_markers(result.answer, citations)
-            sources = build_sources(result.answer, citations, result.passages_by_id)
+            if result.answer_type == "rag":
+                citations = result.context.citations
+                linked_answer = link_citation_markers(result.answer, citations)
+                sources = build_sources(result.answer, citations, result.passages_by_id)
+            else:
+                linked_answer = result.answer
+                sources = []
 
             st.markdown(linked_answer)
             render_sources(sources)

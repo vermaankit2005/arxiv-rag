@@ -1,6 +1,7 @@
 import sys
 import uuid
 from dataclasses import dataclass
+from typing import Literal
 
 from langsmith import traceable
 
@@ -18,6 +19,7 @@ class AnsweredQuestion:
     answer: str
     context: RetrievalContext
     passages_by_id: dict[str, str]
+    answer_type: Literal["chat", "rag"]
 
 
 def main() -> int:
@@ -42,7 +44,7 @@ def main() -> int:
     return 0
 
 
-def answer_question(question: str, thread_id: str | None = None, retriever: PaperRetriever | None = None,
+def answer_question(question: str, thread_id: str | None = None,
                     answer_mode: AnswerMode = "standard") -> AnsweredQuestion:
     """Answer one question and return the evidence behind it.
 
@@ -53,7 +55,6 @@ def answer_question(question: str, thread_id: str | None = None, retriever: Pape
     retriever is accepted for backward compatibility only; retrieval now
     happens inside the workflow graph.
     """
-    _ = retriever
     thread_id = thread_id or str(uuid.uuid4())
     return _answer_question(
         question,
@@ -101,8 +102,9 @@ def _answer_question(question: str, thread_id: str, answer_mode: AnswerMode) -> 
     return AnsweredQuestion(
         thread_id=thread_id,
         answer=workflow_result["answer"],
-        context=workflow_result["current_built_context"].context,
-        passages_by_id=workflow_result["current_built_context"].passages_by_id
+        context=workflow_result["current_built_context"].context if "current_built_context" in workflow_result else RetrievalContext(text="", citations={}),
+        passages_by_id=workflow_result["current_built_context"].passages_by_id if "current_built_context" in workflow_result else {},
+        answer_type= workflow_result["route"]
     )
 
 if __name__ == "__main__":

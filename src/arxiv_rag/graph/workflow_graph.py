@@ -154,7 +154,7 @@ if __name__ == "__main__":
     while True:
 
         question = input("Enter your question (or 'exit' to quit): ")
-        if question.lower() == "exit":
+        if question.lower() == "exit" or question.lower() == "quit" or question.lower() == "bye":
             break
 
         result = invoke_workflow_graph(question, thread_id, answer_mode)

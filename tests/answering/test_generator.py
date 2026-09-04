@@ -257,10 +257,17 @@ def _stub_graph(monkeypatch, captured: dict | None = None) -> BuiltContext:
     def fake_invoke(question, thread_id, answer_mode="standard"):
         if captured is not None:
             captured.update(question=question, thread_id=thread_id, answer_mode=answer_mode)
-        return {"answer": "Answer [P1].", "current_built_context": built}
+        return {"answer": "Answer [P1].", "current_built_context": built, "route": "rag"}
 
     monkeypatch.setattr(answering_cli, "invoke_workflow_graph", fake_invoke)
     return built
+
+
+def _stub_chat_graph(monkeypatch) -> None:
+    def fake_invoke(question, thread_id, answer_mode="standard"):
+        return {"answer": "Hi, I help you read the ingested papers.", "route": "chat"}
+
+    monkeypatch.setattr(answering_cli, "invoke_workflow_graph", fake_invoke)
 
 
 def test_command_line_entry_asks_a_question_and_prints_the_answer(monkeypatch, capsys):
@@ -284,6 +291,18 @@ def test_answer_question_returns_the_answer_with_its_evidence(monkeypatch):
     assert result.answer == "Answer [P1]."
     assert result.context is built.context
     assert result.passages_by_id == built.passages_by_id
+    assert result.answer_type == "rag"
+
+
+def test_answer_question_returns_a_chat_reply_with_no_evidence(monkeypatch):
+    _stub_chat_graph(monkeypatch)
+
+    result = answering_cli.answer_question("Hi there")
+
+    assert result.answer_type == "chat"
+    assert result.answer == "Hi, I help you read the ingested papers."
+    assert result.context.citations == {}
+    assert result.passages_by_id == {}
 
 
 def test_answer_question_passes_easy_mode_to_the_workflow_graph(monkeypatch):
