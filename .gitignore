@@ -20,4 +20,6 @@ experiments/
 !tests/data/
 # The evals' answer key ships with the evals that read it.
 !evals/dataset/
+# The published benchmark page ships; `docs/` above would otherwise catch it.
+!evals/docs/
 chroma_db/

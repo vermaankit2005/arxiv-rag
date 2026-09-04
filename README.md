@@ -21,6 +21,12 @@ resolve, and all 1,211 useful HTML blocks are emitted. It retains 99.91% of
 reference words overall; the worst benchmark paper retains 99.53% against the
 95% rule.
 
+## Evaluation benchmarks
+
+Every evaluation, grouped by the component it tests — what it measures, the
+benchmark it should hit, and the score it actually gets:
+**[Eval benchmarks](https://vermaankit2005.github.io/arxiv-rag/)**.
+
 ## How this is built
 
 Components are developed one at a time, with decisions informed by data and
