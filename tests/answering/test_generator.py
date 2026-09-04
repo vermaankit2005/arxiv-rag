@@ -257,7 +257,12 @@ def _stub_graph(monkeypatch, captured: dict | None = None) -> BuiltContext:
     def fake_invoke(question, thread_id, answer_mode="standard"):
         if captured is not None:
             captured.update(question=question, thread_id=thread_id, answer_mode=answer_mode)
-        return {"answer": "Answer [P1].", "current_built_context": built, "route": "rag"}
+        return {
+            "answer": "Answer [P1].",
+            "current_built_context": built,
+            "route": "rag",
+            "rewritten_question": question,
+        }
 
     monkeypatch.setattr(answering_cli, "invoke_workflow_graph", fake_invoke)
     return built

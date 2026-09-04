@@ -1,15 +1,15 @@
 # State typedict for the workflow graph
-from typing import TypedDict, Annotated, Literal
+from typing import Annotated, Literal, TypedDict
 
-from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.constants import START, END
-from langgraph.graph import add_messages, StateGraph
-from pydantic import Field, BaseModel
+from langgraph.constants import END, START
+from langgraph.graph import StateGraph, add_messages
+from pydantic import BaseModel, Field
 
 from arxiv_rag.answering import AnswerMode, generate_answer
 from arxiv_rag.answering.chat_model import get_chat_model
-from arxiv_rag.graph.prompts import ROUTER_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT
+from arxiv_rag.graph.prompts import CHAT_SYSTEM_PROMPT, ROUTER_SYSTEM_PROMPT
 from arxiv_rag.logging import get_logger
 from arxiv_rag.retrieval import BuiltContext, PaperRetriever
 
@@ -35,19 +35,23 @@ class WorkflowGraphState(TypedDict):
 class RouterNodeOutput(BaseModel):
     route: Literal["chat", "rag"] = Field(..., description="The route to take: 'chat' or 'rag'")
     rewritten_question: str | None = Field(..., description="The rewritten question only when the route is 'rag'")
+    style_override: Literal["easy"] | None = Field(..., description=("Use 'easy' when the user explicitly requests "
+                                                                     "beginner-friendly wording"), )
 
 
 def route_node(state: WorkflowGraphState) -> dict:
     user_prompt = f"""
-    Conversation history:                                                                                                                                                                                                 <conversation>                                                                                                                                                                                                 
-       {state['messages']}                                                                                                                                                                                         
-       </conversation>                                                                                                                                                                                                                
-    Current user message:                                                                                                                                                                                          
-       <current_message>                                                                                                                                                                                              
-       {state['original_question']}                                                                                                                                                                                                     
-       </current_message>                                                                                                                                                                                             
-                                                                                                                                                                                                                  
-   Classify the current user message.
+    Conversation history:
+        <conversation>
+        {state["messages"]}
+        </conversation>
+    
+    Current user message:
+        <current_message>
+        {state["original_question"]}
+        </current_message>
+
+    Classify the current user message.
     """
     llm = get_chat_model()
 
@@ -57,7 +61,12 @@ def route_node(state: WorkflowGraphState) -> dict:
         raise RuntimeError("Could not get chat model.")
 
     try:
-        response = llm.invoke([SystemMessage(content=ROUTER_SYSTEM_PROMPT), HumanMessage(content=user_prompt)])
+        response = llm.invoke(
+            [
+                SystemMessage(content=ROUTER_SYSTEM_PROMPT),
+                HumanMessage(content=user_prompt),
+            ]
+        )
     except Exception as error:
         log.exception("Ollama answer generation failed")
         raise RuntimeError("Could not generate an answer.") from error
@@ -66,25 +75,33 @@ def route_node(state: WorkflowGraphState) -> dict:
         log.error("Response is not of type RouterNodeOutput")
         raise RuntimeError("Could not generate an answer.")
 
+    effective_mode = (
+        "easy"
+        if state["answer_mode"] == "easy" or response.style_override == "easy"
+        else "standard"
+    )
+
     return {
         "route": response.route,
-        "rewritten_question": response.rewritten_question
+        "rewritten_question": response.rewritten_question,
+        "answer_mode": effective_mode,
     }
 
 
 def chat_node(state: WorkflowGraphState) -> dict:
-    user_prompt = f"""                                                                                                                                                                                         
-    Conversation history:                                                                                                                                                                                  
-       <conversation>
-        {state['messages']}                                                                                                                                                                                         
-       </conversation>                                                                                                                                                                                                          
-    Current user message:                                                                                                                                                                                          
-       <current_message>                                                                                                                                                                                              
-       {state['original_question']}
-       </current_message>                                                                                                                                                                                             
-                                                                                                                                                                                                                  
-    Reply to the current user message.                                                                                                                                                                             
-   """
+    user_prompt = f"""
+    Conversation history:
+        <conversation>
+        {state["messages"]}
+        </conversation>
+    
+    Current user message:
+        <current_message>
+        {state["original_question"]}
+        </current_message>
+
+    Reply to the current user message.
+    """
 
     llm = get_chat_model()
     if llm is None:
@@ -95,7 +112,10 @@ def chat_node(state: WorkflowGraphState) -> dict:
         log.exception("Ollama answer generation failed")
         raise RuntimeError("Could not generate an answer.") from error
 
-    messages = [HumanMessage(content=state["original_question"]), AIMessage(content=response.content)]
+    messages = [
+        HumanMessage(content=state["original_question"]),
+        AIMessage(content=response.content),
+    ]
 
     return {
         "messages": messages,
@@ -119,7 +139,9 @@ def rag_node(state: WorkflowGraphState) -> dict:
         raise ValueError("rewritten_question must not be None for RAG route")
 
     built = PaperRetriever().retrieve_context_with_details(state["rewritten_question"])
-    answer = generate_answer(state["rewritten_question"], built.context, answer_mode=state["answer_mode"])
+    answer = generate_answer(
+        state["rewritten_question"], built.context, answer_mode=state["answer_mode"]
+    )
 
     return {
         "messages": [HumanMessage(content=state["original_question"]), AIMessage(content=answer)],
@@ -135,22 +157,24 @@ graph.add_node("chat_node", chat_node)
 graph.add_node("rag_node", rag_node)
 
 graph.add_edge(START, "route_node")
-graph.add_conditional_edges("route_node", route_edge, {"chat_node": "chat_node", "rag_node": "rag_node"})
+graph.add_conditional_edges(
+    "route_node", route_edge, {"chat_node": "chat_node", "rag_node": "rag_node"}
+)
 graph.add_edge("chat_node", END)  # Loop back to route_node for next user message
 
 workflow_graph = graph.compile(checkpointer=InMemorySaver())
 
-def invoke_workflow_graph(question: str, thread_id: str, answer_mode: AnswerMode = "standard") -> WorkflowGraphState:
-    config = {
-        "configurable": {
-            "thread_id": thread_id
-        }
-    }
 
-    final_state = workflow_graph.invoke(input={
-        "original_question": question,
-        "answer_mode": answer_mode,
-    }, config=config)
+def invoke_workflow_graph(question: str, thread_id: str, answer_mode: AnswerMode = "standard") -> WorkflowGraphState:
+    config = {"configurable": {"thread_id": thread_id}}
+
+    final_state = workflow_graph.invoke(
+        input={
+            "original_question": question,
+            "answer_mode": answer_mode,
+        },
+        config=config,
+    )
 
     return final_state
 
@@ -161,9 +185,12 @@ if __name__ == "__main__":
     answer_mode = "standard"
 
     while True:
-
         question = input("Enter your question (or 'exit' to quit): ")
-        if question.lower() == "exit" or question.lower() == "quit" or question.lower() == "bye":
+        if (
+                question.lower() == "exit"
+                or question.lower() == "quit"
+                or question.lower() == "bye"
+        ):
             break
 
         result = invoke_workflow_graph(question, thread_id, answer_mode)
