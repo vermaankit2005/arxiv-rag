@@ -79,7 +79,14 @@ def test_generate_answer_returns_normal_text_with_valid_inline_citations():
     assert "Question:\nHow does it work?" in model.prompt
     assert "[P1]" in model.prompt
     assert "Use natural, clear language while keeping useful technical detail" in model.prompt
-    assert "Answer directly and reply in a clear and formatted Markdown" in model.prompt
+    assert "Answer directly in natural prose" in model.prompt
+    assert "Use Markdown only when it genuinely improves readability" in model.prompt
+    assert "do not announce what will follow or repeat the question" in model.prompt
+    assert "For a short factual answer, use one compact sentence or paragraph" in model.prompt
+    assert "Do not add a heading when the answer fits in one or two paragraphs" in model.prompt
+    assert "Use bullets only for several independent items or steps" in model.prompt
+    assert "stop once the requested points are answered" in model.prompt
+    assert "clear and formatted Markdown" not in model.prompt
     assert "Cite each distinct factual claim supported by the papers" in model.prompt
     assert "Closely related sentences supported by the same passage may share one citation" in model.prompt
     assert "Use only passage IDs" in model.prompt
