@@ -99,7 +99,7 @@ def run_naturalness() -> None:
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
-        max_concurrency=2,
+        max_concurrency=1,
     )
 
 if __name__ == "__main__":

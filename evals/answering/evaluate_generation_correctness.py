@@ -96,7 +96,7 @@ def run_correctness() -> None:
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
-        max_concurrency=4
+        max_concurrency=1
     )
 
 if __name__ == "__main__":

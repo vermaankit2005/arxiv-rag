@@ -101,7 +101,7 @@ def run_evidence_behavior() -> None:
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
-        max_concurrency=2,
+        max_concurrency=1,
     )
 
 
