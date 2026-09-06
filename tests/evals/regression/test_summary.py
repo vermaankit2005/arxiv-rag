@@ -65,7 +65,7 @@ def test_metric_record_carries_threshold_and_status() -> None:
     record = _metric_record("generation_correctness.correctness", [("gen-001", 1.0)], 1)
 
     assert record["average"] == 1.0
-    assert record["threshold"] == 0.75
+    assert record["threshold"] == 0.90
     assert record["status"] == "PASS"
     assert record["passed"] is True
     assert record["error"] is None
@@ -160,7 +160,7 @@ def test_summary_renders_a_row_for_each_metric() -> None:
 
     assert "priority suite — FAIL" in summary
     assert "Started: 2026-09-06T16:30:26+00:00" in summary
-    assert "| `generation_correctness.correctness` | 1.0000 | 0.7500 | 1/1 | 12s | ✅ PASS |" in summary
+    assert "| `generation_correctness.correctness` | 1.0000 | 0.9000 | 1/1 | 12s | ✅ PASS |" in summary
     assert "| `pipeline_fact_citation.fact_citation` | n/a | 0.9500 | 0/12 | 3s | 💥 ERROR |" in summary
     assert "- `pipeline_fact_citation.fact_citation`: RuntimeError: down" in summary
 
