@@ -1,6 +1,29 @@
+import sys
+
+import pytest  # pyright: ignore[reportMissingImports]
+
+from arxiv_rag.ingestion import vector_db_ingest
 from evals.regression.runner import _error_record, _metric_record, write_results
 from evals.regression.summary import build_summary
 from evals.regression.suites import GENERATION_SUBSET, priority_specs
+
+
+def test_suites_can_be_listed_without_a_chroma_database(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """CI lists the suites on a runner that has not ingested the corpus yet."""
+    monkeypatch.setattr(
+        vector_db_ingest, "CHROMA_DATABASE_FILE", tmp_path / "missing.sqlite3"
+    )
+    for module_name in list(sys.modules):
+        if module_name.startswith("evals."):
+            monkeypatch.delitem(sys.modules, module_name, raising=False)
+
+    from evals.regression.suites import full_specs as fresh_full_specs
+    from evals.regression.suites import priority_specs as fresh_priority_specs
+
+    assert fresh_full_specs()
+    assert fresh_priority_specs()
 
 
 def test_priority_suite_is_answering_and_pipeline_only() -> None:

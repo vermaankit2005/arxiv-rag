@@ -17,10 +17,9 @@ EXPERIMENT_METADATA = {
     "vector_db": "chroma",
 }
 
-retriever = retrieval.PaperRetriever()
-
-
 def fetch_docs_for_evaluation(inputs: dict) -> dict | None:
+    # Opened here, not at import, so listing the suites never needs a database.
+    retriever = retrieval.PaperRetriever()
     retrieved_doc_list = retriever.retrieve(inputs["question"])
 
     if not retrieved_doc_list:
