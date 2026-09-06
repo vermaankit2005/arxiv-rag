@@ -5,8 +5,6 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .env
-data/raw/
-data/processed/
 experiments/**/output/
 .idea/
 *.stackdump
@@ -14,7 +12,12 @@ experiments/**/output/
 # Publish README.md and one canonical release-status document. Keep detailed
 # sprint notes and other working material local.
 docs/*
-data/
+# Keep the 12 frozen arXiv HTML fixtures tracked. They are the reproducible
+# corpus CI ingests, so everything else under data/ stays local.
+data/*
+!data/raw/
+data/raw/*
+!data/raw/sampled_html/
 experiments/
 *.md
 !README.md

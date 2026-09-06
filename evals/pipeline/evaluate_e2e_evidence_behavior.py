@@ -16,6 +16,7 @@ from evals.pipeline import context as evaluation_context
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "pipeline_evidence_behavior_dataset"
 EXPERIMENT_PREFIX = "pipeline_evidence_behavior"
+EVALUATOR_VERSION = "pipeline-evidence-behavior-v2"
 EXPERIMENT_METADATA = {
     "metric": "pipeline_evidence_behavior",
     "dataset": LANGSMITH_DATASET_NAME,
@@ -23,7 +24,13 @@ EXPERIMENT_METADATA = {
     "judge_model": get_judge_model(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
+    "evaluator_version": EVALUATOR_VERSION,
 }
+
+# The judge names the behavior; this file turns that name into the score. Asking
+# for a word rather than one of 0, 0.5, or 1 is what a constrained decoder can
+# reliably produce.
+BEHAVIOR_SCORES = {"correct": 1.0, "mixed": 0.5, "wrong": 0.0}
 
 EVIDENCE_BEHAVIOR_PROMPT = f"""
 You are checking whether a retrieval-augmented application responds appropriately
@@ -39,8 +46,9 @@ information requested by the question. Then judge the final answer:
   {INSUFFICIENT_EVIDENCE_ANSWER}
 - The answer must not invent details unsupported by the retrieved passages.
 
-Score 1 when the behavior is fully correct, 0.5 when it is mixed or the limitation
-is unclear, and 0 when it chooses the wrong behavior or invents unsupported facts.
+Report "correct" when the behavior is fully correct, "mixed" when it is partly
+right or the limitation is unclear, and "wrong" when it chooses the wrong
+behavior or invents unsupported facts.
 Use only the retrieved passages. Do not use outside knowledge.
 
 Question and retrieved passages:
@@ -50,12 +58,24 @@ Final answer:
 {{outputs}}
 """
 
+EVIDENCE_BEHAVIOR_SCHEMA = {
+    "title": "EvidenceBehaviorResult",
+    "type": "object",
+    "properties": {
+        "support_level": {"type": "string", "enum": ["all", "some", "none"]},
+        "behavior": {"type": "string", "enum": list(BEHAVIOR_SCORES)},
+        "reason": {"type": "string"},
+    },
+    "required": ["support_level", "behavior", "reason"],
+    "additionalProperties": False,
+}
+
 judge_model = build_judge_model()
 evidence_behavior_judge = create_llm_as_judge(
     prompt=EVIDENCE_BEHAVIOR_PROMPT,
     feedback_key="pipeline_evidence_behavior",
     judge=judge_model,
-    choices=[0, 0.5, 1],
+    output_schema=EVIDENCE_BEHAVIOR_SCHEMA,
 )
 
 
@@ -68,14 +88,19 @@ def evaluate_evidence_behavior(inputs: dict, outputs: dict) -> dict:
         },
         outputs={"answer": outputs.get("answer", "")},
     )
-    score = result.get("score")
-    if score not in (0, 0.5, 1):
-        raise ValueError(f"Evidence-behavior judge returned an invalid score: {score!r}")
+    behavior = result.get("behavior")
+    if behavior not in BEHAVIOR_SCORES:
+        raise ValueError(
+            f"Evidence-behavior judge returned no usable behavior. Got keys "
+            f"{sorted(result)} with behavior {behavior!r}."
+        )
 
+    support_level = result.get("support_level", "unknown")
+    reason = result.get("reason", "Pipeline evidence behavior was judged.")
     return {
         "key": "evidence_behavior",
-        "score": score,
-        "comment": result.get("comment", "Pipeline evidence behavior was judged."),
+        "score": BEHAVIOR_SCORES[behavior],
+        "comment": f"Evidence supports {support_level}; behavior {behavior}. {reason}",
     }
 
 

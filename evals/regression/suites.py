@@ -44,40 +44,32 @@ def _spec(
 
 
 def priority_specs() -> list[dict]:
-    """Return the four urgent evaluations."""
+    """Return the merge-gate suite: answering and pipeline signal only."""
     from evals.answering import context as answering_context
+    from evals.answering import evaluate_generation_correctness as correctness
     from evals.answering import evaluate_generation_fact_citation as citation
-    from evals.answering import evaluate_generation_naturalness as naturalness
-    from evals.application import evaluate_policy_response_accuracy as policy
-    from evals.application import evaluate_sensitive_data_protection as sensitive
-    from evals.application import safety
+    from evals.answering import evaluate_generation_groundedness as groundedness
+    from evals.pipeline import context as pipeline_context
+    from evals.pipeline import evaluate_e2e_evidence_behavior as pipeline_evidence
+    from evals.pipeline import evaluate_e2e_fact_citation as pipeline_fact_citation
+    from evals.pipeline import evaluate_e2e_required_fact_coverage as pipeline_coverage
 
     generate = answering_context.generate_answer_for_evaluation
+    pipeline_generate = pipeline_context.generate_pipeline_answer_for_evaluation
+    pipeline_generate_with_passages = (
+        pipeline_context.generate_pipeline_answer_and_passages_for_evaluation
+    )
+
     return [
         _spec(
-            "generation_naturalness",
-            naturalness,
+            "generation_groundedness",
+            groundedness,
             generate,
-            naturalness.evaluate_naturalness,
-            ("naturalness",),
+            groundedness.evaluate_groundedness,
+            ("groundedness",),
             12,
+            4,
             subset_ids=GENERATION_SUBSET,
-        ),
-        _spec(
-            "application_sensitive_data",
-            sensitive,
-            safety.generate_safety_answer,
-            sensitive.evaluate_sensitive_data_protection,
-            (sensitive.METRIC_NAME,),
-            10,
-        ),
-        _spec(
-            "application_policy_response",
-            policy,
-            safety.generate_safety_answer,
-            policy.evaluate_policy_response_accuracy,
-            (policy.METRIC_NAME,),
-            10,
         ),
         _spec(
             "generation_fact_citation",
@@ -86,7 +78,45 @@ def priority_specs() -> list[dict]:
             citation.evaluate_fact_citation,
             ("fact_citation",),
             12,
+            3,
             subset_ids=GENERATION_SUBSET,
+        ),
+        _spec(
+            "generation_correctness",
+            correctness,
+            generate,
+            correctness.evaluate_correctness,
+            ("correctness",),
+            12,
+            4,
+            subset_ids=GENERATION_SUBSET,
+        ),
+        _spec(
+            "pipeline_required_fact_coverage",
+            pipeline_coverage,
+            pipeline_generate,
+            pipeline_coverage.evaluate_required_fact_coverage,
+            ("required_fact_coverage",),
+            12,
+            subset_ids=GENERATION_SUBSET,
+        ),
+        _spec(
+            "pipeline_fact_citation",
+            pipeline_fact_citation,
+            pipeline_generate_with_passages,
+            pipeline_fact_citation.evaluate_fact_citation,
+            ("fact_citation",),
+            12,
+            subset_ids=GENERATION_SUBSET,
+        ),
+        # Its own dataset holds only nine cases, so there is nothing to subset.
+        _spec(
+            "pipeline_evidence_behavior",
+            pipeline_evidence,
+            pipeline_generate_with_passages,
+            pipeline_evidence.evaluate_evidence_behavior,
+            ("evidence_behavior",),
+            9,
         ),
     ]
 
