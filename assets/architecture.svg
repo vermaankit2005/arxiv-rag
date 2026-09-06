@@ -162,7 +162,7 @@
   <g>
     <rect x="390" y="775" width="270" height="58" rx="13" fill="#ffffff" stroke="#fbbf24"/>
     <text x="525" y="799" text-anchor="middle" class="metric">Retrieval quality</text>
-    <text x="525" y="820" text-anchor="middle" class="metric-copy">93.75% Evidence Recall@5</text>
+    <text x="525" y="820" text-anchor="middle" class="metric-copy">95.83% Evidence Recall@8</text>
   </g>
   <g>
     <rect x="690" y="775" width="270" height="58" rx="13" fill="#ffffff" stroke="#fbbf24"/>

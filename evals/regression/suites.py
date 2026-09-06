@@ -46,7 +46,7 @@ def _spec(
 def priority_specs() -> list[dict]:
     """Return the four urgent evaluations."""
     from evals.answering import context as answering_context
-    from evals.answering import evaluate_generation_citation_support as citation
+    from evals.answering import evaluate_generation_fact_citation as citation
     from evals.answering import evaluate_generation_naturalness as naturalness
     from evals.application import evaluate_policy_response_accuracy as policy
     from evals.application import evaluate_sensitive_data_protection as sensitive
@@ -61,8 +61,7 @@ def priority_specs() -> list[dict]:
             naturalness.evaluate_naturalness,
             ("naturalness",),
             12,
-            2,
-            GENERATION_SUBSET,
+            subset_ids=GENERATION_SUBSET,
         ),
         _spec(
             "application_sensitive_data",
@@ -81,14 +80,13 @@ def priority_specs() -> list[dict]:
             10,
         ),
         _spec(
-            "generation_citation_support",
+            "generation_fact_citation",
             citation,
             generate,
-            citation.evaluate_citation_support,
-            ("citation_support",),
+            citation.evaluate_fact_citation,
+            ("fact_citation",),
             12,
-            3,
-            GENERATION_SUBSET,
+            subset_ids=GENERATION_SUBSET,
         ),
     ]
 
@@ -96,12 +94,12 @@ def priority_specs() -> list[dict]:
 def full_specs() -> list[dict]:
     """Return every active evaluation against its full frozen dataset."""
     from evals.answering import context as answering_context
-    from evals.answering import evaluate_generation_citation_support as citation
     from evals.answering import evaluate_generation_completeness as completeness
     from evals.answering import evaluate_generation_correctness as correctness
     from evals.answering import (
         evaluate_generation_evidence_behavior as generation_evidence,
     )
+    from evals.answering import evaluate_generation_fact_citation as citation
     from evals.answering import evaluate_generation_groundedness as groundedness
     from evals.answering import evaluate_generation_naturalness as naturalness
     from evals.application import evaluate_harmful_content_safety as harmful
@@ -114,7 +112,7 @@ def full_specs() -> list[dict]:
         evaluate_passage_anchor_validity_and_probe_recall as passage_recall,
     )
     from evals.pipeline import context as pipeline_context
-    from evals.pipeline import evaluate_e2e_citation_support as pipeline_citation
+    from evals.pipeline import evaluate_e2e_fact_citation as pipeline_fact_citation
     from evals.pipeline import evaluate_e2e_evidence_behavior as pipeline_evidence
     from evals.pipeline import evaluate_e2e_required_fact_coverage as pipeline_coverage
     from evals.retriever import evaluate_retriever_document_precision as precision
@@ -149,7 +147,7 @@ def full_specs() -> list[dict]:
             recall,
             recall.fetch_docs_for_evaluation,
             recall.evaluate_evidence_recall,
-            ("evidence_recall",),
+            ("evidence_recall_at_8",),
             24,
         ),
         _spec(
@@ -157,7 +155,7 @@ def full_specs() -> list[dict]:
             mrr,
             mrr.fetch_docs_for_evaluation,
             mrr.evaluate_mrr,
-            ("mrr_at_5",),
+            ("mrr_at_8",),
             24,
         ),
         _spec(
@@ -165,7 +163,7 @@ def full_specs() -> list[dict]:
             precision,
             precision.fetch_docs_for_evaluation,
             precision.evaluate_document_precision,
-            ("document_precision_at_5",),
+            ("document_precision_at_8",),
             24,
         ),
         _spec(
@@ -178,11 +176,11 @@ def full_specs() -> list[dict]:
             4,
         ),
         _spec(
-            "generation_citation_support",
+            "generation_fact_citation",
             citation,
             generate,
-            citation.evaluate_citation_support,
-            ("citation_support",),
+            citation.evaluate_fact_citation,
+            ("fact_citation",),
             24,
             3,
         ),
@@ -231,11 +229,11 @@ def full_specs() -> list[dict]:
             24,
         ),
         _spec(
-            "pipeline_citation_support",
-            pipeline_citation,
+            "pipeline_fact_citation",
+            pipeline_fact_citation,
             pipeline_generate_with_passages,
-            pipeline_citation.evaluate_citation_support,
-            ("citation_support",),
+            pipeline_fact_citation.evaluate_fact_citation,
+            ("fact_citation",),
             24,
         ),
         _spec(

@@ -11,12 +11,14 @@ experiments/**/output/
 .idea/
 *.stackdump
 
-# Only README.md ships. Everything below is working material, kept locally.
-docs/
+# Publish README.md and one canonical release-status document. Keep detailed
+# sprint notes and other working material local.
+docs/*
 data/
 experiments/
 *.md
 !README.md
+!docs/release-status.md
 !tests/data/
 # The evals' answer key ships with the evals that read it.
 !evals/dataset/

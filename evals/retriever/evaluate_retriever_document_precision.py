@@ -1,4 +1,4 @@
-"""This checks how many of the top 5 retrieved Documents contain required evidence. The formula is: relevant Documents / 5. We use Documents as the unit because the passage-level metric treated useful neighbouring passages as noise when they were not part of the minimal answer key."""
+"""This checks how many of the top 8 retrieved Documents contain required evidence. The formula is: relevant Documents / 8. We use Documents as the unit because the passage-level metric treated useful neighbouring passages as noise when they were not part of the minimal answer key."""
 
 from langsmith import Client
 
@@ -6,9 +6,9 @@ from arxiv_rag import retrieval
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "retrieval_evidence_dataset"
-EXPERIMENT_PREFIX = "retriever-document-precision-at-5"
+EXPERIMENT_PREFIX = "retriever-document-precision-at-8"
 EXPERIMENT_METADATA = {
-    "metric": "document_precision_at_5",
+    "metric": "document_precision_at_8",
     "evaluation_unit": "document",
     "dataset": LANGSMITH_DATASET_NAME,
     "embedding_model": "qwen3-embedding:4b",
@@ -69,7 +69,7 @@ def evaluate_document_precision(outputs: dict, reference_outputs: dict) -> dict:
     score = relevant_documents / retrieval.DEFAULT_TOP_K
 
     return {
-        "key": "document_precision_at_5",
+        "key": "document_precision_at_8",
         "score": score,
         "comment": (
             f"Found required evidence in {relevant_documents}/"

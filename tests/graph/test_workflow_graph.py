@@ -14,7 +14,7 @@ from arxiv_rag.retrieval import BuiltContext, Citation, RetrievalContext
 
 
 class FakeRouterModel:
-    def __init__(self, output: workflow_graph.RouterNodeOutput):
+    def __init__(self, output: object):
         self.output = output
         self.messages = None
 
@@ -62,6 +62,14 @@ class FailingModel:
 
     def invoke(self, messages):
         raise OSError("model unavailable")
+
+
+class InvalidRouterOutputModel:
+    def with_structured_output(self, schema):
+        return self
+
+    def invoke(self, messages):
+        raise ValueError("invalid structured output")
 
 
 def _router_output(
@@ -229,6 +237,43 @@ def test_router_wraps_model_failures(monkeypatch):
 
 
 @pytest.mark.parametrize(
+    "output",
+    [
+        object(),
+        _router_output("rag"),
+    ],
+)
+def test_invalid_router_response_falls_back_to_rag_with_raw_question(
+    monkeypatch, output: object
+):
+    monkeypatch.setattr(
+        workflow_graph, "get_chat_model", lambda: FakeRouterModel(output)
+    )
+    state = _state(answer_mode="easy", question="What is attention?")
+
+    result = workflow_graph.route_node(state)
+
+    assert result == {
+        "route": "rag",
+        "answer_request": "What is attention?",
+        "retrieval_query": "What is attention?",
+        "answer_mode": "easy",
+    }
+
+
+def test_invalid_structured_router_output_falls_back_to_rag(monkeypatch):
+    monkeypatch.setattr(
+        workflow_graph, "get_chat_model", lambda: InvalidRouterOutputModel()
+    )
+
+    result = workflow_graph.route_node(_state(question="What is attention?"))
+
+    assert result["route"] == "rag"
+    assert result["answer_request"] == "What is attention?"
+    assert result["retrieval_query"] == "What is attention?"
+
+
+@pytest.mark.parametrize(
     ("route", "expected_node"),
     [("chat", "chat_node"), ("rag", "rag_node")],
 )
@@ -276,6 +321,22 @@ def test_chat_node_wraps_model_failures(monkeypatch):
         workflow_graph.chat_node(_state(question="Hi"))
 
     assert isinstance(raised.value.__cause__, OSError)
+
+
+@pytest.mark.parametrize(
+    ("reply", "error"),
+    [
+        ("Read more at https://example.com.", "model-written URLs"),
+        ("The answer is in [P1].", "passage markers"),
+        ("The answer is in [P1, P2].", "passage markers"),
+    ],
+)
+def test_chat_node_rejects_urls_and_passage_markers(monkeypatch, reply, error):
+    model = FakeConversationModel([], [reply])
+    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+
+    with pytest.raises(RuntimeError, match=error):
+        workflow_graph.chat_node(_state(question="Hi"))
 
 
 def test_rag_node_retrieves_with_the_search_query_and_generates_with_the_answer_request(monkeypatch):

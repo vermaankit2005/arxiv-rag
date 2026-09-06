@@ -1,0 +1,14 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Ignore the gitignored local environment file"
+paths = ['''(?:^|[\\/])\.env$''']
+
+[[allowlists]]
+description = "Allow synthetic credentials used by safety evaluation fixtures"
+regexes = [
+  '''SAFE_EVAL_SECRET(?:_V3)?_[A-Z0-9]+''',
+  '''api-v3-prod-[A-Z0-9-]+''',
+  '''POLICY_REFUSAL_SECRET_V3_[A-Z0-9]+''',
+]

@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from arxiv_rag.answering import AnswerMode, generate_answer
 from arxiv_rag.answering.chat_model import get_chat_model
+from arxiv_rag.answering.generator import CITATION_MARKER_PATTERN, URL_PATTERN
 from arxiv_rag.graph.prompts import CHAT_SYSTEM_PROMPT, ROUTER_SYSTEM_PROMPT
 from arxiv_rag.logging import get_logger
 from arxiv_rag.retrieval import BuiltContext, PaperRetriever
@@ -42,6 +43,32 @@ class RouterNodeOutput(BaseModel):
         Field(..., description="Use 'easy' when the user explicitly requests beginner-friendly wording"))
 
 
+def _fallback_to_rag(state: WorkflowGraphState, reason: str) -> dict:
+    question = state["original_question"]
+    log.warning("Invalid router output; falling back to RAG: %s", reason)
+    return {
+        "route": "rag",
+        "answer_request": question,
+        "retrieval_query": question,
+        "answer_mode": state["answer_mode"],
+    }
+
+
+def _valid_router_response(response: RouterNodeOutput) -> bool:
+    if response.route == "rag":
+        return bool(
+            response.answer_request
+            and response.answer_request.strip()
+            and response.retrieval_query
+            and response.retrieval_query.strip()
+        )
+    return (
+        not response.answer_request
+        and not response.retrieval_query
+        and response.style_override is None
+    )
+
+
 def route_node(state: WorkflowGraphState) -> dict:
     user_prompt = f"""
     Conversation history:
@@ -70,13 +97,16 @@ def route_node(state: WorkflowGraphState) -> dict:
                 HumanMessage(content=user_prompt),
             ]
         )
+    except ValueError as error:
+        return _fallback_to_rag(state, str(error))
     except Exception as error:
         log.exception("Ollama answer generation failed")
         raise RuntimeError("Could not generate an answer.") from error
 
     if not isinstance(response, RouterNodeOutput):
-        log.error("Response is not of type RouterNodeOutput")
-        raise RuntimeError("Could not generate an answer.")
+        return _fallback_to_rag(state, "response did not match RouterNodeOutput")
+    if not _valid_router_response(response):
+        return _fallback_to_rag(state, "response fields violated the route contract")
 
     effective_mode = (
         "easy"
@@ -108,6 +138,13 @@ def route_edge(state: WorkflowGraphState) -> Literal["chat_node", "rag_node"]:
         raise ValueError(f"Invalid route: {state['route']}")
 
 
+def _validate_chat_answer(answer: str) -> None:
+    if URL_PATTERN.search(answer):
+        raise RuntimeError("The chat answer must not contain model-written URLs.")
+    if CITATION_MARKER_PATTERN.search(answer):
+        raise RuntimeError("The chat answer must not contain passage markers.")
+
+
 def chat_node(state: WorkflowGraphState) -> dict:
     user_prompt = f"""
     Conversation history:
@@ -127,19 +164,31 @@ def chat_node(state: WorkflowGraphState) -> dict:
     if llm is None:
         raise RuntimeError("Could not get chat model.")
     try:
-        response = llm.invoke([SystemMessage(content=CHAT_SYSTEM_PROMPT), HumanMessage(content=user_prompt)])
+        response = llm.invoke(
+            [
+                SystemMessage(content=CHAT_SYSTEM_PROMPT),
+                HumanMessage(content=user_prompt),
+            ]
+        )
     except Exception as error:
         log.exception("Ollama answer generation failed")
         raise RuntimeError("Could not generate an answer.") from error
 
+    answer = response.content.strip()
+    try:
+        _validate_chat_answer(answer)
+    except RuntimeError as error:
+        log.warning("Rejected chat answer: %s", error)
+        raise
+
     messages = [
         HumanMessage(content=state["original_question"]),
-        AIMessage(content=response.content),
+        AIMessage(content=answer),
     ]
 
     return {
         "messages": messages,
-        "answer": response.content,
+        "answer": answer,
         "current_built_context": None,
     }
 

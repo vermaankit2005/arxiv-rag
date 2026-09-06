@@ -1,4 +1,4 @@
-"""This checks how much of the evidence needed for each question appears in the top 5 Documents. For each question, the formula is: covered evidence units / total evidence units. The final score is the average across all questions."""
+"""This checks how much of the evidence needed for each question appears in the top 8 Documents. For each question, the formula is: covered evidence units / total evidence units. The final score is the average across all questions."""
 
 from langsmith import Client
 
@@ -6,9 +6,9 @@ from arxiv_rag import retrieval
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "retrieval_evidence_dataset"
-EXPERIMENT_PREFIX = "retriever-evidence-recall-at-5"
+EXPERIMENT_PREFIX = "retriever-evidence-recall-at-8"
 EXPERIMENT_METADATA = {
-    "metric": "evidence_recall_at_5",
+    "metric": "evidence_recall_at_8",
     "dataset": LANGSMITH_DATASET_NAME,
     "embedding_model": "qwen3-embedding:4b",
     "top_k": retrieval.DEFAULT_TOP_K,
@@ -75,7 +75,7 @@ def evaluate_evidence_recall(outputs: dict, reference_outputs: dict) -> dict:
     score = len_covered_evidence_unit / len_all_evidence_unit if len_all_evidence_unit > 0 else 0.0
 
     return {
-        "key": "evidence_recall",
+        "key": "evidence_recall_at_8",
         "score": score,
     }
 

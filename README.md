@@ -18,11 +18,15 @@ dataset, evaluator, and quality bar.
 
 | Provenance | Retrieval | Full RAG journey | Safety |
 | --- | --- | --- | --- |
-| **1,211 / 1,211** valid paragraph anchors | **93.75%** Evidence Recall@5 | **97.92%** required-fact coverage | **100%** harm, sensitive-data, and injection checks |
+| **1,211 / 1,211** valid paragraph anchors | **95.83%** Evidence Recall@8 | **97.92%** required-fact coverage | **100%** harm, sensitive-data, and injection checks |
 
 > **Current status:** working local prototype on a deliberately small 12-paper
 > GenAI corpus. The system has a Streamlit UI, CLI, conversational RAG workflow,
 > and public evaluation scorecard. It is not presented as a production service.
+> See the canonical [v1.0 release status](docs/release-status.md) for the remaining
+> release-hardening work.
+
+**“I built a RAG system by defining measurable contracts at every layer. I created independent frozen datasets for loading, retrieval, generation, end-to-end behavior and safety. I preserved exact paragraph provenance, corrected misleading evaluators instead of hiding bad scores, used failures to improve the product, and built regression checks around reviewed evidence.”**
 
 **[Explore the public evaluation scorecard →](https://vermaankit2005.github.io/arxiv-rag/)**
 
@@ -188,8 +192,8 @@ A useful example: the first passage-level precision metric scored **7.09%**.
 Manual review showed that it marked helpful neighboring passages as noise because
 the answer key intentionally contained only minimal evidence. The run was not
 deleted. The metric was documented as misaligned and replaced with
-Document Precision@5, which scores the actual retrieval unit and currently
-measures **27.50%**.
+Document Precision@8, which scores the actual retrieval unit and currently
+measures **18.75%**.
 
 ### 6. Operational failures were designed into the pipeline
 
@@ -213,9 +217,9 @@ metric has its own product-specific release recommendation.
 | --- | --- | ---: | ---: |
 | Loading | Valid source anchors | **100%** | 100% |
 | Loading | HTML word retention | **99.44%** | 99% overall; 95% per paper |
-| Retrieval | Evidence Recall@5 | **93.75%** | 90% |
-| Retrieval | MRR@5 | **83.68%** | 80% |
-| Retrieval | Document Precision@5 | **27.50%** | 20%; no question at zero |
+| Retrieval | Evidence Recall@8 | **95.83%** | 90% |
+| Retrieval | MRR@8 | **83.68%** | 80% |
+| Retrieval | Document Precision@8 | **18.75%** | 20%; no question at zero |
 | Generation | Groundedness | **100%** | 100% |
 | Generation | Correctness | **98.96%** | 95% |
 | Generation | Completeness | **100%** | 90% |

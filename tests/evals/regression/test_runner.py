@@ -4,7 +4,12 @@ from typing import Any, cast
 import pytest  # pyright: ignore[reportMissingImports]
 
 from evals.regression import runner
-from evals.regression.runner import _collect_scores, _print_report, _select_data, _status
+from evals.regression.runner import (
+    _collect_scores,
+    _print_report,
+    _select_data,
+    _status,
+)
 from evals.regression.suites import GENERATION_SUBSET, full_specs
 
 
@@ -51,7 +56,7 @@ def test_incomplete_results_fail() -> None:
     assert _status("generation.naturalness", [("gen-001", 1.0)], 2) == ("FAIL", False)
 
 
-def test_every_full_suite_metric_has_temporary_threshold() -> None:
+def test_every_full_suite_metric_has_threshold() -> None:
     metric_ids = {
         f"{spec['name']}.{feedback_key}"
         for spec in full_specs()
@@ -59,7 +64,9 @@ def test_every_full_suite_metric_has_temporary_threshold() -> None:
     }
 
     assert set(runner.THRESHOLDS) == metric_ids
-    assert set(runner.THRESHOLDS.values()) == {0.75}
+    assert runner.THRESHOLDS["generation_fact_citation.fact_citation"] == 0.95
+    assert runner.THRESHOLDS["pipeline_fact_citation.fact_citation"] == 0.95
+    assert set(runner.THRESHOLDS.values()) == {0.75, 0.95}
 
 
 def test_approved_threshold_is_checked(monkeypatch: pytest.MonkeyPatch) -> None:

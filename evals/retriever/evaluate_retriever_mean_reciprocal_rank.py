@@ -1,4 +1,4 @@
-"""This checks how early the first useful Document appears in the top 5. For each question, the formula is: 1 / rank of the first Document containing required evidence. The score is 0 when no evidence appears in the top 5, and the final score is the average across all questions."""
+"""This checks how early the first useful Document appears in the top 8. For each question, the formula is: 1 / rank of the first Document containing required evidence. The score is 0 when no evidence appears in the top 8, and the final score is the average across all questions."""
 
 from dotenv import load_dotenv
 from langsmith import Client
@@ -7,9 +7,9 @@ from arxiv_rag import retrieval
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "retrieval_evidence_dataset"
-EXPERIMENT_PREFIX = "retriever-mrr-at-5"
+EXPERIMENT_PREFIX = "retriever-mrr-at-8"
 EXPERIMENT_METADATA = {
-    "metric": "mean_reciprocal_rank_at_5",
+    "metric": "mean_reciprocal_rank_at_8",
     "dataset": LANGSMITH_DATASET_NAME,
     "embedding_model": "qwen3-embedding:4b",
     "top_k": retrieval.DEFAULT_TOP_K,
@@ -63,9 +63,9 @@ def evaluate_mrr(outputs: dict, reference_outputs: dict) -> dict:
             _passage_matches_evidence(source_passage, reference_outputs)
             for source_passage in document.get("source_passages", [])
         ):
-            return {"key": "mrr_at_5", "score": 1 / rank}
+            return {"key": "mrr_at_8", "score": 1 / rank}
 
-    return {"key": "mrr_at_5", "score": 0.0}
+    return {"key": "mrr_at_8", "score": 0.0}
 
 
 def run_mrr() -> None:
