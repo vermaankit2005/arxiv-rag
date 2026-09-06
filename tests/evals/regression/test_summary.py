@@ -46,11 +46,17 @@ def test_priority_suite_is_answering_and_pipeline_only() -> None:
         "generation_correctness",
         "pipeline_required_fact_coverage",
         "pipeline_fact_citation",
+        "pipeline_evidence_behavior",
     ]
 
 
-def test_priority_suite_uses_the_fixed_subset_everywhere() -> None:
+def test_priority_suite_subsets_the_shared_generation_dataset() -> None:
+    """Evidence behavior has its own nine-case dataset and runs whole."""
     for spec in priority_specs():
+        if spec["name"] == "pipeline_evidence_behavior":
+            assert spec["subset_ids"] == ()
+            assert spec["expected"] == 9
+            continue
         assert spec["subset_ids"] == GENERATION_SUBSET
         assert spec["expected"] == len(GENERATION_SUBSET)
 

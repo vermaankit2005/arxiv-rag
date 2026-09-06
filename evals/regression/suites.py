@@ -50,6 +50,7 @@ def priority_specs() -> list[dict]:
     from evals.answering import evaluate_generation_fact_citation as citation
     from evals.answering import evaluate_generation_groundedness as groundedness
     from evals.pipeline import context as pipeline_context
+    from evals.pipeline import evaluate_e2e_evidence_behavior as pipeline_evidence
     from evals.pipeline import evaluate_e2e_fact_citation as pipeline_fact_citation
     from evals.pipeline import evaluate_e2e_required_fact_coverage as pipeline_coverage
 
@@ -107,6 +108,15 @@ def priority_specs() -> list[dict]:
             ("fact_citation",),
             12,
             subset_ids=GENERATION_SUBSET,
+        ),
+        # Its own dataset holds only nine cases, so there is nothing to subset.
+        _spec(
+            "pipeline_evidence_behavior",
+            pipeline_evidence,
+            pipeline_generate_with_passages,
+            pipeline_evidence.evaluate_evidence_behavior,
+            ("evidence_behavior",),
+            9,
         ),
     ]
 
