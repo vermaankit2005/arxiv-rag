@@ -1,9 +1,17 @@
 name: Evaluations
 
 # Semantic regression runs against the frozen 12-paper corpus.
-# Merges to master run the priority suite. The full inventory is manual.
+# Pull requests and merges to master run the priority suite. The full inventory
+# is manual.
 
 on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "evals/**"
+      - "data/raw/sampled_html/**"
+      - "uv.lock"
+      - ".github/workflows/evals.yml"
   push:
     branches: [master]
     paths:
@@ -28,8 +36,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: evals
-  cancel-in-progress: false
+  # A new push to a pull request replaces its stale run. Master runs queue and
+  # are never cancelled, so no baseline is lost.
+  group: evals-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   # The 0.75/0.95 minimums in evals/regression/runner.py are still placeholders.
@@ -87,9 +97,12 @@ jobs:
         env:
           SUITE: ${{ inputs.suite || 'priority' }}
           UPLOAD: ${{ inputs.upload }}
+          EVENT: ${{ github.event_name }}
         run: |
           ARGS="--results-json regression-results.json"
-          if [ "$UPLOAD" != "false" ]; then
+          # A pull-request run is a gate, not history. Only master runs and
+          # manual dispatches add experiments to LangSmith.
+          if [ "$EVENT" != "pull_request" ] && [ "$UPLOAD" != "false" ]; then
             ARGS="$ARGS --upload"
           fi
           uv run python -m "evals.regression.run_${SUITE}" $ARGS
