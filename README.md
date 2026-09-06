@@ -20,11 +20,11 @@ dataset, evaluator, and quality bar.
 | --- | --- | --- | --- |
 | **1,211 / 1,211** valid paragraph anchors | **95.83%** Evidence Recall@8 | **97.92%** required-fact coverage | **100%** harm, sensitive-data, and injection checks |
 
-> **Current status:** working local prototype on a deliberately small 12-paper
-> GenAI corpus. The system has a Streamlit UI, CLI, conversational RAG workflow,
-> and public evaluation scorecard. It is not presented as a production service.
-> See the canonical [v1.0 release status](docs/release-status.md) for the remaining
-> release-hardening work.
+> **Current status:** v1.0 is a working local prototype on a deliberately small
+> 12-paper GenAI corpus. It includes a Streamlit UI, CLI, conversational RAG
+> workflow, frozen evaluation datasets, regression checks, and a public evaluation
+> scorecard. It is not presented as a production service. See the canonical
+> [v1.0 release status](docs/release-status.md) for its verified scope and limits.
 
 **“I built a RAG system by defining measurable contracts at every layer. I created independent frozen datasets for loading, retrieval, generation, end-to-end behavior and safety. I preserved exact paragraph provenance, corrected misleading evaluators instead of hiding bad scores, used failures to improve the product, and built regression checks around reviewed evidence.”**
 
@@ -203,8 +203,8 @@ atomically switches the active pointer only after every paper is stored. Failed
 builds are cleaned up, so readers do not search a half-built index.
 
 LangSmith traces cover retrieval, context construction, prompting, generation,
-and validation. Tracing stays outside the Streamlit UI and can be disabled; model
-names and Cloudflare Access credentials are loaded from environment configuration.
+and validation. Tracing stays outside the Streamlit UI and is off by default;
+model names and Cloudflare Access credentials come from environment configuration.
 
 ---
 

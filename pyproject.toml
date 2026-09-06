@@ -1,6 +1,6 @@
 [project]
 name = "arxiv-rag"
-version = "0.0.1"
+version = "1.0.0"
 description = "An evidence-grounded reading assistant for language-centric GenAI research."
 readme = "README.md"
 requires-python = ">=3.13"

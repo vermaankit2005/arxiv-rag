@@ -1,82 +1,79 @@
 # v1.0 release status
 
-**Updated:** 6 September 2026
-**Status:** Release hardening in progress — not yet tagged `v1.0`
+**Released:** 6 September 2026
 
-This is the single current sprint and release-status document. The older detailed
-sprint files are working history, not competing statements of current status.
+**Tag:** `v1.0.0`
 
-## What is built
+**Status:** Released as a measured local prototype
 
-| Sprint | Outcome | Current state |
-| --- | --- | --- |
-| 01 — Loading | arXiv HTML loading with exact paragraph anchors | Complete |
-| 02 — Ingestion | Source-aware chunking, Chroma ingestion, and atomic index activation | Complete |
-| 03 — Retrieval | Evidence-based retrieval evaluation, currently using top eight results | Complete; one precision case remains below the recommended bar |
-| 04 — Generation | Grounded answers, citations, partial answers, and refusal behavior | Complete |
-| 05 — Pipeline evaluation | Required-fact, fact-citation, and evidence-behavior evaluation | Implemented; canonical release run pending |
-| 06 — Application safety | Harm, sensitive-data, prompt-injection, and policy-response checks | Implemented; one policy-response case remains below the recommended bar |
-| 07 — Tracing and regression | LangSmith tracing and local regression suites | Implemented; final gates, CI, and release artifact remain |
-| 08 — Conversation | Two-route LangGraph workflow, Standard/Easy modes, and fresh retrieval on paper follow-ups | Complete; real 11-turn conversation accepted |
+v1.0 freezes the first complete, reviewable version of arxiv-rag. It is a local
+research-paper assistant and engineering case study, not a production service.
+The release deliberately keeps the corpus small so its provenance and evaluation
+evidence remain inspectable.
 
-## Current verified snapshot
+## Release scope
 
-- The local corpus contains 12 papers and 384 retrieval documents.
-- All 1,211 published paragraph anchors are valid.
-- The deterministic suite passed **159 tests in 5.77 seconds** on 6 September 2026.
-- The real Sprint 08 acceptance conversation completed all 11 turns in one thread:
-  four chat turns used no retrieval, seven paper turns retrieved fresh evidence,
-  non-latest topic recall worked, and chat answers contained no passage markers or
-  model-written URLs.
-- Invalid router output now falls back to RAG with the raw user question.
-- Generation and pipeline regression suites now use the newer fact-citation
-  evaluator. Their current local release floor is **95%**.
-- The last published evaluation snapshot reports 16 of 20 checks meeting their
-  recommended benchmark. It predates the next canonical run of the current
-  top-eight and fact-citation release suite.
+- Load 12 frozen arXiv HTML papers while preserving section structure and exact
+  paragraph anchors.
+- Build 384 source-aware Chroma retrieval documents through staged ingestion and
+  atomic index activation.
+- Retrieve the top eight documents and preserve the original passages needed for
+  trustworthy citations.
+- Generate grounded answers with code-resolved source links, partial-answer and
+  insufficient-evidence behavior, and Standard or Easy presentation modes.
+- Route chat and paper questions through a bounded LangGraph workflow. Paper
+  follow-ups always retrieve fresh evidence rather than treating conversation
+  history as evidence.
+- Provide both a Streamlit interface and a command-line entry point through the
+  same backend answer path.
+- Ship frozen component, pipeline, and application-safety datasets, metric-specific
+  release thresholds, priority/full regression runners, and a public benchmark
+  scorecard.
+- Run deterministic tests and semantic regression checks in GitHub Actions.
+  LangSmith uploads are opt-in, while manual and master eval results remain in
+  `evals/results/`.
 
-## Overall release sprint
+## Release verification
 
-Complete these in order. Do not add scaling infrastructure before this list is
-closed.
+- The deterministic suite passed **173 tests** on 6 September 2026.
+- The local corpus contains **12 papers and 384 retrieval documents**.
+- All **1,211 published paragraph anchors** are valid.
+- The reviewed 11-turn conversation acceptance run correctly separated four chat
+  turns from seven paper turns and retrieved fresh evidence for paper follow-ups.
+- The latest published evaluation snapshot reports **16 of 20 checks** meeting
+  their recommended benchmark.
 
-- [x] Align retrieval evaluation names and execution with the production top-eight contract.
-- [x] Replace legacy citation-support checks in the active regression suites with fact citation.
-- [x] Set a practical 95% release floor for generation and pipeline fact citation.
-- [x] Add invalid-router fallback and deterministic chat URL/passage-marker rejection.
-- [x] Run and manually review the real 11-turn conversation.
-- [ ] Replace the remaining shared 75% regression thresholds with metric-specific release rules.
-- [ ] Run one canonical full evaluation against the current code and record completion, latency, models, commit SHA, and dataset hashes.
-- [ ] Review every failure and approve the release baselines.
-- [ ] Add GitHub Actions for `uv sync` and the deterministic pytest suite.
-- [ ] Change `.env.example` so LangSmith tracing is off by default.
-- [ ] Remove stray local artifacts, confirm a clean release diff, and tag `v1.0`.
+A new full semantic evaluation was intentionally **not** run for this release.
+The published evaluation snapshot therefore describes the latest observed system
+quality; it is not a certification of the exact tagged commit. This limitation is
+recorded rather than hidden.
 
-## Current release blockers
+## Known limitations
 
-1. Most regression metrics still use temporary 75% thresholds rather than their
-   metric-specific standards.
-2. The current top-eight and fact-citation suite does not yet have one canonical,
-   machine-readable release result.
-3. The latest published snapshot still has known misses in HTML block coverage,
-   retrieval precision, and policy-response accuracy.
-4. Normal test CI is not configured; the existing workflow publishes only the
-   evaluation dashboard.
-5. LangSmith tracing is still enabled by default in `.env.example`.
+- The benchmark covers 12 GenAI papers, not a broad or production-scale corpus.
+- The latest snapshot includes known misses in HTML block coverage, one retrieval
+  precision case, a legacy live-citation monitoring metric, and one policy-response
+  case.
+- Two newer fact-citation checks reached 100% on stored-answer replay but still
+  require broader manual review.
+- There is no public API, production traffic validation, durable conversation
+  memory, or measured fallback for papers without arXiv HTML.
+- Citation validation rejects invented IDs and URLs, but does not provide a formal
+  sentence-level proof for every generated claim.
 
-## Public documentation policy
+## LangSmith and result retention
 
-The public narrative documentation is intentionally limited to:
+- Application tracing is off by default.
+- Deterministic tests permanently disable LangSmith tracing, test tracking, and
+  credentials.
+- Pull-request eval runs never upload to LangSmith.
+- Manual eval runs can opt in through the workflow checkbox.
+- Master eval runs upload only when the `EVAL_UPLOAD_TO_LANGSMITH` repository
+  variable is set to `true`.
+- Manual and master eval runs commit their complete JSON result to
+  `evals/results/`; every run also exposes a GitHub Actions summary and artifact.
 
-1. `README.md` — stable project overview, architecture, results, and local setup.
-2. `docs/release-status.md` — this concise overall sprint and current release state.
-
-The generated benchmark site under `evals/docs/` remains a published supporting
-artifact, not another planning or status document. Detailed sprint notes,
-experiments, and production-readiness drafts stay local and ignored by Git. When
-status changes, update this file instead of adding another sprint-status document.
-
-## Deferred until after v1.0
+## Deferred beyond v1.0
 
 - A 5,000-paper corpus experiment.
 - Weaviate or another vector-database migration.
