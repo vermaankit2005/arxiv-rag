@@ -2,10 +2,17 @@
 
 import argparse
 import json
+import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
 from langsmith import Client
+
+# One switch for the whole regression run, not per evaluation. The --upload flag
+# turns uploading on; this variable is how CI and .env do the same thing.
+UPLOAD_ENV_NAME = "REGRESSION_UPLOAD_TO_LANGSMITH"
+TRUE_VALUES = {"1", "true", "yes", "on"}
 
 # Temporary minimum scores. Keys use "<evaluation name>.<feedback key>".
 THRESHOLDS: dict[str, float] = {
@@ -136,23 +143,51 @@ def _print_report(metric_id: str, scores: list[tuple[str, float]], expected: int
     return record["passed"]
 
 
-def write_results(results_path: Path, suite: str, uploaded: bool, passed: bool, records: list[dict]) -> None:
-    """Write the one JSON file the GitHub Actions summary step reads back."""
-    results = {
+def resolve_upload(upload_flag: bool) -> bool:
+    """Decide once, for the whole suite, whether results reach LangSmith."""
+    if upload_flag:
+        return True
+    load_dotenv()
+    return os.environ.get(UPLOAD_ENV_NAME, "").strip().lower() in TRUE_VALUES
+
+
+def build_results(suite: str, started_at: datetime, uploaded: bool, passed: bool, records: list[dict]) -> dict:
+    """Build the one result document written to every destination."""
+    return {
         "suite": suite,
+        "started_at": started_at.isoformat(timespec="seconds"),
         "uploaded": uploaded,
         "status": "PASS" if passed else "FAIL",
         "metrics": records,
     }
+
+
+def history_file_name(suite: str, started_at: datetime) -> str:
+    """Name a history file so a plain sort puts the runs in order.
+
+    Colons are illegal in Windows file names, so this is not quite ISO-8601.
+    """
+    return f"{started_at.strftime('%Y-%m-%d_%H%M%S')}Z_{suite}.json"
+
+
+def write_results(results_path: Path, results: dict) -> None:
+    """Write one results document to one path."""
     results_path.parent.mkdir(parents=True, exist_ok=True)
     results_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
     print(f"\nWrote results to {results_path}")
 
 
-def run_suite(name: str, specs: list[dict], upload_results: bool, results_path: Path | None = None) -> int:
+def run_suite(
+    name: str,
+    specs: list[dict],
+    upload_results: bool,
+    results_path: Path | None = None,
+    results_dir: Path | None = None,
+) -> int:
     """Run each configured evaluation and return zero only when all checks pass."""
     load_dotenv()
     client = Client()
+    started_at = datetime.now(timezone.utc)
     suite_passed = True
     records: list[dict] = []
 
@@ -203,8 +238,11 @@ def run_suite(name: str, specs: list[dict], upload_results: bool, results_path: 
 
     print(f"\nSuite status: {'PASS' if suite_passed else 'FAIL'}")
 
+    results = build_results(name, started_at, upload_results, suite_passed, records)
     if results_path is not None:
-        write_results(results_path, name, upload_results, suite_passed, records)
+        write_results(results_path, results)
+    if results_dir is not None:
+        write_results(results_dir / history_file_name(name, started_at), results)
 
     return 0 if suite_passed else 1
 
@@ -213,12 +251,20 @@ def parse_arguments(description: str) -> argparse.Namespace:
     """Parse the two run options shared by both regression entry points."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
-        "--upload", action="store_true", help="Upload results to LangSmith."
+        "--upload",
+        action="store_true",
+        help=f"Upload results to LangSmith. {UPLOAD_ENV_NAME} does the same.",
     )
     parser.add_argument(
         "--results-json",
         type=Path,
         default=None,
-        help="Write the run results to this JSON file.",
+        help="Write the run results to this exact JSON file.",
+    )
+    parser.add_argument(
+        "--results-dir",
+        type=Path,
+        default=None,
+        help="Also keep a timestamped copy of the results in this directory.",
     )
     return parser.parse_args()

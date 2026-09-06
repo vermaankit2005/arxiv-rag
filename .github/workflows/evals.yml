@@ -9,6 +9,8 @@ on:
     paths:
       - "src/**"
       - "evals/**"
+      # This job commits its own results back. Never react to that commit.
+      - "!evals/results/**"
       - "data/raw/sampled_html/**"
       - "uv.lock"
       - ".github/workflows/evals.yml"
@@ -17,6 +19,8 @@ on:
     paths:
       - "src/**"
       - "evals/**"
+      # This job commits its own results back. Never react to that commit.
+      - "!evals/results/**"
       - "data/raw/sampled_html/**"
       - "uv.lock"
       - ".github/workflows/evals.yml"
@@ -33,7 +37,8 @@ on:
         default: true
 
 permissions:
-  contents: read
+  # Needed to commit the results history back to master.
+  contents: write
 
 concurrency:
   # A new push to a pull request replaces its stale run. Master runs queue and
@@ -96,16 +101,13 @@ jobs:
         continue-on-error: true
         env:
           SUITE: ${{ inputs.suite || 'priority' }}
-          UPLOAD: ${{ inputs.upload }}
-          EVENT: ${{ github.event_name }}
+          # One switch for the whole run. A pull request is a gate, not history,
+          # so it never uploads. Master runs always do; a manual dispatch asks.
+          REGRESSION_UPLOAD_TO_LANGSMITH: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.upload) }}
         run: |
-          ARGS="--results-json regression-results.json"
-          # A pull-request run is a gate, not history. Only master runs and
-          # manual dispatches add experiments to LangSmith.
-          if [ "$EVENT" != "pull_request" ] && [ "$UPLOAD" != "false" ]; then
-            ARGS="$ARGS --upload"
-          fi
-          uv run python -m "evals.regression.run_${SUITE}" $ARGS
+          uv run python -m "evals.regression.run_${SUITE}" \
+            --results-json regression-results.json \
+            --results-dir evals/results
 
       - name: Write job summary
         if: always()
@@ -116,6 +118,24 @@ jobs:
           else
             echo "## 💥 The suite produced no results file." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      # Artifacts expire. This is the history that stays in the repository, and
+      # it records failed runs too, which are the ones worth looking back at.
+      - name: Commit results history
+        if: always() && github.event_name == 'push'
+        env:
+          SUITE: ${{ inputs.suite || 'priority' }}
+        run: |
+          if [ -z "$(git status --porcelain evals/results)" ]; then
+            echo "No results file to record."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add evals/results
+          git commit -m "Record ${SUITE} evaluation run ${GITHUB_RUN_ID}"
+          git pull --rebase --autostash
+          git push
 
       - name: Upload results
         if: always()

@@ -22,6 +22,8 @@ def build_summary(results: dict) -> str:
     lines = [
         f"## {STATUS_ICONS.get(status, '')} {suite} suite — {status}".strip(),
         "",
+        f"Started: {results.get('started_at', 'unknown')}",
+        "",
         f"Uploaded to LangSmith: {uploaded}",
         "",
         "| Metric | Average | Threshold | Cases | Status |",
