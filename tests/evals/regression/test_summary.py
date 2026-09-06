@@ -95,6 +95,11 @@ def test_write_results_round_trips(tmp_path) -> None:
     assert results["uploaded"] is True
     assert results["status"] == "PASS"
     assert results["metrics"] == [record]
+    # A release artifact has to identify the code and models it measured.
+    assert results["commit"]
+    assert results["generator_model"]
+    assert results["judge_model"]
+    assert results["duration_seconds"] >= 0
 
 
 def test_history_file_name_sorts_by_run_time() -> None:
@@ -134,8 +139,20 @@ def test_summary_renders_a_row_for_each_metric() -> None:
         True,
         False,
         [
-            _metric_record("generation_correctness.correctness", [("gen-001", 1.0)], 1),
-            _error_record("pipeline_fact_citation.fact_citation", 12, "RuntimeError: down"),
+            _metric_record(
+                "generation_correctness.correctness",
+                [("gen-001", 1.0)],
+                1,
+                "generation_quality_dataset",
+                12.0,
+            ),
+            _error_record(
+                "pipeline_fact_citation.fact_citation",
+                12,
+                "RuntimeError: down",
+                "pipeline_required_fact_coverage_dataset",
+                3.0,
+            ),
         ],
     )
 
@@ -143,8 +160,8 @@ def test_summary_renders_a_row_for_each_metric() -> None:
 
     assert "priority suite — FAIL" in summary
     assert "Started: 2026-09-06T16:30:26+00:00" in summary
-    assert "| `generation_correctness.correctness` | 1.0000 | 0.7500 | 1/1 | ✅ PASS |" in summary
-    assert "| `pipeline_fact_citation.fact_citation` | n/a | 0.9500 | 0/12 | 💥 ERROR |" in summary
+    assert "| `generation_correctness.correctness` | 1.0000 | 0.7500 | 1/1 | 12s | ✅ PASS |" in summary
+    assert "| `pipeline_fact_citation.fact_citation` | n/a | 0.9500 | 0/12 | 3s | 💥 ERROR |" in summary
     assert "- `pipeline_fact_citation.fact_citation`: RuntimeError: down" in summary
 
 
