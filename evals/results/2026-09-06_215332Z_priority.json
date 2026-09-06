@@ -1,0 +1,373 @@
+{
+  "suite": "priority",
+  "commit": "3eb0ee8082a8caeede80de985cb101c4d5641382",
+  "generator_model": "gemma4:26b",
+  "judge_model": "gemma4:26b",
+  "started_at": "2026-09-06T21:53:32+00:00",
+  "finished_at": "2026-09-06T22:01:12+00:00",
+  "duration_seconds": 459.6,
+  "uploaded": false,
+  "status": "PASS",
+  "metrics": [
+    {
+      "metric": "generation_groundedness.groundedness",
+      "dataset": "generation_quality_dataset",
+      "scores": [
+        {
+          "example_id": "gen-004",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-005",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-007",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-001",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-010",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-012",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-015",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-014",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-018",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-019",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-021",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-024",
+          "score": 1.0
+        }
+      ],
+      "completed": 12,
+      "expected": 12,
+      "average": 1.0,
+      "threshold": 0.95,
+      "duration_seconds": 48.0,
+      "status": "PASS",
+      "passed": true,
+      "error": null
+    },
+    {
+      "metric": "generation_fact_citation.fact_citation",
+      "dataset": "generation_quality_dataset",
+      "scores": [
+        {
+          "example_id": "gen-001",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-005",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-004",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-010",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-015",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-007",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-014",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-019",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-018",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-024",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-012",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-021",
+          "score": 1.0
+        }
+      ],
+      "completed": 12,
+      "expected": 12,
+      "average": 1.0,
+      "threshold": 0.95,
+      "duration_seconds": 70.1,
+      "status": "PASS",
+      "passed": true,
+      "error": null
+    },
+    {
+      "metric": "generation_correctness.correctness",
+      "dataset": "generation_quality_dataset",
+      "scores": [
+        {
+          "example_id": "gen-005",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-004",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-007",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-001",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-010",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-014",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-018",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-015",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-019",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-024",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-012",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-021",
+          "score": 1.0
+        }
+      ],
+      "completed": 12,
+      "expected": 12,
+      "average": 1.0,
+      "threshold": 0.9,
+      "duration_seconds": 34.1,
+      "status": "PASS",
+      "passed": true,
+      "error": null
+    },
+    {
+      "metric": "pipeline_required_fact_coverage.required_fact_coverage",
+      "dataset": "pipeline_required_fact_coverage_dataset",
+      "scores": [
+        {
+          "example_id": "gen-001",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-004",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-005",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-007",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-010",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-012",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-014",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-015",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-018",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-019",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-021",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-024",
+          "score": 1.0
+        }
+      ],
+      "completed": 12,
+      "expected": 12,
+      "average": 1.0,
+      "threshold": 0.85,
+      "duration_seconds": 95.7,
+      "status": "PASS",
+      "passed": true,
+      "error": null
+    },
+    {
+      "metric": "pipeline_fact_citation.fact_citation",
+      "dataset": "pipeline_required_fact_coverage_dataset",
+      "scores": [
+        {
+          "example_id": "gen-001",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-004",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-005",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-007",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-010",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-012",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-014",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-015",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-018",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-019",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-021",
+          "score": 1.0
+        },
+        {
+          "example_id": "gen-024",
+          "score": 1.0
+        }
+      ],
+      "completed": 12,
+      "expected": 12,
+      "average": 1.0,
+      "threshold": 0.95,
+      "duration_seconds": 148.6,
+      "status": "PASS",
+      "passed": true,
+      "error": null
+    },
+    {
+      "metric": "pipeline_evidence_behavior.evidence_behavior",
+      "dataset": "pipeline_evidence_behavior_dataset",
+      "scores": [
+        {
+          "example_id": "pipeline-behavior-003",
+          "score": 1.0
+        },
+        {
+          "example_id": "pipeline-behavior-005",
+          "score": 1.0
+        },
+        {
+          "example_id": "pipeline-behavior-002",
+          "score": 1.0
+        },
+        {
+          "example_id": "pipeline-behavior-004",
+          "score": 1.0
+        },
+        {
+          "example_id": "pipeline-behavior-001",
+          "score": 1.0
+        },
+        {
+          "example_id": "pipeline-behavior-008",
+          "score": 1.0
+        },
+        {
+          "example_id": "pipeline-behavior-006",
+          "score": 1.0
+        },
+        {
+          "example_id": "pipeline-behavior-007",
+          "score": 1.0
+        },
+        {
+          "example_id": "pipeline-behavior-009",
+          "score": 1.0
+        }
+      ],
+      "completed": 9,
+      "expected": 9,
+      "average": 1.0,
+      "threshold": 0.9,
+      "duration_seconds": 63.0,
+      "status": "PASS",
+      "passed": true,
+      "error": null
+    }
+  ]
+}
