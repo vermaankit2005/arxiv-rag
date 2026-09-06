@@ -18,6 +18,14 @@ jobs:
   pytest:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      LANGSMITH_TRACING: "false"
+      LANGSMITH_TRACING_V2: "false"
+      LANGCHAIN_TRACING: "false"
+      LANGCHAIN_TRACING_V2: "false"
+      LANGSMITH_TEST_TRACKING: "false"
+      LANGSMITH_API_KEY: ""
+      LANGCHAIN_API_KEY: ""
     steps:
       - uses: actions/checkout@v4
 

@@ -34,7 +34,7 @@ on:
       upload:
         description: "Upload results to LangSmith"
         type: boolean
-        default: true
+        default: false
 
 permissions:
   # Needed to commit the results history back to master.
@@ -90,7 +90,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: chroma_db
-          key: chroma-${{ runner.os }}-${{ env.EMBEDDING_CACHE_VERSION }}-${{ hashFiles('data/raw/sampled_html/**', 'src/arxiv_rag/ingestion/**', 'src/arxiv_rag/loading/**', 'uv.lock') }}
+          key: >-
+            chroma-${{ runner.os }}-${{ env.EMBEDDING_CACHE_VERSION }}-${{
+              hashFiles('data/raw/sampled_html/**',
+              'src/arxiv_rag/ingestion/**',
+              'src/arxiv_rag/loading/**', 'uv.lock')
+            }}
 
       - name: Build Chroma corpus
         if: steps.chroma.outputs.cache-hit != 'true'
@@ -101,9 +106,13 @@ jobs:
         continue-on-error: true
         env:
           SUITE: ${{ inputs.suite || 'priority' }}
-          # One switch for the whole run. A pull request is a gate, not history,
-          # so it never uploads. Master runs always do; a manual dispatch asks.
-          REGRESSION_UPLOAD_TO_LANGSMITH: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.upload) }}
+          # Uploads are off by default to protect the LangSmith quota. A manual
+          # dispatch can opt in directly. Master uploads can be temporarily
+          # enabled with the EVAL_UPLOAD_TO_LANGSMITH repository variable.
+          REGRESSION_UPLOAD_TO_LANGSMITH: >-
+            ${{ (github.event_name == 'push' &&
+            vars.EVAL_UPLOAD_TO_LANGSMITH == 'true') ||
+            (github.event_name == 'workflow_dispatch' && inputs.upload) }}
         run: |
           uv run python -m "evals.regression.run_${SUITE}" \
             --results-json regression-results.json \
@@ -116,13 +125,16 @@ jobs:
             uv run python -m evals.regression.summary regression-results.json \
               --output "$GITHUB_STEP_SUMMARY"
           else
-            echo "## 💥 The suite produced no results file." >> "$GITHUB_STEP_SUMMARY"
+            echo "## 💥 No results file." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       # Artifacts expire. This is the history that stays in the repository, and
       # it records failed runs too, which are the ones worth looking back at.
+      # Manual runs commit to the branch selected when the workflow is launched.
       - name: Commit results history
-        if: always() && github.event_name == 'push'
+        if: >-
+          always() && (github.event_name == 'push' ||
+          github.event_name == 'workflow_dispatch')
         env:
           SUITE: ${{ inputs.suite || 'priority' }}
         run: |
@@ -131,7 +143,8 @@ jobs:
             exit 0
           fi
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
           git add evals/results
           git commit -m "Record ${SUITE} evaluation run ${GITHUB_RUN_ID}"
           git pull --rebase --autostash
@@ -141,7 +154,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: regression-results-${{ inputs.suite || 'priority' }}-${{ github.run_id }}
+          name: >-
+            regression-results-${{ inputs.suite || 'priority' }}-${{
+              github.run_id
+            }}
           path: regression-results.json
           if-no-files-found: warn
 
@@ -156,4 +172,4 @@ jobs:
             echo "Suite failed and thresholds are enforced."
             exit 1
           fi
-          echo "Suite failed. Thresholds are not enforced yet, so this run is reporting only."
+          echo "Suite failed; thresholds are not enforced. Report-only run."

@@ -43,5 +43,5 @@ default-groups = ["dev", "ui"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
-addopts = "-ra --strict-markers -m 'not slow'"
+addopts = "-ra --strict-markers -p no:langsmith_plugin -m 'not slow'"
 markers = ["slow: runs the real benchmark against the benchmark papers"]

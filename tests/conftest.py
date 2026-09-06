@@ -13,6 +13,11 @@ for variable in (
 ):
     os.environ[variable] = "false"
 
+# Do not let load_dotenv restore account credentials during test collection.
+# With no key available, a tracing regression still cannot reach the account.
+for variable in ("LANGSMITH_API_KEY", "LANGCHAIN_API_KEY"):
+    os.environ[variable] = ""
+
 # This process-wide override also wins if LangSmith cached its configuration
-# before pytest loaded this conftest (for example, while loading its plugin).
+# before pytest loaded this conftest.
 langsmith.configure(enabled=False)
