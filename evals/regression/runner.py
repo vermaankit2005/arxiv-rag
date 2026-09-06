@@ -1,6 +1,8 @@
 """Run LangSmith evaluation suites with a small local summary."""
 
 import argparse
+import json
+from pathlib import Path
 
 from dotenv import load_dotenv
 from langsmith import Client
@@ -91,24 +93,68 @@ def _status(metric_id: str, scores: list[tuple[str, float]], expected: int) -> t
     return "FAIL", False
 
 
-def _print_report(metric_id: str, scores: list[tuple[str, float]], expected: int) -> bool:
+def _metric_record(metric_id: str, scores: list[tuple[str, float]], expected: int) -> dict:
+    """Build the plain record shared by the console report and the JSON results file."""
     status, passed = _status(metric_id, scores, expected)
-    average = _average(scores)
+    return {
+        "metric": metric_id,
+        "scores": [
+            {"example_id": example_id, "score": score} for example_id, score in scores
+        ],
+        "completed": len(scores),
+        "expected": expected,
+        "average": _average(scores),
+        "threshold": THRESHOLDS.get(metric_id),
+        "status": status,
+        "passed": passed,
+        "error": None,
+    }
 
-    print(f"\n{metric_id}")
-    for example_id, score in scores:
-        print(f"  {example_id}: {score:.4f}")
-    print(f"  Completed: {len(scores)}/{expected}")
+
+def _error_record(metric_id: str, expected: int, message: str) -> dict:
+    """Record a metric whose evaluation raised before producing any score."""
+    record = _metric_record(metric_id, [], expected)
+    record["status"] = "ERROR"
+    record["passed"] = False
+    record["error"] = message
+    return record
+
+
+def _print_record(record: dict) -> None:
+    print(f"\n{record['metric']}")
+    for score in record["scores"]:
+        print(f"  {score['example_id']}: {score['score']:.4f}")
+    print(f"  Completed: {record['completed']}/{record['expected']}")
+    average = record["average"]
     print(f"  Average: {'n/a' if average is None else f'{average:.4f}'}")
-    print(f"  Status: {status}")
-    return passed
+    print(f"  Status: {record['status']}")
 
 
-def run_suite(name: str, specs: list[dict], upload_results: bool) -> int:
+def _print_report(metric_id: str, scores: list[tuple[str, float]], expected: int) -> bool:
+    record = _metric_record(metric_id, scores, expected)
+    _print_record(record)
+    return record["passed"]
+
+
+def write_results(results_path: Path, suite: str, uploaded: bool, passed: bool, records: list[dict]) -> None:
+    """Write the one JSON file the GitHub Actions summary step reads back."""
+    results = {
+        "suite": suite,
+        "uploaded": uploaded,
+        "status": "PASS" if passed else "FAIL",
+        "metrics": records,
+    }
+    results_path.parent.mkdir(parents=True, exist_ok=True)
+    results_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
+    print(f"\nWrote results to {results_path}")
+
+
+def run_suite(name: str, specs: list[dict], upload_results: bool, results_path: Path | None = None) -> int:
     """Run each configured evaluation and return zero only when all checks pass."""
     load_dotenv()
     client = Client()
     suite_passed = True
+    records: list[dict] = []
 
     print(f"Running {name} suite (upload: {'yes' if upload_results else 'no'})")
 
@@ -136,7 +182,11 @@ def run_suite(name: str, specs: list[dict], upload_results: bool) -> int:
             )
         except Exception as error:  # noqa: BLE001 - keep running the remaining evals
             suite_passed = False
-            print(f"  FAIL: {type(error).__name__}: {error}")
+            message = f"{type(error).__name__}: {error}"
+            print(f"  FAIL: {message}")
+            for feedback_key in spec["feedback_keys"]:
+                metric_id = f"{spec['name']}.{feedback_key}"
+                records.append(_error_record(metric_id, spec["expected"], message))
             continue
 
         for feedback_key in spec["feedback_keys"]:
@@ -144,18 +194,31 @@ def run_suite(name: str, specs: list[dict], upload_results: bool) -> int:
 
             scores = _collect_scores(results, feedback_key)
 
-            metric_passed = _print_report(metric_id, scores, spec["expected"])
-            if not metric_passed:
+            record = _metric_record(metric_id, scores, spec["expected"])
+            records.append(record)
+            _print_record(record)
+            if not record["passed"]:
                 suite_passed = False
 
 
     print(f"\nSuite status: {'PASS' if suite_passed else 'FAIL'}")
+
+    if results_path is not None:
+        write_results(results_path, name, upload_results, suite_passed, records)
+
     return 0 if suite_passed else 1
 
 
-def parse_upload_flag(description: str) -> bool:
+def parse_arguments(description: str) -> argparse.Namespace:
+    """Parse the two run options shared by both regression entry points."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
         "--upload", action="store_true", help="Upload results to LangSmith."
     )
-    return parser.parse_args().upload
+    parser.add_argument(
+        "--results-json",
+        type=Path,
+        default=None,
+        help="Write the run results to this JSON file.",
+    )
+    return parser.parse_args()

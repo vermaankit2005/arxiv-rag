@@ -1,0 +1,838 @@
+<!DOCTYPE html><html lang="en-GB">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>GitSkills: A Dataset of Agent Skills on GitHub</title>
+<!--Generated on Tue Aug 11 12:56:42 2026 by LaTeXML (version 0.8.8) http://dlmf.nist.gov/LaTeXML/.-->
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="stylesheet" href="/static/browse/0.3.4/css/arxiv-html-papers-20260131.css" type="text/css">
+<script src="/static/browse/0.3.4/js/arxiv-html-papers-20260131.js"></script>
+<script>
+  // Restore the saved color scheme preference, or
+  // enact the browser preference if "automatic", 
+  // without expecting DOM load to have completed.
+  //
+  // Also restore any saved readingmode and ToC display preferences.
+  function initializeReadingPreferences() {
+    let saved_theme = localStorage.getItem("ar5iv_theme") || "automatic";
+    if (saved_theme === "automatic") {
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        saved_theme = "dark";
+      }
+    }
+    if (saved_theme == "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+
+    const tocDisplay = localStorage.getItem('arxiv_html_paper_toc_display');
+    if (tocDisplay) {
+      document.documentElement.setAttribute("data-toc-display", tocDisplay);
+    }
+    const readingMode = localStorage.getItem('arxiv_html_paper_reading_mode');
+    if (readingMode) {
+      document.documentElement.setAttribute("data-reading-mode", readingMode);
+    }
+    // Pre-apply spinout-banner dismissal here, before the banner paints, so it
+    // never flashes in only to be hidden later by the deferred arxiv-header.js.
+    // Key matches arxiv-header.js: "arxiv-banner-dismissed:" + dataset-banner-name.
+    if (localStorage.getItem('arxiv-banner-dismissed:spinout-nonprofit')) {
+      document.documentElement.setAttribute("data-banner-dismissed", "");
+    }
+  }
+  // Run as soon as JS starts, to minimize repainting
+  initializeReadingPreferences();
+</script>
+<link rel="apple-touch-icon" sizes="180x180"
+  href="/static/browse/0.3.4/images/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32"
+  href="/static/browse/0.3.4/images/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16"
+  href="/static/browse/0.3.4/images/icons/favicon-16x16.png">
+<link rel="manifest" href="/static/browse/0.3.4/images/icons/site.webmanifest">
+<link rel="mask-icon" href="/static/browse/0.3.4/images/icons/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="stylesheet" type="text/css" media="screen" href="https://use.typekit.net/utz6mli.css"><link rel="stylesheet" type="text/css" media="screen"
+  href="/static/base/1.0.1/css/arxiv-header-footer.css?v=20260626"><style>
+  /* Banner pre-dismissal (set above before paint -> no flash-then-hide) and
+     reading-mode chrome hiding. */
+  html[data-banner-dismissed] .ds-announcement { display: none; }
+  html[data-reading-mode="enabled"] .ds-announcement,
+  html[data-reading-mode="enabled"] .ds-site-footer { display: none; }
+  /* Keep the announcement text dark on the Open-Blue band in both colour themes
+     (otherwise it inherits the paper's warm-wash text in dark mode and washes out). */
+  .ds-announcement-text { color: var(--arxiv-ink, #1c1a17); }
+</style>
+<script defer src="/static/base/1.0.1/js/arxiv-header.js?v=20260626"></script>
+</head>
+<body>
+<dialog id="modal-form" aria-labelledby="modal-title" closedby="any">
+  <form id="modal-form-content" method="dialog" enctype="multipart/form-data">
+    <header class="modal-header">
+      <h5 id="modal-title" class="modal-title">Report GitHub Issue</h5>
+      <button type="submit" formnovalidate class="modal-close" aria-label="Close">×</button>
+    </header>
+
+    <div class="modal-body">
+      <label for="form_title">Title:</label>
+      <input class="form-control" id="form_title" name="form_title" required placeholder="Enter title">
+
+      <p id="selectedTextModalDescription" hidden>Content selection saved. Describe the issue below:</p>
+
+      <label for="description">Description:</label>
+      <textarea class="form-control" id="description" name="description" required maxlength="500"
+        placeholder="500 characters maximum"></textarea>
+    </div>
+
+    <footer class="modal-footer">
+      <button type="submit" value="internal-report" class="sr-only modal-submit">Submit without GitHub</button>
+      <button type="submit" value="github-report" class="modal-submit">Submit in GitHub</button>
+    </footer>
+  </form>
+</dialog><div class="ds-announcement" id="announcement-banner" role="region" aria-label="Announcement"
+    data-banner-name="spinout-nonprofit">
+    <img class="ds-announcement-glyph" src="/static/base/1.0.1/images/icons/smileybones-small.svg" alt="" aria-hidden="true">
+    <span class="ds-announcement-text">arXiv is now an independent nonprofit!</span>
+    <a class="ds-announcement-link" href="https://info.arxiv.org/about">Learn more</a>
+    <button type="button" class="ds-announcement-close" aria-label="Dismiss announcement">&times;</button>
+  </div>
+
+<header class="arxiv-html-header">
+  <div class="html-header-logo">
+    <a href="/"><img alt="arXiv logo" class="logo desktop-only" width="100"
+        src="/static/base/1.0.1/images/arxiv-logo-primary-light.svg">
+      <span class="sr-only">Back to arXiv</span>
+    </a>
+  </div>
+  <!--TOC, dark mode, links-->
+  <nav class="html-header-nav">
+    <a class="header-button hover-effect desktop-only" href="https://info.arxiv.org/about/accessible_HTML.html"
+      target="_blank">Why HTML?</a>
+    <a class="header-button" title="Report an Issue" href="#" title="Report an issue"
+      onclick="event.preventDefault(); showModalForm();">
+      <svg role="presentation" class="mobile-only toggle-icon" aria-hidden="true" height="1.25rem"
+        viewBox="0 0 640 640">
+        <path
+          d="M224 160C224 107 267 64 320 64C373 64 416 107 416 160L416 163.6C416 179.3 403.3 192 387.6 192L252.5 192C236.8 192 224.1 179.3 224.1 163.6L224.1 160zM569.6 172.8C580.2 186.9 577.3 207 563.2 217.6L465.4 290.9C470.7 299.8 474.7 309.6 477.2 320L576 320C593.7 320 608 334.3 608 352C608 369.7 593.7 384 576 384L480 384L480 416C480 418.6 479.9 421.3 479.8 423.9L563.2 486.4C577.3 497 580.2 517.1 569.6 531.2C559 545.3 538.9 548.2 524.8 537.6L461.7 490.3C438.5 534.5 395.2 566.5 344 574.2L344 344C344 330.7 333.3 320 320 320C306.7 320 296 330.7 296 344L296 574.2C244.8 566.5 201.5 534.5 178.3 490.3L115.2 537.6C101.1 548.2 81 545.3 70.4 531.2C59.8 517.1 62.7 497 76.8 486.4L160.2 423.9C160.1 421.3 160 418.7 160 416L160 384L64 384C46.3 384 32 369.7 32 352C32 334.3 46.3 320 64 320L162.8 320C165.3 309.6 169.3 299.8 174.6 290.9L76.8 217.6C62.7 207 59.8 186.9 70.4 172.8C81 158.7 101.1 155.8 115.2 166.4L224 248C236.3 242.9 249.8 240 264 240L376 240C390.2 240 403.7 242.8 416 248L524.8 166.4C538.9 155.8 559 158.7 569.6 172.8z" />
+      </svg>
+      <span class="desktop-only">Report Issue</span></a>
+    <!--back to abstract-->
+    <a class="header-button" title="Back to abstract page" aria-label="Back to abstract page"
+      href="/abs/2608.10906v1">
+      <svg class="mobile-only toggle-icon" role="presentation" height="1.25rem" viewBox="0 0 512 512" fill="#ffffff"
+        aria-hidden="true">
+        <path
+          d="M502.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-128-128c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L402.7 224 192 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l210.7 0-73.4 73.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l128-128zM160 96c17.7 0 32-14.3 32-32s-14.3-32-32-32L96 32C43 32 0 75 0 128L0 384c0 53 43 96 96 96l64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0c-17.7 0-32-14.3-32-32l0-256c0-17.7 14.3-32 32-32l64 0z">
+        </path>
+      </svg>
+      <span class="desktop-only">Back to Abstract</span>
+    </a>
+    <!-- PDF download link -->
+    <a class="header-button" title="Download PDF" href="/pdf/2608.10906v1"
+      target="_blank">
+      <svg class="mobile-only toggle-icon" role="presentation" height="1.25rem" viewBox="0 0 576 542">
+        <path
+          d="M208 48L96 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16l80 0 0 48-80 0c-35.3 0-64-28.7-64-64L32 64C32 28.7 60.7 0 96 0L229.5 0c17 0 33.3 6.7 45.3 18.7L397.3 141.3c12 12 18.7 28.3 18.7 45.3l0 149.5-48 0 0-128-88 0c-39.8 0-72-32.2-72-72l0-88zM348.1 160L256 67.9 256 136c0 13.3 10.7 24 24 24l68.1 0zM240 380l32 0c33.1 0 60 26.9 60 60s-26.9 60-60 60l-12 0 0 28c0 11-9 20-20 20s-20-9-20-20l0-128c0-11 9-20 20-20zm32 80c11 0 20-9 20-20s-9-20-20-20l-12 0 0 40 12 0zm96-80l32 0c28.7 0 52 23.3 52 52l0 64c0 28.7-23.3 52-52 52l-32 0c-11 0-20-9-20-20l0-128c0-11 9-20 20-20zm32 128c6.6 0 12-5.4 12-12l0-64c0-6.6-5.4-12-12-12l-12 0 0 88 12 0zm76-108c0-11 9-20 20-20l48 0c11 0 20 9 20 20s-9 20-20 20l-28 0 0 24 28 0c11 0 20 9 20 20s-9 20-20 20l-28 0 0 44c0 11-9 20-20 20s-20-9-20-20l0-128z" />
+      </svg>
+      <span class="desktop-only">Download PDF</span></a>
+    <!-- navigational table of contents toggle -->
+    <a class="header-button toggle-icon" href="javascript:toggleNavTOC();" title="Toggle navigation"
+      aria-label="Toggle navigation">
+      <svg height="1.25rem" role="presentation" viewBox="0 0 512 512">
+        <path
+          d="M40 48C26.7 48 16 58.7 16 72v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V72c0-13.3-10.7-24-24-24H40zM192 64c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zM16 232v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V232c0-13.3-10.7-24-24-24H40c-13.3 0-24 10.7-24 24zM40 368c-13.3 0-24 10.7-24 24v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V392c0-13.3-10.7-24-24-24H40z">
+        </path>
+      </svg>
+    </a>
+    <!--- collapsable header / reading mode toggle -->
+    <a class="header-button toggle-icon" href="javascript:toggleReadingMode();"
+      title="Disable reading mode, show header and footer">
+      <svg role="presentation" height="1.25rem"
+        viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+        <path
+          d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32S0 334.3 0 352l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z" />
+      </svg>
+    </a>
+    <!--- colored theme toggle -->
+    <button type="button" class="header-button color-tog" onclick="toggleColorScheme();" title="Toggle dark/light mode" aria-label="Toggle color scheme">
+      <span class="toggle-icon automatic-tog" aria-hidden="true">
+        <svg role="presentation" height="1.25rem" viewBox="0 0 24 24">
+          <path
+            d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9h-1.9M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69m-9.15 3.96h2.3L12 9l-1.15 3.65Z">
+          </path>
+        </svg>
+      </span>
+      <span class="toggle-icon light-tog" aria-hidden="true">
+        <svg role="presentation" height="1.25rem" viewBox="0 0 24 24">
+          <path
+            d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z">
+          </path>
+        </svg>
+      </span>
+      <span class="toggle-icon dark-tog" aria-hidden="true">
+        <svg role="presentation" height="1.25rem" viewBox="0 0 24 24">
+          <path
+            d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z">
+          </path>
+        </svg>
+      </span>
+    </button>
+  </nav>
+</header><nav class="ltx_page_navbar">
+<nav class="ltx_TOC">
+<ol class="ltx_toclist">
+<li class="ltx_tocentry ltx_tocentry_abstract"><a href="#abstract1" title="In GitSkills: A Dataset of Agent Skills on GitHub" class="ltx_ref"><span class="ltx_text ltx_ref_title">Abstract</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_section"><a href="#S1" title="In GitSkills: A Dataset of Agent Skills on GitHub" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">I </span><span class="ltx_text ltx_font_smallcaps">High-Level Overview</span></span></a></li>
+<li class="ltx_tocentry ltx_tocentry_section"><a href="#S2" title="In GitSkills: A Dataset of Agent Skills on GitHub" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">II </span><span class="ltx_text ltx_font_smallcaps">Internal Structure</span></span></a></li>
+<li class="ltx_tocentry ltx_tocentry_section"><a href="#S3" title="In GitSkills: A Dataset of Agent Skills on GitHub" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">III </span><span class="ltx_text ltx_font_smallcaps">Potential Research Questions</span></span></a></li>
+<li class="ltx_tocentry ltx_tocentry_section"><a href="#S4" title="In GitSkills: A Dataset of Agent Skills on GitHub" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">IV </span><span class="ltx_text ltx_font_smallcaps">How to Access</span></span></a></li>
+<li class="ltx_tocentry ltx_tocentry_bibliography"><a href="#bib" title="In GitSkills: A Dataset of Agent Skills on GitHub" class="ltx_ref"><span class="ltx_text ltx_ref_title">References</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_appendix"><a href="#A1" title="In GitSkills: A Dataset of Agent Skills on GitHub" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">A </span>Dataset Construction</span></a></li>
+</ol></nav>
+</nav>
+<div class="ltx_page_main">
+<div id="infobox" class="infobox">
+  <a id="license-tr" href="https://info.arxiv.org/help/license/index.html#licenses-available">
+    License: arXiv.org perpetual non-exclusive license
+  </a>
+  <div id="watermark-tr">
+arXiv:2608.10906v1 [cs.SE] 11 Aug 2026</div>
+</div><div class="ltx_page_content">
+<article class="ltx_document ltx_authors_1line" lang="en-GB">
+<h1 class="ltx_title ltx_title_document">GitSkills: A Dataset of Agent Skills on GitHub</h1>
+<div class="ltx_authors">
+<span class="ltx_creator ltx_role_author">
+<span class="ltx_personname">
+Giuseppe Destefanis1,
+Daniel Graziotin2,
+Matteo Vaccargiu2,
+Marco Ortu3
+</span></span>
+</div>
+
+<div id="abstract1" class="ltx_abstract">
+<h6 class="ltx_title ltx_title_abstract">Abstract</h6>
+<p class="ltx_p"><span class="ltx_text">An agent skill is a folder containing a <span class="ltx_text ltx_font_typewriter">SKILL.md</span> file with
+instructions for a language-model agent, optionally accompanied by
+scripts and reference files. The agent loads the
+skill when it judges that a task matches the skill description.
+Anthropic introduced the format in October 2025 as an open specification.
+Nine months
+later, we find that skill files in the millions sit in public GitHub
+repositories. Skills are unlike the artifacts the SE research community usually
+mines: they are written mainly in natural language, a
+model selects them probabilistically at run time, and no compiler or type checker verifies the selection. They also have no central registry or
+package manager, so they spread by copying folders between
+repositories. How
+developers write, reuse, and maintain skills is therefore an
+empirical question, and no existing dataset records this population. We present
+GitSkills, a dataset of 3,797,117 <span class="ltx_text ltx_font_typewriter">SKILL.md</span> files collected
+from 282,200 public repositories in July 2026. The dataset retains every
+file occurrence with its repository, path, and content hash. It groups
+identical files into 1,877,981 distinct contents and enriches one
+representative per group with the full text, parsed front matter,
+folder contents, repository metadata, and, for a subset, the commit history of the file. A single self-contained SQLite file supports research on the adoption,
+reuse, structure, authorship, maintenance, and security of agent skills.</span></p>
+</div>
+<section id="S1" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">I </span><span id="S1.1.1" class="ltx_text ltx_font_smallcaps">High-Level Overview</span>
+</h2>
+
+<div id="S1.p1" class="ltx_para">
+<p id="S1.p1.1" class="ltx_p">An agent skill describes a workflow, convention, or procedure that a
+language-model agent should follow for a class of tasks. A skill consists of
+a folder containing a <span id="S1.p1.1.1" class="ltx_text ltx_font_typewriter">SKILL.md</span> file. The file has YAML front matter
+with a name and description, followed by a Markdown body with the
+instructions (Figure <a href="#A1.F2" title="Figure 2 ‣ Appendix A Dataset Construction ‣ GitSkills: A Dataset of Agent Skills on GitHub" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a> in the Appendix). The folder may also contain scripts and reference documents.
+Anthropic introduced the format in October 2025 and published its
+directory structure, front-matter constraints, and staged loading model as an
+open specification <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib1" title="" class="ltx_ref">1</a>, <a href="#bib.bib2" title="" class="ltx_ref">2</a>]</cite>. Any agent tool can
+support the format. Claude Code is the reference
+implementation <cite class="ltx_cite ltx_citemacro_cite">[<a href="#bib.bib3" title="" class="ltx_ref">3</a>]</cite>; where a tool-specific
+convention matters, such as the <span id="S1.p1.1.2" class="ltx_text ltx_font_typewriter">.claude/skills/</span> skill
+directory, we follow Claude Code’s for simplicity.</p>
+</div>
+<div id="S1.p2" class="ltx_para">
+<p id="S1.p2.1" class="ltx_p">A property of skills makes them different from ordinary configuration files.
+The model decides at run time whether to load a skill by comparing the task
+with the skill description. This decision is probabilistic. No compiler or
+type checker verifies that the agent selected the appropriate skill. A vague
+description may prevent selection, while unclear instructions may lead to
+incomplete or incorrect execution without an explicit error. These problems
+are difficult to detect with conventional software analysis. How developers
+write and maintain skills is therefore an empirical question, but no dataset
+currently supports a large-scale study of this artifact.</p>
+</div>
+<div id="S1.p3" class="ltx_para">
+<p id="S1.p3.1" class="ltx_p">GitSkills addresses this gap. It records 3,797,117
+<span id="S1.p3.1.1" class="ltx_text ltx_font_typewriter">SKILL.md</span> files from 282,200 public GitHub repositories owned by
+195,841 accounts, collected in July 2026. The files are grouped by
+content hash into 1,877,981 distinct contents. One representative file
+from each group is enriched with its full text, parsed front matter, folder
+contents, and repository metadata; commit history, with first- and
+last-commit author accounts, covers skills in standard location and
+a size-stratified sample of the rest. Every occurrence is retained with its
+repository and path, so researchers can study both unique contents and
+their copies.</p>
+</div>
+<div id="S1.p4" class="ltx_para">
+<p id="S1.p4.1" class="ltx_p">The dataset covers the early adoption of the format, while conventions and
+tooling are still developing. This makes it possible to study how a new
+software artifact spreads, how common practices emerge, and whether the
+format develops into shared infrastructure across agent tools.</p>
+</div>
+<div id="S1.p5" class="ltx_para">
+<p id="S1.p5.1" class="ltx_p">We collected the dataset with a read-only pipeline against the GitHub
+code-search and REST APIs. Because code search returns at most 1,000
+results per query and its reported totals proved unreliable (roughly
+349,000 for the filename query, against over 3.8M files retrieved), discovery partitions the search
+space by file size until every range can be retrieved completely.
+Files are grouped by content hash; one representative per group is
+enriched, and all copies are retained with their repository and path.
+The dataset covers public repositories only and should be read as a
+lower bound on the population. Appendix <a href="#A1" title="Appendix A Dataset Construction ‣ GitSkills: A Dataset of Agent Skills on GitHub" class="ltx_ref"><span class="ltx_text ltx_ref_tag">A</span></a>
+details the pipeline.</p>
+</div>
+</section>
+<section id="S2" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">II </span><span id="S2.1.1" class="ltx_text ltx_font_smallcaps">Internal Structure</span>
+</h2>
+
+<div id="S2.p1" class="ltx_para">
+<p id="S2.p1.1" class="ltx_p">Table <a href="#S2.T1" title="Table I ‣ II Internal Structure ‣ GitSkills: A Dataset of Agent Skills on GitHub" class="ltx_ref"><span class="ltx_text ltx_ref_tag">I</span></a> summarizes the dataset tables. The dataset is stored in SQLite format.</p>
+</div>
+<div id="S2.p2" class="ltx_para">
+<p id="S2.p2.1" class="ltx_p">When several repositories contain the same <span id="S2.p2.1.1" class="ltx_text ltx_font_typewriter">SKILL.md</span> file, the dataset stores the text once and links all copies to it through the content hash. Identical hashes mean that the files contain exactly the same bytes.</p>
+</div>
+<div id="S2.p3" class="ltx_para">
+<p id="S2.p3.1" class="ltx_p">Folder contents and commit history are collected for only one copy of each distinct skill. This information applies only to that specific repository. Other copies may have different scripts, reference files, or commit histories.</p>
+</div>
+<figure id="S2.T1" class="ltx_table">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_table">Table I: </span>Overview of the GitSkills dataset.</figcaption>
+<table id="S2.T1.1" class="ltx_tabular ltx_centering ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S2.T1.1.1.1" class="ltx_tr">
+<td id="S2.T1.1.1.1.1" class="ltx_td ltx_border_tt"></td>
+<td id="S2.T1.1.1.1.2" class="ltx_td ltx_align_left ltx_border_tt">Table</td>
+<td id="S2.T1.1.1.1.3" class="ltx_td ltx_align_right ltx_border_tt"># Records</td>
+<td id="S2.T1.1.1.1.4" class="ltx_td ltx_align_justify ltx_border_tt">
+<span id="S2.T1.1.1.1.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.1.1.1.4.1.1" class="ltx_p">Content</span>
+</span>
+</td>
+</tr>
+<tr id="S2.T1.1.2.2" class="ltx_tr">
+<td id="S2.T1.1.2.2.1" class="ltx_td ltx_align_left ltx_border_t">Core</td>
+<td id="S2.T1.1.2.2.2" class="ltx_td ltx_align_left ltx_border_t"><span id="S2.T1.1.2.2.2.1" class="ltx_text ltx_font_typewriter">artifacts</span></td>
+<td id="S2.T1.1.2.2.3" class="ltx_td ltx_align_right ltx_border_t">3,797,117</td>
+<td id="S2.T1.1.2.2.4" class="ltx_td ltx_align_justify ltx_border_t">
+<span id="S2.T1.1.2.2.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.1.2.2.4.1.1" class="ltx_p">One row per discovered file: repository, path, exact basename, location
+class, content hash, and representative flag; for representatives, also the
+full text, parsed front matter, and body size.</span>
+</span>
+</td>
+</tr>
+<tr id="S2.T1.1.3.3" class="ltx_tr">
+<td id="S2.T1.1.3.3.1" class="ltx_td"></td>
+<td id="S2.T1.1.3.3.2" class="ltx_td ltx_align_left"><span id="S2.T1.1.3.3.2.1" class="ltx_text ltx_font_typewriter">repos</span></td>
+<td id="S2.T1.1.3.3.3" class="ltx_td ltx_align_right">282,200</td>
+<td id="S2.T1.1.3.3.4" class="ltx_td ltx_align_justify">
+<span id="S2.T1.1.3.3.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.1.3.3.4.1.1" class="ltx_p">Repository metadata: owner, star count, primary language, fork status,
+creation date, and last-push date.</span>
+</span>
+</td>
+</tr>
+<tr id="S2.T1.1.4.4" class="ltx_tr">
+<td id="S2.T1.1.4.4.1" class="ltx_td ltx_align_left ltx_border_t">Composition</td>
+<td id="S2.T1.1.4.4.2" class="ltx_td ltx_align_left ltx_border_t"><span id="S2.T1.1.4.4.2.1" class="ltx_text ltx_font_typewriter">artifact_siblings</span></td>
+<td id="S2.T1.1.4.4.3" class="ltx_td ltx_align_right ltx_border_t">7,264,865</td>
+<td id="S2.T1.1.4.4.4" class="ltx_td ltx_align_justify ltx_border_t">
+<span id="S2.T1.1.4.4.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.1.4.4.4.1.1" class="ltx_p">Files stored alongside a representative skill: path, entry type (file or directory), size, and the text of files under a size cap. Whether a skill bundles scripts or reference material is recorded per skill in artifacts (has_scripts, has_references).</span>
+</span>
+</td>
+</tr>
+<tr id="S2.T1.1.5.5" class="ltx_tr">
+<td id="S2.T1.1.5.5.1" class="ltx_td ltx_align_left ltx_border_t">History</td>
+<td id="S2.T1.1.5.5.2" class="ltx_td ltx_align_left ltx_border_t">(columns in <span id="S2.T1.1.5.5.2.1" class="ltx_text ltx_font_typewriter">artifacts</span>)</td>
+<td id="S2.T1.1.5.5.3" class="ltx_td ltx_align_right ltx_border_t">458,548</td>
+<td id="S2.T1.1.5.5.4" class="ltx_td ltx_align_justify ltx_border_t">
+<span id="S2.T1.1.5.5.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.1.5.5.4.1.1" class="ltx_p">First and last commit dates of the <span id="S2.T1.1.5.5.4.1.1.1" class="ltx_text ltx_font_typewriter">SKILL.md</span> file, their author
+accounts (anonymized; user or bot), and commit count, for standard
+locations and a size-stratified sample of the rest.</span>
+</span>
+</td>
+</tr>
+<tr id="S2.T1.1.6.6" class="ltx_tr">
+<td id="S2.T1.1.6.6.1" class="ltx_td ltx_align_left ltx_border_bb ltx_border_t">Provenance</td>
+<td id="S2.T1.1.6.6.2" class="ltx_td ltx_align_left ltx_border_bb ltx_border_t"><span id="S2.T1.1.6.6.2.1" class="ltx_text ltx_font_typewriter">mining_runs</span></td>
+<td id="S2.T1.1.6.6.3" class="ltx_td ltx_align_right ltx_border_bb ltx_border_t">7</td>
+<td id="S2.T1.1.6.6.4" class="ltx_td ltx_align_justify ltx_border_bb ltx_border_t">
+<span id="S2.T1.1.6.6.4.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.1.6.6.4.1.1" class="ltx_p">Query, start and end timestamps, and result count for each collection run.</span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+<div id="S2.p4" class="ltx_para">
+<p id="S2.p4.1" class="ltx_p">Collection is separated from interpretation: every filename match is
+retained with the attributes needed to define an analysis population, and
+all copies remain linked to a representative content.</p>
+</div>
+</section>
+<section id="S3" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">III </span><span id="S3.1.1" class="ltx_text ltx_font_smallcaps">Potential Research Questions</span>
+</h2>
+
+<div id="S3.p1" class="ltx_para">
+<p id="S3.p1.1" class="ltx_p">Agent skills influence how coding agents operate within software
+projects, so their content, structure, reuse, and maintenance are
+empirical questions the dataset can answer at population scale.</p>
+</div>
+<div id="S3.p2" class="ltx_para ltx_noindent">
+<p id="S3.p2.1" class="ltx_p"><span id="S3.p2.1.1" class="ltx_text ltx_font_bold">1) Adoption and linguistic evolution.</span></p>
+<ul id="S3.I1" class="ltx_itemize">
+<li id="S3.I1.ix1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">a)</span> 
+<div id="S3.I1.ix1.p1" class="ltx_para">
+<p id="S3.I1.ix1.p1.1" class="ltx_p">How quickly does the format spread, and which projects adopt
+it first, in terms of programming language, popularity, age, and
+activity?</p>
+</div>
+</li>
+<li id="S3.I1.ix2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">b)</span> 
+<div id="S3.I1.ix2.p1" class="ltx_para">
+<p id="S3.I1.ix2.p1.1" class="ltx_p">What do developers codify in skills, and in which contexts do
+skills appear, from operational projects to catalogs, templates, and
+demonstrations? A taxonomy of skill purposes does not yet exist.</p>
+</div>
+</li>
+<li id="S3.I1.ix3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">c)</span> 
+<div id="S3.I1.ix3.p1" class="ltx_para">
+<p id="S3.I1.ix3.p1.1" class="ltx_p">Do the linguistic properties of newly written skills change
+across monthly cohorts, in structure and phrasing as well as in topic
+coverage and semantic diversity? Convergence toward formulaic templates
+would indicate an emerging genre; shrinking diversity may also reflect
+rising machine authorship.</p>
+</div>
+</li>
+<li id="S3.I1.ix4" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">d)</span> 
+<div id="S3.I1.ix4.p1" class="ltx_para">
+<p id="S3.I1.ix4.p1.1" class="ltx_p">How many skills do agents themselves create or maintain, and
+in which natural languages are skills written? A skill is read by a
+multilingual model, so a developer may state a procedure more precisely
+in their own language than in English.</p>
+</div>
+</li>
+</ul>
+</div>
+<div id="S3.p3" class="ltx_para ltx_noindent">
+<p id="S3.p3.1" class="ltx_p"><span id="S3.p3.1.1" class="ltx_text ltx_font_bold">2) Development of a shared format.</span></p>
+<ul id="S3.I2" class="ltx_itemize">
+<li id="S3.I2.ix1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">a)</span> 
+<div id="S3.I2.ix1.p1" class="ltx_para">
+<p id="S3.I2.ix1.p1.1" class="ltx_p">What proportion of skills use vendor-neutral rather than
+tool-specific locations, and how does this proportion change over time?</p>
+</div>
+</li>
+<li id="S3.I2.ix2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">b)</span> 
+<div id="S3.I2.ix2.p1" class="ltx_para">
+<p id="S3.I2.ix2.p1.1" class="ltx_p">Do skill texts address one named tool, or any agent that
+implements the specification?</p>
+</div>
+</li>
+</ul>
+</div>
+<div id="S3.p4" class="ltx_para ltx_noindent">
+<p id="S3.p4.1" class="ltx_p"><span id="S3.p4.1.1" class="ltx_text ltx_font_bold">3) Reuse without a package manager.</span> Skills have no central
+registry; reuse happens by copying folders, and 50.5% of the
+collected files are verbatim copies.</p>
+<ul id="S3.I3" class="ltx_itemize">
+<li id="S3.I3.ix1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">a)</span> 
+<div id="S3.I3.ix1.p1" class="ltx_para">
+<p id="S3.I3.ix1.p1.1" class="ltx_p">How concentrated is reuse: a long tail of rarely copied
+contents, or a small set of widely copied templates?</p>
+</div>
+</li>
+<li id="S3.I3.ix2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">b)</span> 
+<div id="S3.I3.ix2.p1" class="ltx_para">
+<p id="S3.I3.ix2.p1.1" class="ltx_p">Through which mechanisms do skills move between repositories,
+such as direct addition, catalogs, or scaffolding tools?</p>
+</div>
+</li>
+<li id="S3.I3.ix3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">c)</span> 
+<div id="S3.I3.ix3.p1" class="ltx_para">
+<p id="S3.I3.ix3.p1.1" class="ltx_p">Do skill copies follow the genealogy patterns known from code
+clones, such as consistent and inconsistent propagation of changes?</p>
+</div>
+</li>
+</ul>
+</div>
+<div id="S3.p5" class="ltx_para ltx_noindent">
+<p id="S3.p5.1" class="ltx_p"><span id="S3.p5.1.1" class="ltx_text ltx_font_bold">4) Software metrics for natural-language instructions.</span></p>
+<ul id="S3.I4" class="ltx_itemize">
+<li id="S3.I4.ix1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">a)</span> 
+<div id="S3.I4.ix1.p1" class="ltx_para">
+<p id="S3.I4.ix1.p1.1" class="ltx_p">Which established metrics, such as size, churn, age, clone
+coverage, and readability, have meaningful equivalents for skills, and
+how do their distributions compare with those of source code?</p>
+</div>
+</li>
+<li id="S3.I4.ix2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">b)</span> 
+<div id="S3.I4.ix2.p1" class="ltx_para">
+<p id="S3.I4.ix2.p1.1" class="ltx_p">Can observable indicators of skill quality be defined and
+compared with proxies such as copy count and subsequent edits?</p>
+</div>
+</li>
+<li id="S3.I4.ix3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">c)</span> 
+<div id="S3.I4.ix3.p1" class="ltx_para">
+<p id="S3.I4.ix3.p1.1" class="ltx_p">Which properties of the description, the text the agent
+matches against when deciding whether to load the skill, are associated
+with reuse and maintenance?</p>
+</div>
+</li>
+</ul>
+</div>
+<div id="S3.p6" class="ltx_para ltx_noindent">
+<p id="S3.p6.1" class="ltx_p"><span id="S3.p6.1.1" class="ltx_text ltx_font_bold">5) Maintenance and trust.</span> Skills can instruct agents to run
+commands, access external resources, and execute bundled scripts, and
+they are copied between repositories without formal review.</p>
+<ul id="S3.I5" class="ltx_itemize">
+<li id="S3.I5.ix1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">a)</span> 
+<div id="S3.I5.ix1.p1" class="ltx_para">
+<p id="S3.I5.ix1.p1.1" class="ltx_p">How often do skills become outdated relative to the projects
+and tools they describe?</p>
+</div>
+</li>
+<li id="S3.I5.ix2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">b)</span> 
+<div id="S3.I5.ix2.p1" class="ltx_para">
+<p id="S3.I5.ix2.p1.1" class="ltx_p">Do modified copies of widely reused skills introduce command
+execution or network access absent from the original, the analog of a
+supply-chain attack in an ecosystem without a registry?</p>
+</div>
+</li>
+<li id="S3.I5.ix3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">c)</span> 
+<div id="S3.I5.ix3.p1" class="ltx_para">
+<p id="S3.I5.ix3.p1.1" class="ltx_p">How often do skills bundle executable files, and how widely
+are these skills copied?</p>
+</div>
+</li>
+</ul>
+</div>
+</section>
+<section id="S4" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">IV </span><span id="S4.1.1" class="ltx_text ltx_font_smallcaps">How to Access</span>
+</h2>
+
+<div id="S4.p1" class="ltx_para">
+<p id="S4.p1.1" class="ltx_p">The full dataset, as a single self-contained SQLite file, is archived on
+Zenodo at this
+<a href="https://doi.org/10.5281/zenodo.21875637" title="" class="ltx_ref ltx_href">link</a><span id="footnote1" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">1</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">1</sup><span class="ltx_tag ltx_tag_note">1</span><a href="https://doi.org/10.5281/zenodo.21875637" title="" class="ltx_ref ltx_url ltx_font_typewriter">https://doi.org/10.5281/zenodo.21875637</a></span></span></span>.
+A Parquet mirror, partitioned by table, is available on Hugging Face at
+this
+<a href="https://huggingface.co/datasets/mvaccargiu/gitskills" title="" class="ltx_ref ltx_href">link</a><span id="footnote2" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">2</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">2</sup><span class="ltx_tag ltx_tag_note">2</span><a href="https://huggingface.co/datasets/mvaccargiu/gitskills" title="" class="ltx_ref ltx_url ltx_font_typewriter">https://huggingface.co/datasets/mvaccargiu/gitskills</a></span></span></span>.</p>
+</div>
+<div id="S4.p2" class="ltx_para">
+<p id="S4.p2.1" class="ltx_p">A sample of the dataset is available on GitHub at this <a href="https://github.com/giuseppedestefanis/gitskills-sample" title="" class="ltx_ref ltx_href">link</a><span id="footnote3" class="ltx_note ltx_role_footnote"><sup class="ltx_note_mark">3</sup><span class="ltx_note_outer"><span class="ltx_note_content"><sup class="ltx_note_mark">3</sup><span class="ltx_tag ltx_tag_note">3</span><a href="https://github.com/giuseppedestefanis/gitskills-sample" title="" class="ltx_ref ltx_url ltx_font_typewriter">https://github.com/giuseppedestefanis/gitskills-sample</a></span></span></span>.</p>
+</div>
+<div id="S4.p3" class="ltx_para">
+<p id="S4.p3.1" class="ltx_p">Commit author accounts are replaced by keyed one-way codes, identical
+for the same account throughout, so authorship can be traced without
+identifying anyone. Bot accounts keep
+their login. Email addresses and personal names in commit messages are
+redacted; AI assistant names in <span id="S4.p3.1.1" class="ltx_text ltx_font_typewriter">Co-authored-by</span> trailers are
+kept.</p>
+</div>
+<figure id="S4.F1" class="ltx_figure"><span class="ltx_inline-block"><svg id="S4.F1.pic1" class="ltx_picture ltx_centering" height="139.65" overflow="visible" version="1.1" viewBox="0 0 686.99 139.65" width="686.99"><g transform="translate(0,139.65) matrix(1 0 0 -1 0 0) translate(35.34,0) translate(0,69.82)"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" stroke="#000000" fill="#000000" stroke-width="0.4pt"><g style="--ltx-stroke-color:#979CA6;--ltx-fill-color:#F0F1F2;" stroke="#979CA6" fill="#F0F1F2"><path d="M 29.53 47.24 L -29.53 47.24 C -32.58 47.24 -35.06 44.77 -35.06 41.71 L -35.06 -41.71 C -35.06 -44.77 -32.58 -47.24 -29.53 -47.24 L 29.53 -47.24 C 32.58 -47.24 35.06 -44.77 35.06 -41.71 L 35.06 41.71 C 35.06 44.77 32.58 47.24 29.53 47.24 Z M -35.06 -47.24"></path></g><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="matrix(1.0 0.0 0.0 1.0 -29.53 -2.42)" fill="#000000" stroke="#000000"><foreignObject style="--ltx-fo-width:4.27em;--ltx-fo-height:0.49em;--ltx-fo-depth:0.14em;" width="59.06" height="8.61" transform="matrix(1 0 0 -1 0 6.73)" overflow="visible"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="S4.F1.pic1.1.1.1.1.1.1" class="ltx_inline-block ltx_minipage ltx_align_top" style="width:5.35em;">
+<span id="S4.F1.pic1.1.1.1.1.1.1.1" class="ltx_p"></span>
+<span id="S4.F1.pic1.1.1.1.1.1.1.2" class="ltx_p"><span id="S4.F1.pic1.1.1.1.1.1.1.2.1" class="ltx_text ltx_font_bold" style="font-size:70%;">GitHub</span></span>
+<span id="S4.F1.pic1.1.1.1.1.1.1.3" class="ltx_p"><span id="S4.F1.pic1.1.1.1.1.1.1.3.1" class="ltx_text" style="font-size:70%;">public</span></span>
+<span id="S4.F1.pic1.1.1.1.1.1.1.4" class="ltx_p"><span id="S4.F1.pic1.1.1.1.1.1.1.4.1" class="ltx_text" style="font-size:70%;">repositories</span></span>
+</span></span></span></foreignObject></g></g><g style="--ltx-stroke-color:#736EBF;--ltx-fill-color:#F3F3FA;" stroke="#736EBF" fill="#F3F3FA" stroke-width="0.7pt"><path d="M 187.83 69.34 L 68.92 69.34 C 65.86 69.34 63.38 66.86 63.38 63.8 L 63.38 -63.8 C 63.38 -66.86 65.86 -69.34 68.92 -69.34 L 187.83 -69.34 C 190.88 -69.34 193.36 -66.86 193.36 -63.8 L 193.36 63.8 C 193.36 66.86 190.88 69.34 187.83 69.34 Z M 63.38 -69.34"></path></g><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" stroke-width="0.7pt" fill="#000000" stroke="#000000" transform="matrix(1.0 0.0 0.0 1.0 70.3 55.69)"><foreignObject style="--ltx-fo-width:8.39em;--ltx-fo-height:0.49em;--ltx-fo-depth:8.54em;" width="116.14" height="124.84" transform="matrix(1 0 0 -1 0 6.73)" overflow="visible"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="S4.F1.pic1.2.2.2.1.1" class="ltx_inline-block ltx_minipage ltx_align_top" style="width:10.53em;">
+<span id="S4.F1.pic1.2.2.2.1.1.1" class="ltx_p"></span>
+<span id="S4.F1.pic1.2.2.2.1.1.2" class="ltx_p ltx_align_left"><span id="S4.F1.pic1.2.2.2.1.1.2.1" class="ltx_text ltx_font_bold" style="font-size:70%;--ltx-fg-color:#3730A3;">1. Discovery
+<br class="ltx_break"></span><span id="S4.F1.pic1.2.2.2.1.1.2.2" class="ltx_text" style="font-size:70%;">
+search for files matching <span id="S4.F1.pic1.2.2.2.1.1.2.2.1" class="ltx_text ltx_font_typewriter">SKILL.md</span>;
+partition by file size to pass the 1,000-result limit;
+classify each result by location
+<br class="ltx_break">
+<em id="S4.F1.pic1.2.2.2.1.1.2.2.2" class="ltx_emph ltx_font_italic">retain every result</em></span></span>
+</span></span></span></foreignObject></g><g style="--ltx-stroke-color:#736EBF;--ltx-fill-color:#F3F3FA;" stroke="#736EBF" fill="#F3F3FA" stroke-width="0.7pt"><path d="M 346.33 61.04 L 227.42 61.04 C 224.37 61.04 221.89 58.56 221.89 55.5 L 221.89 -55.5 C 221.89 -58.56 224.37 -61.04 227.42 -61.04 L 346.33 -61.04 C 349.39 -61.04 351.87 -58.56 351.87 -55.5 L 351.87 55.5 C 351.87 58.56 349.39 61.04 346.33 61.04 Z M 221.89 -61.04"></path></g><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" stroke-width="0.7pt" fill="#000000" stroke="#000000" transform="matrix(1.0 0.0 0.0 1.0 228.81 47.39)"><foreignObject style="--ltx-fo-width:8.39em;--ltx-fo-height:0.49em;--ltx-fo-depth:7.34em;" width="116.14" height="108.24" transform="matrix(1 0 0 -1 0 6.73)" overflow="visible"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="S4.F1.pic1.3.3.3.1.1" class="ltx_inline-block ltx_minipage ltx_align_top" style="width:10.53em;">
+<span id="S4.F1.pic1.3.3.3.1.1.1" class="ltx_p"></span>
+<span id="S4.F1.pic1.3.3.3.1.1.2" class="ltx_p ltx_align_left"><span id="S4.F1.pic1.3.3.3.1.1.2.1" class="ltx_text ltx_font_bold" style="font-size:70%;--ltx-fg-color:#3730A3;">2. Deduplication
+<br class="ltx_break"></span><span id="S4.F1.pic1.3.3.3.1.1.2.2" class="ltx_text" style="font-size:70%;">
+group files by content hash; select one representative per group,
+preferring a standard location
+<br class="ltx_break">
+<em id="S4.F1.pic1.3.3.3.1.1.2.2.1" class="ltx_emph ltx_font_italic">retain all copies</em></span></span>
+</span></span></span></foreignObject></g><g style="--ltx-stroke-color:#736EBF;--ltx-fill-color:#F3F3FA;" stroke="#736EBF" fill="#F3F3FA" stroke-width="0.7pt"><path d="M 504.84 61.04 L 385.93 61.04 C 382.87 61.04 380.4 58.56 380.4 55.5 L 380.4 -55.5 C 380.4 -58.56 382.87 -61.04 385.93 -61.04 L 504.84 -61.04 C 507.9 -61.04 510.37 -58.56 510.37 -55.5 L 510.37 55.5 C 510.37 58.56 507.9 61.04 504.84 61.04 Z M 380.4 -61.04"></path></g><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" stroke-width="0.7pt" fill="#000000" stroke="#000000" transform="matrix(1.0 0.0 0.0 1.0 387.31 47.39)"><foreignObject style="--ltx-fo-width:8.39em;--ltx-fo-height:0.49em;--ltx-fo-depth:7.34em;" width="116.14" height="108.24" transform="matrix(1 0 0 -1 0 6.73)" overflow="visible"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="S4.F1.pic1.4.4.4.1.1" class="ltx_inline-block ltx_minipage ltx_align_top" style="width:10.53em;">
+<span id="S4.F1.pic1.4.4.4.1.1.1" class="ltx_p"></span>
+<span id="S4.F1.pic1.4.4.4.1.1.2" class="ltx_p ltx_align_left"><span id="S4.F1.pic1.4.4.4.1.1.2.1" class="ltx_text ltx_font_bold" style="font-size:70%;--ltx-fg-color:#3730A3;">3. Enrichment
+<br class="ltx_break"></span><span id="S4.F1.pic1.4.4.4.1.1.2.2" class="ltx_text" style="font-size:70%;">
+<em id="S4.F1.pic1.4.4.4.1.1.2.2.1" class="ltx_emph ltx_font_italic">for representatives:</em>
+content and front matter; folder contents; repository metadata;
+sampled <span id="S4.F1.pic1.4.4.4.1.1.2.2.2" class="ltx_text ltx_font_typewriter">SKILL.md</span> commit history</span></span>
+</span></span></span></foreignObject></g><g style="--ltx-stroke-color:#50B696;--ltx-fill-color:#EBF7F3;" stroke="#50B696" fill="#EBF7F3" stroke-width="0.7pt"><path d="M 645.63 47.24 L 544.44 47.24 C 541.38 47.24 538.9 44.77 538.9 41.71 L 538.9 -41.71 C 538.9 -44.77 541.38 -47.24 544.44 -47.24 L 645.63 -47.24 C 648.69 -47.24 651.16 -44.77 651.16 -41.71 L 651.16 41.71 C 651.16 44.77 648.69 47.24 645.63 47.24 Z M 538.9 -47.24"></path></g><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" stroke-width="0.7pt" fill="#000000" stroke="#000000" transform="matrix(1.0 0.0 0.0 1.0 545.82 30.65)"><foreignObject style="--ltx-fo-width:7.11em;--ltx-fo-height:0.52em;--ltx-fo-depth:4.96em;" width="98.43" height="75.83" transform="matrix(1 0 0 -1 0 7.26)" overflow="visible"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="S4.F1.pic1.5.5.5.1.1" class="ltx_inline-block ltx_minipage ltx_align_top" style="width:8.92em;">
+<span id="S4.F1.pic1.5.5.5.1.1.1" class="ltx_p"></span>
+<span id="S4.F1.pic1.5.5.5.1.1.2" class="ltx_p ltx_align_left"><span id="S4.F1.pic1.5.5.5.1.1.2.1" class="ltx_text ltx_font_bold" style="font-size:70%;--ltx-fg-color:#035A3F;">Dataset (SQLite)
+<br class="ltx_break"></span><span id="S4.F1.pic1.5.5.5.1.1.2.2" class="ltx_text" style="font-size:70%;">
+<span id="S4.F1.pic1.5.5.5.1.1.2.2.1" class="ltx_text ltx_font_typewriter">artifacts
+<br class="ltx_break">artifact_siblings
+<br class="ltx_break">repos
+<br class="ltx_break">mining_runs</span></span></span>
+</span></span></span></foreignObject></g><g style="--ltx-stroke-color:#6964BA;--ltx-fill-color:#6964BA;--ltx-fg-color:#6964BA;" stroke-width="0.8pt" fill="#6964BA" stroke="#6964BA" color="#6964BA"><path style="fill:none" d="M 35.34 0 L 56.94 0"></path><g transform="matrix(1.0 0.0 0.0 1.0 53.77 0)" stroke-dasharray="none" stroke-dashoffset="0.0pt" stroke-linejoin="miter"><path d="M 7.66 0 L 1.79 2.18 L 3.45 0 L 1.79 -2.18 Z"></path></g></g><g style="--ltx-stroke-color:#6964BA;--ltx-fill-color:#6964BA;--ltx-fg-color:#6964BA;" stroke-width="0.8pt" fill="#6964BA" stroke="#6964BA" color="#6964BA"><path style="fill:none" d="M 193.85 0 L 215.44 0"></path><g transform="matrix(1.0 0.0 0.0 1.0 212.27 0)" stroke-dasharray="none" stroke-dashoffset="0.0pt" stroke-linejoin="miter"><path d="M 7.66 0 L 1.79 2.18 L 3.45 0 L 1.79 -2.18 Z"></path></g></g><g style="--ltx-stroke-color:#6964BA;--ltx-fill-color:#6964BA;--ltx-fg-color:#6964BA;" stroke-width="0.8pt" fill="#6964BA" stroke="#6964BA" color="#6964BA"><path style="fill:none" d="M 352.35 0 L 373.95 0"></path><g transform="matrix(1.0 0.0 0.0 1.0 370.78 0)" stroke-dasharray="none" stroke-dashoffset="0.0pt" stroke-linejoin="miter"><path d="M 7.66 0 L 1.79 2.18 L 3.45 0 L 1.79 -2.18 Z"></path></g></g><g style="--ltx-stroke-color:#6964BA;--ltx-fill-color:#6964BA;--ltx-fg-color:#6964BA;" stroke-width="0.8pt" fill="#6964BA" stroke="#6964BA" color="#6964BA"><path style="fill:none" d="M 510.86 0 L 532.46 0"></path><g transform="matrix(1.0 0.0 0.0 1.0 529.28 0)" stroke-dasharray="none" stroke-dashoffset="0.0pt" stroke-linejoin="miter"><path d="M 7.66 0 L 1.79 2.18 L 3.45 0 L 1.79 -2.18 Z"></path></g></g></g></svg></span>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure">Figure 1: </span>Collection pipeline. Discovery retains every filename match; deduplication selects one representative per distinct content while retaining all copies; enrichment applies to the representatives.</figcaption>
+</figure>
+</section>
+<section id="bib" class="ltx_bibliography">
+<h2 class="ltx_title ltx_title_bibliography">References</h2>
+
+<ul class="ltx_biblist">
+<li id="bib.bib1" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[1]</span>
+<span class="ltx_bibblock"> Agent Skills, “Agent Skills Specification (open
+standard, Apache-2.0),” <a href="https://agentskills.io" title="" class="ltx_ref ltx_url ltx_font_typewriter">https://agentskills.io</a>.
+
+</span>
+</li>
+<li id="bib.bib2" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[2]</span>
+<span class="ltx_bibblock"> Anthropic, “Agent Skills,” Claude API
+documentation,
+<a href="https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview" title="" class="ltx_ref ltx_url ltx_font_typewriter">https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview</a>.
+
+</span>
+</li>
+<li id="bib.bib3" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[3]</span>
+<span class="ltx_bibblock"> Anthropic, “Skills in Claude Code,” Claude Code
+documentation, <a href="https://code.claude.com/docs/en/skills" title="" class="ltx_ref ltx_url ltx_font_typewriter">https://code.claude.com/docs/en/skills</a>.
+
+</span>
+</li>
+<li id="bib.bib4" class="ltx_bibitem">
+<span class="ltx_tag ltx_tag_bibitem">[4]</span>
+<span class="ltx_bibblock"> G. Destefanis,
+“Authoring Agent Skills: A Software-Engineering Approach,”
+<em id="bib.bib4.1.1" class="ltx_emph ltx_font_italic">arXiv preprint arXiv:2607.25032</em>, 2026.
+
+</span>
+</li>
+</ul>
+</section>
+<section id="A1" class="ltx_appendix">
+<h2 class="ltx_title ltx_title_appendix">
+<span class="ltx_tag ltx_tag_appendix">Appendix A </span>Dataset Construction</h2>
+
+<div id="A1.p1" class="ltx_para">
+<p id="A1.p1.1" class="ltx_p">Figure <a href="#S4.F1" title="Figure 1 ‣ IV How to Access ‣ GitSkills: A Dataset of Agent Skills on GitHub" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> shows the collection pipeline. Collection is read-only; requests go to the GitHub REST and GraphQL APIs, the code-search API, and the raw-content CDN. Each stage checkpoints its progress in the database and resumes after interruptions.</p>
+</div>
+<div id="A1.p2" class="ltx_para">
+<p id="A1.p2.1" class="ltx_p"><em id="A1.p2.1.1" class="ltx_emph ltx_font_italic">Discovery.</em> Agent tools identify skills by filename, so the exact basename is a direct marker for code search. The code-search API returns at most 1,000 results per query, and its <span id="A1.p2.1.2" class="ltx_text ltx_font_typewriter">total_count</span> estimate proved unreliable: it reported roughly 349,000 matches for the filename query, against over 3.8M files ultimately retrieved. We therefore partitioned the search space by file size, splitting any range with more than 1,000 results until every range
+could be retrieved completely.</p>
+</div>
+<div id="A1.p3" class="ltx_para">
+<p id="A1.p3.1" class="ltx_p"><em id="A1.p3.1.1" class="ltx_emph ltx_font_italic">Deduplication.</em> Files are grouped by content hash. One representative per group is selected for enrichment, preferring a file in the <span id="A1.p3.1.2" class="ltx_text ltx_font_typewriter">.claude/skills/</span> directory, with a deterministic rule to
+break ties. The representative is not assumed to be the original source. All copies remain in the dataset with their repository, path, and location class, so the spread of each content can be measured.</p>
+</div>
+<div id="A1.p4" class="ltx_para">
+<p id="A1.p4.1" class="ltx_p"><em id="A1.p4.1.1" class="ltx_emph ltx_font_italic">Enrichment.</em> For each representative, the tool downloads the <span id="A1.p4.1.2" class="ltx_text ltx_font_typewriter">SKILL.md</span> file, parses its front matter, and records the bundled scripts and reference documents in the skill folder, downloading the text of bundled files up to a size cap. It also collects repository metadata, including star counts, and retrieves the commit history of the <span id="A1.p4.1.3" class="ltx_text ltx_font_typewriter">SKILL.md</span> file, with the author account of the first and last commit stored as an anonymized code, for skills in standard locations and a size-stratified sample of the others; the file’s own history dates the skill’s addition.</p>
+</div>
+<div id="A1.p5" class="ltx_para">
+<p id="A1.p5.1" class="ltx_p"><em id="A1.p5.1.1" class="ltx_emph ltx_font_italic">Anonymization.</em> Email addresses in commit messages, including
+GitHub noreply addresses, were masked with a fixed marker, and a scan
+of the released file confirmed that none remain; the first and last
+commit messages are included in this redacted form. Commit author
+accounts and personal names in trailer lines were replaced by codes
+from a keyed one-way function; the codes cannot be reversed and stay
+stable across the dataset.</p>
+</div>
+<div id="A1.p6" class="ltx_para">
+<p id="A1.p6.1" class="ltx_p">The search also returns filenames that merely contain the term, such as <span id="A1.p6.1.1" class="ltx_text ltx_font_typewriter">coding-skill.md</span>, and lowercase files predating the format. We retained them: each record carries the exact basename,
+location class, front-matter validity, and date of the first recorded commit, so researchers can define and compare stricter inclusion criteria during analysis. The dataset covers public repositories only, and GitHub code search indexes only default branches, files under 384 KB, recently active repositories with fewer than 500,000 files, and forks only when they have more stars than the parent repository. The dataset is therefore a lower bound on the full population.</p>
+</div>
+<figure id="A1.F2" class="ltx_figure">
+<div id="A1.F2.1" class="ltx_listing ltx_lstlisting ltx_framed ltx_framed_rectangle ltx_listing" style="--ltx-border-color:#666666;">
+<div class="ltx_listing_data"><a href="data:text/plain;base64,LS0tCm5hbWU6IHdlYi1hcnRpZmFjdHMtYnVpbGRlcgpkZXNjcmlwdGlvbjogU3VpdGUgb2YgdG9vbHMgZm9yIGNyZWF0aW5nIGVsYWJvcmF0ZSwgbXVsdGktY29tcG9uZW50IGNsYXVkZS5haSBIVE1MIGFydGlmYWN0cyB1c2luZyBtb2Rlcm4gZnJvbnRlbmQgd2ViIHRlY2hub2xvZ2llcyAoUmVhY3QsIFRhaWx3aW5kIENTUywgc2hhZGNuL3VpKS4gVXNlIGZvciBjb21wbGV4IGFydGlmYWN0cyByZXF1aXJpbmcgc3RhdGUgbWFuYWdlbWVudCwgcm91dGluZywgb3Igc2hhZGNuL3VpIGNvbXBvbmVudHMgLSBub3QgZm9yIHNpbXBsZSBzaW5nbGUtZmlsZSBIVE1ML0pTWCBhcnRpZmFjdHMuCmxpY2Vuc2U6IENvbXBsZXRlIHRlcm1zIGluIExJQ0VOU0UudHh0Ci0tLQoKIyBXZWIgQXJ0aWZhY3RzIEJ1aWxkZXIKClRvIGJ1aWxkIHBvd2VyZnVsIGZyb250ZW5kIGNsYXVkZS5haSBhcnRpZmFjdHMsIGZvbGxvdyB0aGVzZSBzdGVwczoKMS4gSW5pdGlhbGl6ZSB0aGUgZnJvbnRlbmQgcmVwbyB1c2luZyBgc2NyaXB0cy9pbml0LWFydGlmYWN0LnNoYAoyLiBEZXZlbG9wIHlvdXIgYXJ0aWZhY3QgYnkgZWRpdGluZyB0aGUgZ2VuZXJhdGVkIGNvZGUKMy4gQnVuZGxlIGFsbCBjb2RlIGludG8gYSBzaW5nbGUgSFRNTCBmaWxlIHVzaW5nIGBzY3JpcHRzL2J1bmRsZS1hcnRpZmFjdC5zaGAKNC4gRGlzcGxheSBhcnRpZmFjdCB0byB1c2VyCjUuIChPcHRpb25hbCkgVGVzdCB0aGUgYXJ0aWZhY3QKClsuLi5d" download="">⬇</a></div>
+<div id="lstnumberx1" class="ltx_listingline">
+<span id="lstnumberx1.1" class="ltx_text ltx_font_typewriter" style="font-size:70%;--ltx-fg-color:#6B7280;">---</span>
+</div>
+<div id="lstnumberx2" class="ltx_listingline">
+<span id="lstnumberx2.1" class="ltx_text ltx_lst_keyword ltx_font_typewriter" style="font-size:70%;--ltx-fg-color:#3730A3;">name</span><span id="lstnumberx2.2" class="ltx_text ltx_font_typewriter" style="font-size:70%;">:</span><span id="lstnumberx2.3" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx2.4" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">web</span><span id="lstnumberx2.5" class="ltx_text ltx_font_typewriter" style="font-size:70%;">-</span><span id="lstnumberx2.6" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">artifacts</span><span id="lstnumberx2.7" class="ltx_text ltx_font_typewriter" style="font-size:70%;">-</span><span id="lstnumberx2.8" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">builder</span>
+</div>
+<div id="lstnumberx3" class="ltx_listingline">
+<span id="lstnumberx3.1" class="ltx_text ltx_lst_keyword ltx_font_typewriter" style="font-size:70%;--ltx-fg-color:#3730A3;">description</span><span id="lstnumberx3.2" class="ltx_text ltx_font_typewriter" style="font-size:70%;">:</span><span id="lstnumberx3.3" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.4" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">Suite</span><span id="lstnumberx3.5" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.6" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">of</span><span id="lstnumberx3.7" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.8" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">tools</span><span id="lstnumberx3.9" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.10" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">for</span><span id="lstnumberx3.11" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.12" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">creating</span><span id="lstnumberx3.13" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.14" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">elaborate</span><span id="lstnumberx3.15" class="ltx_text ltx_font_typewriter" style="font-size:70%;">,</span><span id="lstnumberx3.16" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.17" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">multi</span><span id="lstnumberx3.18" class="ltx_text ltx_font_typewriter" style="font-size:70%;">-</span><span id="lstnumberx3.19" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">component</span><span id="lstnumberx3.20" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.21" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">claude</span><span id="lstnumberx3.22" class="ltx_text ltx_font_typewriter" style="font-size:70%;">.</span><span id="lstnumberx3.23" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">ai</span><span id="lstnumberx3.24" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.25" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">HTML</span><span id="lstnumberx3.26" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.27" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">artifacts</span><span id="lstnumberx3.28" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.29" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">using</span><span id="lstnumberx3.30" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.31" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">modern</span><span id="lstnumberx3.32" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.33" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">frontend</span><span id="lstnumberx3.34" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.35" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">web</span><span id="lstnumberx3.36" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.37" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">technologies</span><span id="lstnumberx3.38" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.39" class="ltx_text ltx_font_typewriter" style="font-size:70%;">(</span><span id="lstnumberx3.40" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">React</span><span id="lstnumberx3.41" class="ltx_text ltx_font_typewriter" style="font-size:70%;">,</span><span id="lstnumberx3.42" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.43" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">Tailwind</span><span id="lstnumberx3.44" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.45" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">CSS</span><span id="lstnumberx3.46" class="ltx_text ltx_font_typewriter" style="font-size:70%;">,</span><span id="lstnumberx3.47" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.48" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">shadcn</span><span id="lstnumberx3.49" class="ltx_text ltx_font_typewriter" style="font-size:70%;">/</span><span id="lstnumberx3.50" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">ui</span><span id="lstnumberx3.51" class="ltx_text ltx_font_typewriter" style="font-size:70%;">).</span><span id="lstnumberx3.52" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.53" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">Use</span><span id="lstnumberx3.54" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.55" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">for</span><span id="lstnumberx3.56" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.57" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">complex</span><span id="lstnumberx3.58" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.59" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">artifacts</span><span id="lstnumberx3.60" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.61" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">requiring</span><span id="lstnumberx3.62" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.63" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">state</span><span id="lstnumberx3.64" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.65" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">management</span><span id="lstnumberx3.66" class="ltx_text ltx_font_typewriter" style="font-size:70%;">,</span><span id="lstnumberx3.67" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.68" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">routing</span><span id="lstnumberx3.69" class="ltx_text ltx_font_typewriter" style="font-size:70%;">,</span><span id="lstnumberx3.70" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.71" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">or</span><span id="lstnumberx3.72" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.73" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">shadcn</span><span id="lstnumberx3.74" class="ltx_text ltx_font_typewriter" style="font-size:70%;">/</span><span id="lstnumberx3.75" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">ui</span><span id="lstnumberx3.76" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.77" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">components</span><span id="lstnumberx3.78" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.79" class="ltx_text ltx_font_typewriter" style="font-size:70%;">-</span><span id="lstnumberx3.80" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.81" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">not</span><span id="lstnumberx3.82" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.83" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">for</span><span id="lstnumberx3.84" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.85" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">simple</span><span id="lstnumberx3.86" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.87" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">single</span><span id="lstnumberx3.88" class="ltx_text ltx_font_typewriter" style="font-size:70%;">-</span><span id="lstnumberx3.89" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">file</span><span id="lstnumberx3.90" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.91" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">HTML</span><span id="lstnumberx3.92" class="ltx_text ltx_font_typewriter" style="font-size:70%;">/</span><span id="lstnumberx3.93" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">JSX</span><span id="lstnumberx3.94" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx3.95" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">artifacts</span><span id="lstnumberx3.96" class="ltx_text ltx_font_typewriter" style="font-size:70%;">.</span>
+</div>
+<div id="lstnumberx4" class="ltx_listingline">
+<span id="lstnumberx4.1" class="ltx_text ltx_lst_keyword ltx_font_typewriter" style="font-size:70%;--ltx-fg-color:#3730A3;">license</span><span id="lstnumberx4.2" class="ltx_text ltx_font_typewriter" style="font-size:70%;">:</span><span id="lstnumberx4.3" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx4.4" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">Complete</span><span id="lstnumberx4.5" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx4.6" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">terms</span><span id="lstnumberx4.7" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx4.8" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">in</span><span id="lstnumberx4.9" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx4.10" class="ltx_text ltx_lst_keyword ltx_font_typewriter" style="font-size:70%;--ltx-fg-color:#3730A3;">LICENSE</span><span id="lstnumberx4.11" class="ltx_text ltx_font_typewriter" style="font-size:70%;">.</span><span id="lstnumberx4.12" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">txt</span>
+</div>
+<div id="lstnumberx5" class="ltx_listingline">
+<span id="lstnumberx5.1" class="ltx_text ltx_font_typewriter" style="font-size:70%;--ltx-fg-color:#6B7280;">---</span>
+</div>
+<div id="lstnumberx6" class="ltx_listingline">
+</div>
+<div id="lstnumberx7" class="ltx_listingline">
+<span id="lstnumberx7.1" class="ltx_text ltx_lst_comment ltx_font_typewriter ltx_font_italic" style="font-size:70%;">#<span id="lstnumberx7.1.1" class="ltx_text ltx_lst_space"> </span>Web<span id="lstnumberx7.1.2" class="ltx_text ltx_lst_space"> </span>Artifacts<span id="lstnumberx7.1.3" class="ltx_text ltx_lst_space"> </span>Builder</span>
+</div>
+<div id="lstnumberx8" class="ltx_listingline">
+</div>
+<div id="lstnumberx9" class="ltx_listingline">
+<span id="lstnumberx9.1" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">To</span><span id="lstnumberx9.2" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx9.3" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">build</span><span id="lstnumberx9.4" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx9.5" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">powerful</span><span id="lstnumberx9.6" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx9.7" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">frontend</span><span id="lstnumberx9.8" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx9.9" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">claude</span><span id="lstnumberx9.10" class="ltx_text ltx_font_typewriter" style="font-size:70%;">.</span><span id="lstnumberx9.11" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">ai</span><span id="lstnumberx9.12" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx9.13" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">artifacts</span><span id="lstnumberx9.14" class="ltx_text ltx_font_typewriter" style="font-size:70%;">,</span><span id="lstnumberx9.15" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx9.16" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">follow</span><span id="lstnumberx9.17" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx9.18" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">these</span><span id="lstnumberx9.19" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx9.20" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">steps</span><span id="lstnumberx9.21" class="ltx_text ltx_font_typewriter" style="font-size:70%;">:</span>
+</div>
+<div id="lstnumberx10" class="ltx_listingline">
+<span id="lstnumberx10.1" class="ltx_text ltx_font_typewriter" style="font-size:70%;">1.</span><span id="lstnumberx10.2" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx10.3" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">Initialize</span><span id="lstnumberx10.4" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx10.5" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">the</span><span id="lstnumberx10.6" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx10.7" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">frontend</span><span id="lstnumberx10.8" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx10.9" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">repo</span><span id="lstnumberx10.10" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx10.11" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">using</span><span id="lstnumberx10.12" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx10.13" class="ltx_text ltx_font_typewriter" style="font-size:70%;--ltx-fg-color:#059669;">‘scripts/init-artifact.sh‘</span>
+</div>
+<div id="lstnumberx11" class="ltx_listingline">
+<span id="lstnumberx11.1" class="ltx_text ltx_font_typewriter" style="font-size:70%;">2.</span><span id="lstnumberx11.2" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx11.3" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">Develop</span><span id="lstnumberx11.4" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx11.5" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">your</span><span id="lstnumberx11.6" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx11.7" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">artifact</span><span id="lstnumberx11.8" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx11.9" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">by</span><span id="lstnumberx11.10" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx11.11" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">editing</span><span id="lstnumberx11.12" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx11.13" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">the</span><span id="lstnumberx11.14" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx11.15" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">generated</span><span id="lstnumberx11.16" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx11.17" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">code</span>
+</div>
+<div id="lstnumberx12" class="ltx_listingline">
+<span id="lstnumberx12.1" class="ltx_text ltx_font_typewriter" style="font-size:70%;">3.</span><span id="lstnumberx12.2" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx12.3" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">Bundle</span><span id="lstnumberx12.4" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx12.5" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">all</span><span id="lstnumberx12.6" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx12.7" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">code</span><span id="lstnumberx12.8" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx12.9" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">into</span><span id="lstnumberx12.10" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx12.11" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">a</span><span id="lstnumberx12.12" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx12.13" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">single</span><span id="lstnumberx12.14" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx12.15" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">HTML</span><span id="lstnumberx12.16" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx12.17" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">file</span><span id="lstnumberx12.18" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx12.19" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">using</span><span id="lstnumberx12.20" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx12.21" class="ltx_text ltx_font_typewriter" style="font-size:70%;--ltx-fg-color:#059669;">‘scripts/bundle-artifact.sh‘</span>
+</div>
+<div id="lstnumberx13" class="ltx_listingline">
+<span id="lstnumberx13.1" class="ltx_text ltx_font_typewriter" style="font-size:70%;">4.</span><span id="lstnumberx13.2" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx13.3" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">Display</span><span id="lstnumberx13.4" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx13.5" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">artifact</span><span id="lstnumberx13.6" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx13.7" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">to</span><span id="lstnumberx13.8" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx13.9" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">user</span>
+</div>
+<div id="lstnumberx14" class="ltx_listingline">
+<span id="lstnumberx14.1" class="ltx_text ltx_font_typewriter" style="font-size:70%;">5.</span><span id="lstnumberx14.2" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx14.3" class="ltx_text ltx_font_typewriter" style="font-size:70%;">(</span><span id="lstnumberx14.4" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">Optional</span><span id="lstnumberx14.5" class="ltx_text ltx_font_typewriter" style="font-size:70%;">)</span><span id="lstnumberx14.6" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx14.7" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">Test</span><span id="lstnumberx14.8" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx14.9" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">the</span><span id="lstnumberx14.10" class="ltx_text ltx_lst_space ltx_font_typewriter" style="font-size:70%;"> </span><span id="lstnumberx14.11" class="ltx_text ltx_lst_identifier ltx_font_typewriter" style="font-size:70%;">artifact</span>
+</div>
+<div id="lstnumberx15" class="ltx_listingline">
+</div>
+<div id="lstnumberx16" class="ltx_listingline">
+<span id="lstnumberx16.1" class="ltx_text ltx_font_typewriter" style="font-size:70%;">[...]</span>
+</div>
+</div>
+<br class="ltx_break ltx_break">
+<figcaption class="ltx_caption"><span class="ltx_tag ltx_tag_figure">Figure 2: </span>Opening of the <span id="A1.F2.4.1" class="ltx_text ltx_font_typewriter">SKILL.md</span> of Anthropic’s
+<span id="A1.F2.5.2" class="ltx_text ltx_font_typewriter">web-artifacts-builder</span> skill, reproduced verbatim and
+truncated. Source:
+<a href="https://github.com/anthropics/skills" title="" class="ltx_ref ltx_url ltx_font_typewriter">https://github.com/anthropics/skills</a>. The YAML front matter
+carries the name and the description that the agent matches against
+the task when deciding whether to load the skill; the Markdown body
+holds the instructions, here referencing bundled executable scripts.</figcaption>
+</figure>
+</section>
+</article>
+</div>
+</div>
+<footer class="arxiv-html-footer">
+  <div class="ltx_page_logo">
+    Experimental support, please
+    <a href="./2608.10906v1/__stdout.txt" class="ltx_ref"
+    target="_blank" rel="nofollow">view the build logs</a>
+    for errors. Generated by
+    <a href="https://math.nist.gov/~BMiller/LaTeXML/" target="_blank" class="ltx_ref ltx_LaTeXML_logo">
+      <span style="letter-spacing: -0.2em; margin-right: 0.1em;">
+        L
+        <span style="font-size: 70%; position: relative; bottom: 2.2pt;">A</span>
+        T
+        <span style="position: relative; bottom: -0.4ex;">E</span>
+      </span>
+      <span class="ltx_font_smallcaps">xml</span>
+      <img alt="[LOGO]"
+        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAOCAYAAAD5YeaVAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wKExQZLWTEaOUAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAdpJREFUKM9tkL+L2nAARz9fPZNCKFapUn8kyI0e4iRHSR1Kb8ng0lJw6FYHFwv2LwhOpcWxTjeUunYqOmqd6hEoRDhtDWdA8ApRYsSUCDHNt5ul13vz4w0vWCgUnnEc975arX6ORqN3VqtVZbfbTQC4uEHANM3jSqXymFI6yWazP2KxWAXAL9zCUa1Wy2tXVxheKA9YNoR8Pt+aTqe4FVVVvz05O6MBhqUIBGk8Hn8HAOVy+T+XLJfLS4ZhTiRJgqIoVBRFIoric47jPnmeB1mW/9rr9ZpSSn3Lsmir1fJZlqWlUonKsvwWwD8ymc/nXwVBeLjf7xEKhdBut9Hr9WgmkyGEkJwsy5eHG5vN5g0AKIoCAEgkEkin0wQAfN9/cXPdheu6P33fBwB4ngcAcByHJpPJl+fn54mD3Gg0NrquXxeLRQAAwzAYj8cwTZPwPH9/sVg8PXweDAauqqr2cDjEer1GJBLBZDJBs9mE4zjwfZ85lAGg2+06hmGgXq+j3+/DsixYlgVN03a9Xu8jgCNCyIegIAgx13Vfd7vdu+FweG8YRkjXdWy329+dTgeSJD3ieZ7RNO0VAXAPwDEAO5VKndi2fWrb9jWl9Esul6PZbDY9Go1OZ7PZ9z/lyuD3OozU2wAAAABJRU5ErkJggg==">
+    </a>.
+  </div>
+  <div class="keyboard-glossary">
+    <h2>Instructions for reporting errors</h2>
+    <p>We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:</p>
+    <ul>
+      <li>Click the "Report Issue" <span class="mobile-only">(<svg role="presentation"
+            style="display: inline-block; vertical-align: middle; fill: var(--text-color);" aria-hidden="true"
+            height="1em" viewBox="0 0 640 640">
+            <path
+              d="M224 160C224 107 267 64 320 64C373 64 416 107 416 160L416 163.6C416 179.3 403.3 192 387.6 192L252.5 192C236.8 192 224.1 179.3 224.1 163.6L224.1 160zM569.6 172.8C580.2 186.9 577.3 207 563.2 217.6L465.4 290.9C470.7 299.8 474.7 309.6 477.2 320L576 320C593.7 320 608 334.3 608 352C608 369.7 593.7 384 576 384L480 384L480 416C480 418.6 479.9 421.3 479.8 423.9L563.2 486.4C577.3 497 580.2 517.1 569.6 531.2C559 545.3 538.9 548.2 524.8 537.6L461.7 490.3C438.5 534.5 395.2 566.5 344 574.2L344 344C344 330.7 333.3 320 320 320C306.7 320 296 330.7 296 344L296 574.2C244.8 566.5 201.5 534.5 178.3 490.3L115.2 537.6C101.1 548.2 81 545.3 70.4 531.2C59.8 517.1 62.7 497 76.8 486.4L160.2 423.9C160.1 421.3 160 418.7 160 416L160 384L64 384C46.3 384 32 369.7 32 352C32 334.3 46.3 320 64 320L162.8 320C165.3 309.6 169.3 299.8 174.6 290.9L76.8 217.6C62.7 207 59.8 186.9 70.4 172.8C81 158.7 101.1 155.8 115.2 166.4L224 248C236.3 242.9 249.8 240 264 240L376 240C390.2 240 403.7 242.8 416 248L524.8 166.4C538.9 155.8 559 158.7 569.6 172.8z" />
+          </svg>)</span> button, located in the page header.</li>
+    </ul>
+    <p><strong>Tip:</strong> You can select the relevant text first, to include it in your report.</p>
+    <p>Our team has already identified <a class="ltx_ref" href="https://github.com/arXiv/html_feedback/issues"
+        target="_blank">the following issues</a>. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.</p>
+    <p>Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a <a
+        class="ltx_ref" href="https://github.com/brucemiller/LaTeXML/wiki/Porting-LaTeX-packages-for-LaTeXML"
+        target="_blank">list of packages that need conversion</a>, and welcome <a class="ltx_ref"
+        href="https://github.com/brucemiller/LaTeXML/issues" target="_blank">developer contributions</a>.</p>
+  </div>
+</footer><footer class="ds-site-footer">
+  <div class="ds-site-footer-grid">
+    <div class="ds-site-footer-main">
+      <div class="ds-site-footer-ack">
+        We gratefully acknowledge support from
+        our <strong>major funders</strong>,
+        <a href="https://info.arxiv.org/about/ourmembers.html"><strong>member institutions</strong></a><span class="ack-member-inline" hidden>, <strong></strong></span>,
+        and all contributors.
+      </div>
+      <nav class="ds-site-footer-links" aria-label="Site navigation">
+        <a href="https://info.arxiv.org/about">About</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help">Help</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/contact.html">Contact</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/subscribe">Subscribe</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/license/index.html">Copyright</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/policies/privacy_policy.html">Privacy</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/web_accessibility.html">Accessibility</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://status.arxiv.org" target="_blank" rel="noopener noreferrer">Operational Status<span class="is-sr-only"> (opens in new tab)</span></a>
+      </nav>
+    </div>
+
+    <div class="ds-site-footer-funders" aria-label="Major funders">
+      <div class="ds-site-footer-funders-label">Major funding support from</div>
+      <div class="ds-site-footer-funders-logos">
+        <a class="ds-funder-link" href="https://www.simonsfoundation.org/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="/static/base/1.0.1/images/funders/simons-foundation.png" alt="Simons Foundation">
+        </a>
+        <a class="ds-funder-link" href="https://www.sfi.org.bm/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="/static/base/1.0.1/images/funders/simons-foundation-international.png" alt="Simons Foundation International">
+        </a>
+        <a class="ds-funder-link" href="https://www.schmidtsciences.org/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="/static/base/1.0.1/images/funders/schmidt-sciences.png" alt="Schmidt Sciences">
+        </a>
+      </div>
+    </div>
+  </div>
+</footer><div id="fixed-buttons-container">
+  <a id="disable-reading-mode-btn" class="header-button" href="javascript:toggleReadingMode();"
+    title="Disable reading mode, show header and footer">
+    <svg role="presentation" height="1.25rem"
+      viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+      <path
+        d="M0 96C0 78.3 14.3 64 32 64l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 128C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 288c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32L32 448c-17.7 0-32-14.3-32-32s14.3-32 32-32l384 0c17.7 0 32 14.3 32 32z" />
+    </svg>
+  </a>
+</div></body>
+</html>

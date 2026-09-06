@@ -1,0 +1,45 @@
+name: Tests
+
+# Deterministic gate. No model calls, no secrets, no network.
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # Several eval modules read model names and build a judge client at import
+      # time. These placeholders satisfy that without reaching any server.
+      - name: Write placeholder .env
+        run: |
+          cat > .env <<'ENV'
+          OLLAMA_BASE_URL=http://localhost:11434
+          CF-ACCESS-CLIENT-ID=placeholder
+          CF-ACCESS-CLIENT-SECRET=placeholder
+          GENERATOR_MODEL=placeholder-generator
+          JUDGE_MODEL=placeholder-judge
+          LANGSMITH_TRACING=false
+          ENV
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run tests
+        run: uv run pytest -q

@@ -1,0 +1,126 @@
+name: Evaluations
+
+# Semantic regression runs against the frozen 12-paper corpus.
+# Merges to master run the priority suite. The full inventory is manual.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "src/**"
+      - "evals/**"
+      - "data/raw/sampled_html/**"
+      - "uv.lock"
+      - ".github/workflows/evals.yml"
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Which suite to run"
+        type: choice
+        options: [priority, full]
+        default: full
+      upload:
+        description: "Upload results to LangSmith"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals
+  cancel-in-progress: false
+
+env:
+  # The 0.75/0.95 minimums in evals/regression/runner.py are still placeholders.
+  # Flip this to "true" once real thresholds are approved and the job will fail
+  # the merge on a regression instead of only reporting it.
+  ENFORCE_THRESHOLDS: "false"
+  EMBEDDING_CACHE_VERSION: "v1"
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # Written as a file because the Cloudflare Access variable names contain
+      # hyphens, which shells cannot export. python-dotenv reads them fine.
+      - name: Write .env from secrets
+        run: |
+          cat > .env <<ENV
+          OLLAMA_BASE_URL=${{ secrets.OLLAMA_BASE_URL }}
+          CF-ACCESS-CLIENT-ID=${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF-ACCESS-CLIENT-SECRET=${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          GENERATOR_MODEL=${{ secrets.GENERATOR_MODEL }}
+          JUDGE_MODEL=${{ secrets.JUDGE_MODEL }}
+          LANGSMITH_TRACING=false
+          LANGSMITH_ENDPOINT=${{ secrets.LANGSMITH_ENDPOINT }}
+          LANGSMITH_API_KEY=${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_PROJECT=${{ secrets.LANGSMITH_PROJECT }}
+          ENV
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # The corpus is the 12 committed HTML files, so the same inputs always
+      # produce the same embeddings. Rebuild only when an input changes.
+      - name: Restore Chroma corpus
+        id: chroma
+        uses: actions/cache@v4
+        with:
+          path: chroma_db
+          key: chroma-${{ runner.os }}-${{ env.EMBEDDING_CACHE_VERSION }}-${{ hashFiles('data/raw/sampled_html/**', 'src/arxiv_rag/ingestion/**', 'src/arxiv_rag/loading/**', 'uv.lock') }}
+
+      - name: Build Chroma corpus
+        if: steps.chroma.outputs.cache-hit != 'true'
+        run: uv run python -m arxiv_rag.ingestion.ingestion_pipeline
+
+      - name: Run evaluation suite
+        id: evaluate
+        continue-on-error: true
+        env:
+          SUITE: ${{ inputs.suite || 'priority' }}
+          UPLOAD: ${{ inputs.upload }}
+        run: |
+          ARGS="--results-json regression-results.json"
+          if [ "$UPLOAD" != "false" ]; then
+            ARGS="$ARGS --upload"
+          fi
+          uv run python -m "evals.regression.run_${SUITE}" $ARGS
+
+      - name: Write job summary
+        if: always()
+        run: |
+          if [ -f regression-results.json ]; then
+            uv run python -m evals.regression.summary regression-results.json \
+              --output "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## 💥 The suite produced no results file." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-results-${{ inputs.suite || 'priority' }}-${{ github.run_id }}
+          path: regression-results.json
+          if-no-files-found: warn
+
+      - name: Report suite status
+        if: always()
+        run: |
+          if [ "${{ steps.evaluate.outcome }}" = "success" ]; then
+            echo "Suite passed."
+            exit 0
+          fi
+          if [ "${ENFORCE_THRESHOLDS}" = "true" ]; then
+            echo "Suite failed and thresholds are enforced."
+            exit 1
+          fi
+          echo "Suite failed. Thresholds are not enforced yet, so this run is reporting only."
