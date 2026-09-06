@@ -47,10 +47,10 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  # The 0.75/0.95 minimums in evals/regression/runner.py are still placeholders.
-  # Flip this to "true" once real thresholds are approved and the job will fail
-  # the merge on a regression instead of only reporting it.
-  ENFORCE_THRESHOLDS: "false"
+  # A failing suite fails the job. The 0.75/0.95 minimums in
+  # evals/regression/runner.py are still placeholders, so today this mostly
+  # catches incomplete runs and evaluator crashes rather than score drift.
+  ENFORCE_THRESHOLDS: "true"
   EMBEDDING_CACHE_VERSION: "v1"
 
 jobs:
