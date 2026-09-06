@@ -1,37 +1,336 @@
 # arxiv-rag
 
-An evidence-grounded reading assistant for language-centric GenAI research
-papers. Every claim it makes points at the passage it came from.
+## A benchmark-driven, hyper-grounded research paper assistant
 
-**Status: sprint 1 complete — paper loading finished.** Nothing works end to end yet;
-chunking is the next question.
+Most RAG demos stop when the answers look convincing. **arxiv-rag was built to
+prove when its answers can be trusted.**
 
-## What exists
+It turns arXiv papers into a citation-aware knowledge base, answers technical
+questions from those papers, and links claims back to the exact source paragraph.
+Technical readers can keep the detail in **Standard mode**; beginners can switch
+to **Easy mode** for simpler language and clearly labelled analogies. The style
+changes. The evidence does not.
 
-`src/arxiv_rag/loading/` reads arXiv HTML and returns citable prose, figure/table captions
-and serialized data tables with their section path and anchor. Figure captions
-carry their image URL-and-anchor records, which are also available as a flat
-image list. A citation resolves to a link like
-`https://arxiv.org/html/2005.11401v4#S4.SS1.p1` — the exact passage, not a page.
+This is not another “chat with PDFs” wrapper. It is an engineering case study in
+building RAG one measurable component at a time: source loading, chunking,
+retrieval, generation, end-to-end behavior, and safety each have their own frozen
+dataset, evaluator, and quality bar.
 
-The source was chosen by measurement, not preference: 40 papers surveyed, 39 have
-arXiv HTML, and the source decision used a 12-paper answer key built from LaTeX.
-The shipping loading pipeline finds all 120 sampled passages, all 1,211 passage anchors
-resolve, and all 1,211 useful HTML blocks are emitted. It retains 99.91% of
-reference words overall; the worst benchmark paper retains 99.53% against the
-95% rule.
+| Provenance | Retrieval | Full RAG journey | Safety |
+| --- | --- | --- | --- |
+| **1,211 / 1,211** valid paragraph anchors | **93.75%** Evidence Recall@5 | **97.92%** required-fact coverage | **100%** harm, sensitive-data, and injection checks |
 
-## Evaluation benchmarks
+> **Current status:** working local prototype on a deliberately small 12-paper
+> GenAI corpus. The system has a Streamlit UI, CLI, conversational RAG workflow,
+> and public evaluation scorecard. It is not presented as a production service.
 
-Every evaluation, grouped by the component it tests — what it measures, the
-benchmark it should hit, and the score it actually gets:
-**[Eval benchmarks](https://vermaankit2005.github.io/arxiv-rag/)**.
+**[Explore the public evaluation scorecard →](https://vermaankit2005.github.io/arxiv-rag/)**
 
-## How this is built
+---
 
-Components are developed one at a time, with decisions informed by data and
-tests.
+## What makes it different
 
-Working notes — the product definition, the runtime map, the seven principles,
-the sprint records and the decision log — are kept locally and are not published
-with the code.
+### Evidence you can inspect
+
+Answers use inline citations tied to the retrieved claim. The model may select a
+supplied passage ID such as `[P1]`, but it is never trusted to invent the URL.
+Application code resolves that ID into a link like:
+
+```text
+https://arxiv.org/html/2005.11401v4#S4.SS1.p1
+```
+
+That opens the supporting paragraph—not merely the paper, and not an approximate
+PDF page.
+
+### One evidence path for experts and beginners
+
+- **Standard mode** keeps useful terminology and technical detail.
+- **Easy mode** uses shorter sentences, explains difficult terms, and adds an
+  analogy only when it helps.
+- Both modes retrieve the same paper evidence and follow the same grounding and
+  citation rules.
+- Follow-up questions retrieve fresh evidence. Conversation history helps resolve
+  “What about the encoder?”, but previous model answers never become evidence.
+
+### Quality is measured, not judged by vibe
+
+The project does not rely on a single “RAG quality” score. A good final answer
+can hide a weak retriever, and fluent writing can hide unsupported facts. Each
+stage is isolated first, then the complete user journey is evaluated separately.
+
+The development loop is intentionally simple:
+
+```text
+Define the product rule → build independent ground truth → set the metric
+→ implement the component → inspect failures → freeze the result → track regressions
+```
+
+---
+
+## Architecture
+
+![arxiv-rag architecture: live question path, offline knowledge build, and evaluation layers](assets/architecture.svg)
+
+The editable source is available at [`assets/architecture.drawio`](assets/architecture.drawio).
+
+The online path stays bounded: route the request, retrieve when paper knowledge is
+needed, generate once, validate, and render. There is no free-form tool loop and
+no unbounded “repair until it passes” behavior.
+
+---
+
+## How the system was built
+
+### 1. We changed the source before choosing a PDF parser
+
+The project began with the obvious question: *which PDF parser should we use?*
+That turned out to be the wrong question.
+
+PDFs are presentation artifacts. Multi-column reading order, page furniture,
+hyphenation, and lost document structure all become problems that a parser must
+reconstruct. arXiv HTML retains section hierarchy and stable IDs on individual
+paragraphs, making exact citations possible.
+
+Instead of choosing HTML by preference, the project measured the decision:
+
+| Source-selection check | Result |
+| --- | ---: |
+| In-domain papers surveyed | 40 |
+| Papers with arXiv HTML | 39 / 40 |
+| Representative benchmark papers | 12 |
+| Independent LaTeX probe sentences recovered | 96 / 96 |
+| Reading-order score | 1.00 |
+| Section-heading fidelity | 306 / 309 |
+
+The benchmark answer key came from the authors’ LaTeX source, not from the HTML
+loader being tested. Once HTML cleared the pre-written acceptance rule, spending
+more time benchmarking PDF libraries would not have changed the decision.
+
+Off-the-shelf HTML readers still discarded the feature the product needed most:
+the paragraph anchor. A custom loader was built to retain prose, lists, notes,
+figure and table captions, tables, section paths, and exact source locations.
+Its accepted exhaustive audit recovered all **1,211 useful HTML blocks**, kept
+**99.91% of reference words**, and produced **1,211 / 1,211 valid anchors**.
+
+### 2. Chunking became a retrieval experiment
+
+One paragraph was often too small to retrieve reliably. A full section was too
+large to cite honestly. The answer was not another generic text-splitter preset;
+it was a representation designed around both retrieval and provenance.
+
+The final strategy:
+
+- groups neighboring passages toward **350 words**;
+- never crosses a main-section boundary;
+- carries subsection breadcrumbs in the embedded text;
+- overlaps one complete passage only within the same main section;
+- splits a source passage only above **600 words**, preserving sentence and table-row boundaries; and
+- stores every original passage and anchor inside the retrieval document metadata.
+
+This transformed **1,206 source passages into 384 retrieval documents** while
+preserving paragraph-level citations. The retriever is evaluated against source
+evidence—not unstable chunk IDs—so changing chunk boundaries cannot manufacture
+a better score.
+
+The embedding model was also treated as a measurable component. The initial
+`qwen3-embedding:0.6b` model retrieved poorly, so the corpus was rebuilt with
+`qwen3-embedding:4b` only after focused retrieval checks showed a clear
+improvement.
+
+### 3. We built the narrow RAG path before the agent layer
+
+The first shipping path was deliberately boring:
+
+```text
+load → chunk → index → retrieve → answer
+```
+
+Plain Python functions made each boundary easy to test and evaluate. LangGraph
+was introduced only after the single-question path was measurable and useful.
+The conversation graph has two explicit routes:
+
+- `rag` for any request that needs paper information; and
+- `chat` for greetings, capabilities, conversation recall, and out-of-scope talk.
+
+Even “Explain your first answer more simply” returns to retrieval. This prevents
+conversation memory from quietly becoming an uncited knowledge source.
+
+### 4. Grounding is a product contract, not a prompt slogan
+
+The generator receives deduplicated passages with temporary IDs. It is instructed
+to answer only from those passages, cite distinct factual claims, state when only
+part of a question is supported, and use a fixed insufficient-evidence response
+when nothing is supported.
+
+Deterministic application checks reject unknown citation IDs and model-written
+URLs. Trusted links are built by code. Semantic evaluators then test what string
+validation cannot prove: whether statements stay grounded, cited evidence really
+supports the claim, required facts are correct and complete, and the answer knows
+when to answer, limit itself, or decline.
+
+### 5. Every component gets its own exam
+
+The evaluation labels are independent of the system under test:
+
+- loader probes come from LaTeX and an independent HTML extraction;
+- retrieval uses **24 human-written questions** and **36 required evidence units**;
+- generation uses **92 frozen source passages** and **84 atomic required facts**;
+- end-to-end evals expose only the question to the live pipeline while keeping
+  the answer key hidden; and
+- safety uses controlled contexts so “the papers do not contain that” cannot be
+  mistaken for a safety refusal.
+
+Datasets are frozen before baselining. Old runs are kept when a metric is wrong.
+Thresholds are not moved to make a result pass.
+
+A useful example: the first passage-level precision metric scored **7.09%**.
+Manual review showed that it marked helpful neighboring passages as noise because
+the answer key intentionally contained only minimal evidence. The run was not
+deleted. The metric was documented as misaligned and replaced with
+Document Precision@5, which scores the actual retrieval unit and currently
+measures **27.50%**.
+
+### 6. Operational failures were designed into the pipeline
+
+Ingestion does not clear the live collection and hope a rebuild succeeds. It
+parses the complete corpus, writes to a uniquely named staging collection, and
+atomically switches the active pointer only after every paper is stored. Failed
+builds are cleaned up, so readers do not search a half-built index.
+
+LangSmith traces cover retrieval, context construction, prompting, generation,
+and validation. Tracing stays outside the Streamlit UI and can be disabled; model
+names and Cloudflare Access credentials are loaded from environment configuration.
+
+---
+
+## Evaluation scorecard
+
+These are latest observed results, not a cherry-picked overall average. Every
+metric has its own product-specific release recommendation.
+
+| Layer | Metric | Latest | Recommended bar |
+| --- | --- | ---: | ---: |
+| Loading | Valid source anchors | **100%** | 100% |
+| Loading | HTML word retention | **99.44%** | 99% overall; 95% per paper |
+| Retrieval | Evidence Recall@5 | **93.75%** | 90% |
+| Retrieval | MRR@5 | **83.68%** | 80% |
+| Retrieval | Document Precision@5 | **27.50%** | 20%; no question at zero |
+| Generation | Groundedness | **100%** | 100% |
+| Generation | Correctness | **98.96%** | 95% |
+| Generation | Completeness | **100%** | 90% |
+| Generation | Naturalness | **80.21%** | 75% |
+| Generation | Full / partial / no-answer decision | **100%** | 100% |
+| End to end | Required-fact coverage | **97.92%** | 90% |
+| End to end | Full / partial / no-answer decision | **100%** | 100% |
+| Safety | Harmful-content safety | **100%** | 100% |
+| Safety | Sensitive-data protection | **100%** | 100% |
+| Safety | Prompt-injection resistance | **100%** | 100% |
+| Safety | Policy-response accuracy | **90%** | 100% |
+
+**16 of 20 current checks meet their recommended bar.** The misses are published,
+not hidden: HTML block coverage is 99.53% against a 100% bar, one retrieval
+question has zero document precision, the legacy live citation metric remains
+below its monitoring target, and one policy-response case fails. Two newer
+fact-citation evaluators scored **100% on stored-answer replay**, but remain
+candidates until manual review is complete.
+
+This is the point of the scorecard: a prompt can make an answer sound better while
+making evidence coverage worse. In this project, that is recorded as a regression,
+not celebrated as an improvement.
+
+### Run the checks
+
+```bash
+# Deterministic production tests
+uv run pytest -q
+
+# Fast, fixed semantic regression subset
+uv run python -m evals.regression.run_priority
+
+# Complete frozen evaluation inventory
+uv run python -m evals.regression.run_full
+```
+
+Semantic suites run locally by default and upload a canonical experiment only
+with `--upload`. They require access to the configured Ollama and LangSmith
+services.
+
+---
+
+## Key engineering decisions
+
+| Decision | Why it matters |
+| --- | --- |
+| arXiv HTML over PDF | Preserves reading order, structure, and paragraph-level links |
+| Source-aware chunks over generic splitting | Balances retrieval context with honest citation granularity |
+| Source evidence over chunk IDs in evals | Chunking changes cannot game retrieval scores |
+| Focused RAG before LangGraph | Establishes a testable baseline before adding conversation state |
+| Fresh retrieval on follow-ups | Conversation history resolves intent but never replaces evidence |
+| Code-owned citation URLs | The model cannot invent or rewrite trusted source links |
+| Separate component and pipeline evals | Reveals whether failures come from retrieval or generation |
+| Separate safety and evidence abstention | “I cannot find it” cannot falsely pass as safe behavior |
+| Atomic index activation | A failed ingestion run cannot expose a partial corpus |
+| Honest metric history | Misaligned evaluators are deprecated with an explanation, not erased |
+
+---
+
+## Tech stack
+
+**Python 3.13 · arXiv HTML/LaTeXML · LangChain · LangGraph · Chroma · Ollama ·
+Qwen embeddings · LangSmith/OpenEvals · Streamlit · pytest**
+
+---
+
+## Run locally
+
+### 1. Install dependencies
+
+```bash
+uv sync
+```
+
+### 2. Configure the model services
+
+```bash
+cp .env.example .env
+```
+
+Set the Ollama endpoint, generator and judge models, and Cloudflare Access
+service-token values in `.env`. LangSmith tracing is optional.
+
+### 3. Build the local index
+
+```bash
+uv run python -m arxiv_rag.ingestion.ingestion_pipeline
+```
+
+### 4. Start the app
+
+```bash
+uv run streamlit run ui/streamlit_app.py
+```
+
+Or ask one question from the terminal:
+
+```bash
+uv run python -m arxiv_rag.answering
+```
+
+---
+
+## Current boundaries
+
+This repository demonstrates a strong, measured RAG prototype. It does not yet
+claim:
+
+- production-scale traffic or a public API;
+- evaluation across hundreds of papers;
+- a measured fallback for papers without arXiv HTML;
+- durable conversation memory across process restarts; or
+- deterministic sentence-level proof that every generated factual statement has
+  a citation.
+
+Those limits are deliberate and documented. The project’s strongest result is not
+that a chatbot can answer questions—it is that the complete path was designed,
+tested, evaluated, challenged, and improved with evidence.

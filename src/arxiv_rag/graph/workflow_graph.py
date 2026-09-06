@@ -170,7 +170,8 @@ graph.add_edge(START, "route_node")
 graph.add_conditional_edges(
     "route_node", route_edge, {"chat_node": "chat_node", "rag_node": "rag_node"}
 )
-graph.add_edge("chat_node", END)  # Loop back to route_node for next user message
+graph.add_edge("chat_node", END)
+graph.add_edge("rag_node", END)
 
 workflow_graph = graph.compile(checkpointer=InMemorySaver())
 

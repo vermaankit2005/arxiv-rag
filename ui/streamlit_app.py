@@ -5,8 +5,10 @@ Run it from the project root so the pipeline finds .env and chroma_db:
     uv run streamlit run ui/streamlit_app.py
 """
 
+import random
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor, wait
 
 import streamlit as st
 from citations import build_sources, link_citation_markers
@@ -15,6 +17,14 @@ from pipeline import answer_in_conversation
 # Missing .env keys, a missing Chroma database and a rejected answer all reach
 # the UI as one of these, and all of them are worth showing the reader.
 PIPELINE_ERRORS = (FileNotFoundError, RuntimeError, ValueError)
+
+# The route is unknown until the graph decides, so the waiting label stays neutral
+# and simply rotates while the answer is being produced.
+THINKING_PHRASES = (
+    "Thinking", "Pondering", "Noodling", "Percolating", "Musing",
+    "Ruminating", "Cogitating", "Puzzling", "Deliberating", "Mulling",
+)
+PHRASE_SECONDS = 3.0
 
 SUGGESTIONS = {
     ":blue[:material/hub:] Multi-head attention": "What is multi-head attention, and why use several heads?",
@@ -29,6 +39,14 @@ def start_conversation() -> None:
     """Empty the chat and start a new trace thread for the next questions."""
     st.session_state.messages = []
     st.session_state.thread_id = str(uuid.uuid4())
+
+
+def thinking_labels():
+    """Endless stream of neutral waiting words, reshuffled so the order feels fresh."""
+    while True:
+        words = list(THINKING_PHRASES)
+        random.shuffle(words)
+        yield from words
 
 
 def render_sources(sources: list[dict]) -> None:
@@ -87,9 +105,15 @@ if question:
 
     with st.chat_message("assistant"):
         started = time.perf_counter()
+        labels = thinking_labels()
         try:
-            with st.status(":shimmer[Reading the papers]", type="compact") as status:
-                result = answer_in_conversation(question, st.session_state.thread_id, answer_mode)
+            with st.status(f":shimmer[{next(labels)}…]", type="compact") as status:
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    pending = pool.submit(answer_in_conversation, question, st.session_state.thread_id, answer_mode)
+                    while not wait([pending], timeout=PHRASE_SECONDS).done:
+                        status.update(label=f":shimmer[{next(labels)}… {time.perf_counter() - started:.0f}s]")
+
+                result = pending.result()
                 elapsed = time.perf_counter() - started
 
                 if result.answer_type == "rag":
