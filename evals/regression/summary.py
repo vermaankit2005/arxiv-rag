@@ -12,6 +12,10 @@ def _cell(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.4f}"
 
 
+def _seconds(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.0f}s"
+
+
 def build_summary(results: dict) -> str:
     """Render the run as a heading plus one row per metric."""
     suite = results.get("suite", "unknown")
@@ -22,12 +26,15 @@ def build_summary(results: dict) -> str:
     lines = [
         f"## {STATUS_ICONS.get(status, '')} {suite} suite — {status}".strip(),
         "",
-        f"Started: {results.get('started_at', 'unknown')}",
-        "",
+        f"Commit: `{results.get('commit', 'unknown')}`",
+        f"Generator: `{results.get('generator_model', 'unknown')}` · "
+        f"Judge: `{results.get('judge_model', 'unknown')}`",
+        f"Started: {results.get('started_at', 'unknown')} · "
+        f"Took: {_seconds(results.get('duration_seconds'))}",
         f"Uploaded to LangSmith: {uploaded}",
         "",
-        "| Metric | Average | Threshold | Cases | Status |",
-        "| --- | --- | --- | --- | --- |",
+        "| Metric | Average | Threshold | Cases | Took | Status |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
 
     for metric in metrics:
@@ -35,11 +42,12 @@ def build_summary(results: dict) -> str:
         cases = f"{metric['completed']}/{metric['expected']}"
         lines.append(
             f"| `{metric['metric']}` | {_cell(metric['average'])} "
-            f"| {_cell(metric['threshold'])} | {cases} | {icon} {metric['status']} |"
+            f"| {_cell(metric['threshold'])} | {cases} "
+            f"| {_seconds(metric.get('duration_seconds'))} | {icon} {metric['status']} |"
         )
 
     if not metrics:
-        lines.append("| _no metrics recorded_ | | | | |")
+        lines.append("| _no metrics recorded_ | | | | | |")
 
     errors = [metric for metric in metrics if metric.get("error")]
     if errors:
