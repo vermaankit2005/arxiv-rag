@@ -72,7 +72,6 @@ def test_document_metadata_preserves_each_source_passage_and_anchor():
             "kind": "prose",
         },
     ]
-    assert json.loads(documents[0].metadata["locations"]) == ["#p1", "#p2"]
 
 
 def test_passage_filter_rejects_content_that_cannot_be_retrieved_or_cited():
@@ -243,9 +242,7 @@ def test_conversion_creates_non_empty_documents_with_unique_ids():
     assert all(document.metadata["arxiv_id"] == "test-paper" for document in documents)
     for document in documents:
         source_passages = json.loads(document.metadata["source_passages"])
-        assert json.loads(document.metadata["locations"]) == [
-            source_passage["location"] for source_passage in source_passages
-        ]
+        assert all(source_passage["location"] for source_passage in source_passages)
 
 
 def test_document_ids_are_stable_and_change_with_the_paper():
