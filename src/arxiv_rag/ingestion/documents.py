@@ -163,14 +163,13 @@ def convert_loaded_paper_to_documents(loaded_paper: LoadedPaper) -> list[Documen
     for group in grouped_passages:
 
         locations = [passage.location for passage in group]
-        # Preserve the original passage text, location, section path, and kind in the metadata for each passage.
+        # Preserve the original passage text, location, and section path in the metadata for each passage.
         # !!! Important for retrieval and context building.
         source_passages = [
             {
                 "text": passage.text,
                 "location": passage.location,
                 "section_path": passage.section_path,
-                "kind": passage.kind,
             }
             for passage in group
         ]

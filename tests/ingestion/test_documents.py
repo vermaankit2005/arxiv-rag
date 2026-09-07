@@ -63,13 +63,11 @@ def test_document_metadata_preserves_each_source_passage_and_anchor():
             "text": first.text,
             "location": "#p1",
             "section_path": ["Training", "Optimizer"],
-            "kind": "prose",
         },
         {
             "text": second.text,
             "location": "#p2",
             "section_path": ["Training", "Regularization"],
-            "kind": "prose",
         },
     ]
 
@@ -215,14 +213,13 @@ def test_conversion_preserves_every_included_passage():
             passage["text"],
             passage["location"],
             tuple(passage["section_path"]),
-            passage["kind"],
         )
         for document in documents
         for passage in json.loads(document.metadata["source_passages"])
     }
 
     assert stored_passages == {
-        (passage.text, passage.location, tuple(passage.section_path), passage.kind)
+        (passage.text, passage.location, tuple(passage.section_path))
         for passage in [first, second, third]
     }
 

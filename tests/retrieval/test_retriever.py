@@ -42,7 +42,6 @@ def _passage(text, location="#S6.T2", section_path=None):
         "text": text,
         "location": location,
         "section_path": section_path or ["Results", "Machine Translation"],
-        "kind": "prose",
     }
 
 
