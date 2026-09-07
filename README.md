@@ -3,13 +3,9 @@
 ## A benchmark-driven, hyper-grounded research paper assistant
 
 Most RAG demos stop when the answers look convincing. **arxiv-rag was built to
-prove when its answers can be trusted.**
-
-It turns arXiv papers into a citation-aware knowledge base, answers technical
-questions from those papers, and links claims back to the exact source paragraph.
-Technical readers can keep the detail in **Standard mode**; beginners can switch
-to **Easy mode** for simpler language and clearly labelled analogies. The style
-changes. The evidence does not.
+prove when its answers can be trusted.** It turns arXiv papers into a
+citation-aware knowledge base, answers technical questions from those papers, and
+links every claim back to the exact source paragraph.
 
 This is not another “chat with PDFs” wrapper. It is an engineering case study in
 building RAG one measurable component at a time: source loading, chunking,
@@ -32,13 +28,33 @@ dataset, evaluator, and quality bar.
 
 ---
 
+## Contents
+
+- [What makes it different](#what-makes-it-different)
+- [Architecture](#architecture)
+- [How the system was built](#how-the-system-was-built)
+  - [1. We changed the source before choosing a PDF parser](#1-we-changed-the-source-before-choosing-a-pdf-parser)
+  - [2. Chunking became a retrieval experiment](#2-chunking-became-a-retrieval-experiment)
+  - [3. We built the narrow RAG path before the agent layer](#3-we-built-the-narrow-rag-path-before-the-agent-layer)
+  - [4. Grounding is a product contract, not a prompt slogan](#4-grounding-is-a-product-contract-not-a-prompt-slogan)
+  - [5. Every component gets its own exam](#5-every-component-gets-its-own-exam)
+  - [6. Operational failures were designed into the pipeline](#6-operational-failures-were-designed-into-the-pipeline)
+- [Evaluation scorecard](#evaluation-scorecard)
+- [Key engineering decisions](#key-engineering-decisions)
+- [Tech stack](#tech-stack)
+- [Run locally](#run-locally)
+- [Current boundaries](#current-boundaries)
+
+---
+
 ## What makes it different
 
 ### Evidence you can inspect
 
-Answers use inline citations tied to the retrieved claim. The model may select a
-supplied passage ID such as `[P1]`, but it is never trusted to invent the URL.
-Application code resolves that ID into a link like:
+**Every citation resolves to a paragraph, not a paper.**
+
+The model may select a supplied passage ID such as `[P1]`, but it is never trusted
+to invent the URL. Application code resolves that ID into a link like:
 
 ```text
 https://arxiv.org/html/2005.11401v4#S4.SS1.p1
@@ -48,6 +64,8 @@ That opens the supporting paragraph—not merely the paper, and not an approxima
 PDF page.
 
 ### One evidence path for experts and beginners
+
+**Two reading levels, one set of evidence.**
 
 - **Standard mode** keeps useful terminology and technical detail.
 - **Easy mode** uses shorter sentences, explains difficult terms, and adds an
@@ -59,9 +77,10 @@ PDF page.
 
 ### Quality is measured, not judged by vibe
 
-The project does not rely on a single “RAG quality” score. A good final answer
-can hide a weak retriever, and fluent writing can hide unsupported facts. Each
-stage is isolated first, then the complete user journey is evaluated separately.
+**Each stage is isolated first, then the complete journey is evaluated separately.**
+
+A good final answer can hide a weak retriever, and fluent writing can hide
+unsupported facts. So the project does not rely on a single “RAG quality” score.
 
 The development loop is intentionally simple:
 
@@ -88,11 +107,10 @@ no unbounded “repair until it passes” behavior.
 
 ### 1. We changed the source before choosing a PDF parser
 
-The project began with the obvious question: *which PDF parser should we use?*
-That turned out to be the wrong question.
+**The obvious question—*which PDF parser?*—turned out to be the wrong question.**
 
 PDFs are presentation artifacts. Multi-column reading order, page furniture,
-hyphenation, and lost document structure all become problems that a parser must
+hyphenation, and lost document structure all become problems a parser must
 reconstruct. arXiv HTML retains section hierarchy and stable IDs on individual
 paragraphs, making exact citations possible.
 
@@ -111,17 +129,51 @@ The benchmark answer key came from the authors’ LaTeX source, not from the HTM
 loader being tested. Once HTML cleared the pre-written acceptance rule, spending
 more time benchmarking PDF libraries would not have changed the decision.
 
-Off-the-shelf HTML readers still discarded the feature the product needed most:
-the paragraph anchor. A custom loader was built to retain prose, lists, notes,
-figure and table captions, tables, section paths, and exact source locations.
-Its accepted exhaustive audit recovered all **1,211 useful HTML blocks**, kept
-**99.91% of reference words**, and produced **1,211 / 1,211 valid anchors**.
+#### The loader was custom-built for one missing feature
+
+Off-the-shelf HTML readers discarded the thing the product needed most: the
+paragraph anchor. The custom loader’s accepted exhaustive audit:
+
+- recovered all **1,211 useful HTML blocks**;
+- kept **99.91% of reference words**; and
+- produced **1,211 / 1,211 valid anchors**.
+
+#### What the loader keeps, and how it finds it
+
+arXiv HTML is generated by LaTeXML, so every meaningful element carries a
+predictable `ltx_*` class. That allows an allowlist: name the elements worth
+keeping, and every banner, sidebar, reference entry, and numbering artifact is
+ignored automatically because it was never named.
+
+**Four element types become searchable text.** Each becomes its own passage, so a
+table is never glued onto the paragraph above it.
+
+| Content kept | HTML element | What it is in the paper |
+| --- | --- | --- |
+| Prose | `div.ltx_para`, or a bare `p.ltx_p` | Body paragraphs, including lists written inside them |
+| Note | `ltx_note_content`, `ltx_role_thanks`, `ltx_role_footnote` | Footnotes and funding or acknowledgement notes |
+| Caption | `figcaption.ltx_caption` | “Figure 3: Attention heat map…” |
+| Table | `table.ltx_tabular` | Result grids, serialized row by row |
+
+**Three more elements are read but never become text.** They are recorded against
+the passage so an answer can be attributed, linked, and displayed.
+
+| Metadata kept | HTML element | What it enables |
+| --- | --- | --- |
+| Section path | `h1`–`h6` with `ltx_title`, tracked inside `<section>` | Breadcrumbs such as `Results > Machine Translation` |
+| Location | the element’s `id` attribute | The `#S4.SS1.p1` anchor behind every citation |
+| Images | `img.ltx_graphics`, `object.ltx_graphics` inside `<figure>` | Figure images attached to their caption |
+
+Mathematics is the one deliberate exception. The `alttext` of a `<math>` element is
+kept once, then its MathML subtree is skipped so the same formula is not stored
+twice.
 
 ### 2. Chunking became a retrieval experiment
 
-One paragraph was often too small to retrieve reliably. A full section was too
-large to cite honestly. The answer was not another generic text-splitter preset;
-it was a representation designed around both retrieval and provenance.
+**One paragraph was too small to retrieve. One section was too large to cite honestly.**
+
+The answer was not another generic text-splitter preset; it was a representation
+designed around both retrieval and provenance.
 
 The final strategy:
 
@@ -132,57 +184,67 @@ The final strategy:
 - splits a source passage only above **600 words**, preserving sentence and table-row boundaries; and
 - stores every original passage and anchor inside the retrieval document metadata.
 
-This transformed **1,206 source passages into 384 retrieval documents** while
-preserving paragraph-level citations. The retriever is evaluated against source
-evidence—not unstable chunk IDs—so changing chunk boundaries cannot manufacture
-a better score.
+The results:
 
-The embedding model was also treated as a measurable component. The initial
-`qwen3-embedding:0.6b` model retrieved poorly, so the corpus was rebuilt with
-`qwen3-embedding:4b` only after focused retrieval checks showed a clear
-improvement.
+- **1,206 source passages became 384 retrieval documents**, with paragraph-level
+  citations preserved.
+- The retriever is evaluated against source evidence—not unstable chunk IDs—so
+  changing chunk boundaries cannot manufacture a better score.
+- The embedding model was treated as a measurable component too: `qwen3-embedding:0.6b`
+  retrieved poorly, so the corpus was rebuilt with `qwen3-embedding:4b` only after
+  focused retrieval checks showed a clear improvement.
 
 ### 3. We built the narrow RAG path before the agent layer
 
-The first shipping path was deliberately boring:
+**The first shipping path was deliberately boring.**
 
 ```text
 load → chunk → index → retrieve → answer
 ```
 
-Plain Python functions made each boundary easy to test and evaluate. LangGraph
-was introduced only after the single-question path was measurable and useful.
-The conversation graph has two explicit routes:
-
-- `rag` for any request that needs paper information; and
-- `chat` for greetings, capabilities, conversation recall, and out-of-scope talk.
-
-Even “Explain your first answer more simply” returns to retrieval. This prevents
-conversation memory from quietly becoming an uncited knowledge source.
+- Plain Python functions made each boundary easy to test and evaluate.
+- LangGraph was introduced only after the single-question path was measurable and
+  useful.
+- The conversation graph has exactly two routes: `rag` for any request that needs
+  paper information, and `chat` for greetings, capabilities, conversation recall,
+  and out-of-scope talk.
+- Even “Explain your first answer more simply” returns to retrieval—this prevents
+  conversation memory from quietly becoming an uncited knowledge source.
 
 ### 4. Grounding is a product contract, not a prompt slogan
 
-The generator receives deduplicated passages with temporary IDs. It is instructed
-to answer only from those passages, cite distinct factual claims, state when only
-part of a question is supported, and use a fixed insufficient-evidence response
-when nothing is supported.
+**The model is constrained by code, not just by instructions.**
 
-Deterministic application checks reject unknown citation IDs and model-written
-URLs. Trusted links are built by code. Semantic evaluators then test what string
-validation cannot prove: whether statements stay grounded, cited evidence really
-supports the claim, required facts are correct and complete, and the answer knows
-when to answer, limit itself, or decline.
+What the generator is told:
+
+- answer only from the supplied deduplicated passages, which carry temporary IDs;
+- cite distinct factual claims;
+- state when only part of a question is supported; and
+- use a fixed insufficient-evidence response when nothing is supported.
+
+What the application enforces regardless:
+
+- unknown citation IDs are rejected;
+- model-written URLs are rejected; and
+- trusted links are built by code.
+
+What semantic evaluators then test, because string validation cannot prove it:
+
+- whether statements stay grounded;
+- whether cited evidence really supports the claim;
+- whether required facts are correct and complete; and
+- whether the answer knows when to answer, limit itself, or decline.
 
 ### 5. Every component gets its own exam
 
-The evaluation labels are independent of the system under test:
+**Evaluation labels are independent of the system under test.**
 
-- loader probes come from LaTeX and an independent HTML extraction;
-- retrieval uses **24 human-written questions** and **36 required evidence units**;
-- generation uses **92 frozen source passages** and **84 atomic required facts**;
-- end-to-end evals expose only the question to the live pipeline while keeping
-  the answer key hidden; and
-- safety uses controlled contexts so “the papers do not contain that” cannot be
+- Loader probes come from LaTeX and an independent HTML extraction.
+- Retrieval uses **24 human-written questions** and **36 required evidence units**.
+- Generation uses **92 frozen source passages** and **84 atomic required facts**.
+- End-to-end evals expose only the question to the live pipeline, keeping the
+  answer key hidden.
+- Safety uses controlled contexts so “the papers do not contain that” cannot be
   mistaken for a safety refusal.
 
 Datasets are frozen before baselining. Old runs are kept when a metric is wrong.
@@ -197,14 +259,21 @@ measures **18.75%**.
 
 ### 6. Operational failures were designed into the pipeline
 
-Ingestion does not clear the live collection and hope a rebuild succeeds. It
-parses the complete corpus, writes to a uniquely named staging collection, and
-atomically switches the active pointer only after every paper is stored. Failed
-builds are cleaned up, so readers do not search a half-built index.
+**A failed rebuild must never expose a half-built index.**
 
-LangSmith traces cover retrieval, context construction, prompting, generation,
-and validation. Tracing stays outside the Streamlit UI and is off by default;
-model names and Cloudflare Access credentials come from environment configuration.
+Ingestion:
+
+- parses the complete corpus first;
+- writes to a uniquely named staging collection;
+- switches the active pointer atomically only after every paper is stored; and
+- cleans up failed builds, so readers never search a partial index.
+
+Observability:
+
+- LangSmith traces cover retrieval, context construction, prompting, generation,
+  and validation.
+- Tracing stays outside the Streamlit UI and is off by default.
+- Model names and Cloudflare Access credentials come from environment configuration.
 
 ---
 
@@ -233,11 +302,15 @@ metric has its own product-specific release recommendation.
 | Safety | Policy-response accuracy | **90%** | 100% |
 
 **16 of 20 current checks meet their recommended bar.** The misses are published,
-not hidden: HTML block coverage is 99.53% against a 100% bar, one retrieval
-question has zero document precision, the legacy live citation metric remains
-below its monitoring target, and one policy-response case fails. Two newer
-fact-citation evaluators scored **100% on stored-answer replay**, but remain
-candidates until manual review is complete.
+not hidden:
+
+- HTML block coverage is 99.53% against a 100% bar;
+- one retrieval question has zero document precision;
+- the legacy live citation metric remains below its monitoring target; and
+- one policy-response case fails.
+
+Two newer fact-citation evaluators scored **100% on stored-answer replay**, but
+remain candidates until manual review is complete.
 
 This is the point of the scorecard: a prompt can make an answer sound better while
 making evidence coverage worse. In this project, that is recorded as a regression,
@@ -288,13 +361,13 @@ Qwen embeddings · LangSmith/OpenEvals · Streamlit · pytest**
 
 ## Run locally
 
-### 1. Install dependencies
+**1. Install dependencies**
 
 ```bash
 uv sync
 ```
 
-### 2. Configure the model services
+**2. Configure the model services**
 
 ```bash
 cp .env.example .env
@@ -303,13 +376,13 @@ cp .env.example .env
 Set the Ollama endpoint, generator and judge models, and Cloudflare Access
 service-token values in `.env`. LangSmith tracing is optional.
 
-### 3. Build the local index
+**3. Build the local index**
 
 ```bash
 uv run python -m arxiv_rag.ingestion.ingestion_pipeline
 ```
 
-### 4. Start the app
+**4. Start the app**
 
 ```bash
 uv run streamlit run ui/streamlit_app.py
