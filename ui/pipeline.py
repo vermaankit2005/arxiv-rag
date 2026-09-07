@@ -1,7 +1,8 @@
 """The only place the UI reaches into the RAG pipeline."""
 
+# pyright: reportMissingImports=false
 from arxiv_rag.answering import AnswerMode
-from arxiv_rag.answering.__main__ import AnsweredQuestion, answer_question
+from arxiv_rag.answering.service import AnsweredQuestion, answer_question
 
 
 def answer_in_conversation(question: str, thread_id: str, answer_mode: AnswerMode = "standard") -> AnsweredQuestion:

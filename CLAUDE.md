@@ -49,7 +49,7 @@ Read the latest relevant code and documentation before proposing work.
 - Every Ollama chat, embedding, and evaluation-judge request must include the
   Cloudflare Access service-token headers loaded from `.env`. Never hard-code or
   expose those credentials.
-- `answer_question` in `src/arxiv_rag/answering/__main__.py` is the single backend
+- `answer_question` in `src/arxiv_rag/answering/service.py` is the single backend
   entry point for one question. The CLI, UI, and future API layers must use it.
 - LangSmith tracing belongs only in `src/arxiv_rag/`. Keep tracing off by default,
   keep tracing code out of the Streamlit UI, and never trace credentials or

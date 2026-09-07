@@ -1,3 +1,5 @@
+from importlib import import_module
+
 import pytest  # pyright: ignore[reportMissingImports]
 from langchain_core.language_models.fake_chat_models import (  # pyright: ignore[reportMissingImports]
     FakeListChatModel,
@@ -6,6 +8,8 @@ from langchain_core.language_models.fake_chat_models import (  # pyright: ignore
 from arxiv_rag.answering import __main__ as answering_cli
 from arxiv_rag.answering import generator, renderer
 from arxiv_rag.retrieval import BuiltContext, Citation, RetrievalContext
+
+service = import_module("arxiv_rag.answering.service")
 
 
 class RecordingModel(FakeListChatModel):
@@ -275,7 +279,7 @@ def _stub_graph(monkeypatch, captured: dict | None = None) -> BuiltContext:
             "answer_mode": answer_mode,
         }
 
-    monkeypatch.setattr(answering_cli, "invoke_workflow_graph", fake_invoke)
+    monkeypatch.setattr(service, "invoke_workflow_graph", fake_invoke)
     return built
 
 
@@ -287,7 +291,7 @@ def _stub_chat_graph(monkeypatch) -> None:
             "answer_mode": answer_mode,
         }
 
-    monkeypatch.setattr(answering_cli, "invoke_workflow_graph", fake_invoke)
+    monkeypatch.setattr(service, "invoke_workflow_graph", fake_invoke)
 
 
 def test_command_line_entry_asks_a_question_and_prints_the_answer(monkeypatch, capsys):
@@ -305,7 +309,7 @@ def test_answer_question_returns_the_answer_with_its_evidence(monkeypatch):
     captured = {}
     built = _stub_graph(monkeypatch, captured)
 
-    result = answering_cli.answer_question("How does it work?")
+    result = service.answer_question("How does it work?")
 
     assert captured["question"] == "How does it work?"
     assert result.answer == "Answer [P1]."
@@ -318,7 +322,7 @@ def test_answer_question_returns_the_answer_with_its_evidence(monkeypatch):
 def test_answer_question_returns_a_chat_reply_with_no_evidence(monkeypatch):
     _stub_chat_graph(monkeypatch)
 
-    result = answering_cli.answer_question("Hi there")
+    result = service.answer_question("Hi there")
 
     assert result.answer_type == "chat"
     assert result.answer == "Hi, I help you read the ingested papers."
@@ -331,7 +335,7 @@ def test_answer_question_passes_easy_mode_to_the_workflow_graph(monkeypatch):
     captured = {}
     _stub_graph(monkeypatch, captured)
 
-    result = answering_cli.answer_question("How does it work?", answer_mode="easy")
+    result = service.answer_question("How does it work?", answer_mode="easy")
 
     assert result.answer == "Answer [P1]."
     assert result.answer_mode == "easy"
@@ -349,9 +353,9 @@ def test_answer_question_returns_the_effective_mode_from_the_workflow(monkeypatc
             "answer_mode": "easy",
         }
 
-    monkeypatch.setattr(answering_cli, "invoke_workflow_graph", fake_invoke)
+    monkeypatch.setattr(service, "invoke_workflow_graph", fake_invoke)
 
-    result = answering_cli.answer_question("Explain it simply")
+    result = service.answer_question("Explain it simply")
 
     assert result.answer_mode == "easy"
 
@@ -359,8 +363,8 @@ def test_answer_question_returns_the_effective_mode_from_the_workflow(monkeypatc
 def test_answer_question_mints_a_new_thread_id_for_every_question(monkeypatch):
     _stub_graph(monkeypatch)
 
-    first = answering_cli.answer_question("How does it work?")
-    second = answering_cli.answer_question("How does it work?")
+    first = service.answer_question("How does it work?")
+    second = service.answer_question("How does it work?")
 
     assert first.thread_id != second.thread_id
 
@@ -369,7 +373,7 @@ def test_answer_question_keeps_a_supplied_thread_id(monkeypatch):
     captured = {}
     _stub_graph(monkeypatch, captured)
 
-    result = answering_cli.answer_question("How does it work?", thread_id="conversation-1")
+    result = service.answer_question("How does it work?", thread_id="conversation-1")
 
     assert result.thread_id == "conversation-1"
     assert captured["thread_id"] == "conversation-1"

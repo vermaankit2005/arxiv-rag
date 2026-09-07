@@ -2,21 +2,33 @@
 # pyright: reportMissingImports=false
 from typing import Annotated, Literal, TypedDict
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.constants import END, START
 from langgraph.graph import StateGraph, add_messages
-from pydantic import BaseModel, Field
 
-from arxiv_rag.answering import AnswerMode, generate_answer
-from arxiv_rag.answering.chat_model import get_chat_model
-from arxiv_rag.answering.generator import CITATION_MARKER_PATTERN, URL_PATTERN
+from arxiv_rag.answering import AnswerMode
+from arxiv_rag.graph.chat_node import chat_node
 from arxiv_rag.graph.prompts import CHAT_SYSTEM_PROMPT, ROUTER_SYSTEM_PROMPT
+from arxiv_rag.graph.rag_node import rag_node
+from arxiv_rag.graph.route_node import RouterNodeOutput, route_node
 from arxiv_rag.logging import get_logger
-from arxiv_rag.retrieval import BuiltContext, PaperRetriever
+from arxiv_rag.retrieval import BuiltContext
 
 log = get_logger(__name__)
 
+# Keep these imports available from this module for callers that used the old layout.
+__all__ = [
+    "CHAT_SYSTEM_PROMPT",
+    "ROUTER_SYSTEM_PROMPT",
+    "RouterNodeOutput",
+    "WorkflowGraphState",
+    "chat_node",
+    "invoke_workflow_graph",
+    "rag_node",
+    "route_edge",
+    "route_node",
+]
 
 # State
 class WorkflowGraphState(TypedDict):
@@ -34,100 +46,6 @@ class WorkflowGraphState(TypedDict):
     answer: str
 
 
-# Pydantic model for the output of the router node
-class RouterNodeOutput(BaseModel):
-    route: Literal["chat", "rag"] = Field(..., description="The route to take: 'chat' or 'rag'")
-    answer_request: str | None = Field(..., description="The answer request only when the route is 'rag'")
-    retrieval_query: str | None = Field(..., description="The topic-only search query when the route is 'rag'")
-    style_override: Literal["easy"] | None = (
-        Field(..., description="Use 'easy' when the user explicitly requests beginner-friendly wording"))
-
-
-def _fallback_to_rag(state: WorkflowGraphState, reason: str) -> dict:
-    question = state["original_question"]
-    log.warning("Invalid router output; falling back to RAG: %s", reason)
-    return {
-        "route": "rag",
-        "answer_request": question,
-        "retrieval_query": question,
-        "answer_mode": state["answer_mode"],
-    }
-
-
-def _valid_router_response(response: RouterNodeOutput) -> bool:
-    if response.route == "rag":
-        return bool(
-            response.answer_request
-            and response.answer_request.strip()
-            and response.retrieval_query
-            and response.retrieval_query.strip()
-        )
-    return (
-        not response.answer_request
-        and not response.retrieval_query
-        and response.style_override is None
-    )
-
-
-def route_node(state: WorkflowGraphState) -> dict:
-    user_prompt = f"""
-    Conversation history:
-        <conversation>
-        {state["messages"]}
-        </conversation>
-
-    Current user message:
-        <current_message>
-        {state["original_question"]}
-        </current_message>
-
-    Classify the current user message.
-    """
-    llm = get_chat_model()
-
-    if llm is not None:
-        llm = llm.with_structured_output(RouterNodeOutput)
-    else:
-        raise RuntimeError("Could not get chat model.")
-
-    try:
-        response = llm.invoke(
-            [
-                SystemMessage(content=ROUTER_SYSTEM_PROMPT),
-                HumanMessage(content=user_prompt),
-            ]
-        )
-    except ValueError as error:
-        return _fallback_to_rag(state, str(error))
-    except Exception as error:
-        log.exception("Ollama answer generation failed")
-        raise RuntimeError("Could not generate an answer.") from error
-
-    if not isinstance(response, RouterNodeOutput):
-        return _fallback_to_rag(state, "response did not match RouterNodeOutput")
-    if not _valid_router_response(response):
-        return _fallback_to_rag(state, "response fields violated the route contract")
-
-    effective_mode = (
-        "easy"
-        if state["answer_mode"] == "easy" or response.style_override == "easy"
-        else "standard"
-    )
-
-    log.info("Original question: %s", state["original_question"])
-    if response.route == "rag":
-        log.info("RAG route selected. Answer request: %s", response.answer_request)
-        log.info("Retrieval query: %s", response.retrieval_query)
-        log.info("Answer mode: %s", effective_mode)
-
-    return {
-        "route": response.route,
-        "answer_request": response.answer_request,
-        "retrieval_query": response.retrieval_query,
-        "answer_mode": effective_mode,
-    }
-
-
 def route_edge(state: WorkflowGraphState) -> Literal["chat_node", "rag_node"]:
     log.debug("Routing to %s", state["route"])
     if state["route"] == "chat":
@@ -136,78 +54,6 @@ def route_edge(state: WorkflowGraphState) -> Literal["chat_node", "rag_node"]:
         return "rag_node"
     else:
         raise ValueError(f"Invalid route: {state['route']}")
-
-
-def _validate_chat_answer(answer: str) -> None:
-    if URL_PATTERN.search(answer):
-        raise RuntimeError("The chat answer must not contain model-written URLs.")
-    if CITATION_MARKER_PATTERN.search(answer):
-        raise RuntimeError("The chat answer must not contain passage markers.")
-
-
-def chat_node(state: WorkflowGraphState) -> dict:
-    user_prompt = f"""
-    Conversation history:
-        <conversation>
-        {state["messages"]}
-        </conversation>
-
-    Current user message:
-        <current_message>
-        {state["original_question"]}
-        </current_message>
-
-    Reply to the current user message.
-    """
-
-    llm = get_chat_model()
-    if llm is None:
-        raise RuntimeError("Could not get chat model.")
-    try:
-        response = llm.invoke(
-            [
-                SystemMessage(content=CHAT_SYSTEM_PROMPT),
-                HumanMessage(content=user_prompt),
-            ]
-        )
-    except Exception as error:
-        log.exception("Ollama answer generation failed")
-        raise RuntimeError("Could not generate an answer.") from error
-
-    answer = response.content.strip()
-    try:
-        _validate_chat_answer(answer)
-    except RuntimeError as error:
-        log.warning("Rejected chat answer: %s", error)
-        raise
-
-    messages = [
-        HumanMessage(content=state["original_question"]),
-        AIMessage(content=answer),
-    ]
-
-    return {
-        "messages": messages,
-        "answer": answer,
-        "current_built_context": None,
-    }
-
-
-def rag_node(state: WorkflowGraphState) -> dict:
-    if state["answer_request"] is None:
-        raise ValueError("answer_request must not be None for RAG route")
-    if state["retrieval_query"] is None:
-        raise ValueError("retrieval_query must not be None for RAG route")
-
-    built = PaperRetriever().retrieve_context_with_details(state["retrieval_query"])
-    answer = generate_answer(state["answer_request"], built.context, answer_mode=state["answer_mode"])
-
-    return {
-        "messages": [HumanMessage(content=state["original_question"]), AIMessage(content=answer)],
-        "answer": answer,
-        "current_built_context": built,
-    }
-
 
 graph = StateGraph(WorkflowGraphState)
 

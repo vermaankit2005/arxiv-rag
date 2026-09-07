@@ -1,3 +1,4 @@
+from importlib import import_module
 from typing import Literal
 from uuid import uuid4
 
@@ -12,6 +13,10 @@ from arxiv_rag.answering import AnswerMode
 from arxiv_rag.graph import workflow_graph
 from arxiv_rag.retrieval import BuiltContext, Citation, RetrievalContext
 
+chat_node_module = import_module("arxiv_rag.graph.chat_node")
+rag_node_module = import_module("arxiv_rag.graph.rag_node")
+route_node_module = import_module("arxiv_rag.graph.route_node")
+
 
 class FakeRouterModel:
     def __init__(self, output: object):
@@ -19,7 +24,7 @@ class FakeRouterModel:
         self.messages = None
 
     def with_structured_output(self, schema):
-        assert schema is workflow_graph.RouterNodeOutput
+        assert schema is route_node_module.RouterNodeOutput
         return self
 
     def invoke(self, messages):
@@ -30,7 +35,7 @@ class FakeRouterModel:
 class FakeConversationModel:
     def __init__(
         self,
-        router_outputs: list[workflow_graph.RouterNodeOutput],
+        router_outputs: list[object],
         chat_replies: list[str] | None = None,
     ):
         self.router_outputs = list(router_outputs)
@@ -39,7 +44,7 @@ class FakeConversationModel:
         self.chat_prompts = []
 
     def with_structured_output(self, schema):
-        assert schema is workflow_graph.RouterNodeOutput
+        assert schema is route_node_module.RouterNodeOutput
         return FakeStructuredRouter(self)
 
     def invoke(self, messages):
@@ -72,13 +77,18 @@ class InvalidRouterOutputModel:
         raise ValueError("invalid structured output")
 
 
+def _stub_chat_model(monkeypatch, model):
+    monkeypatch.setattr(route_node_module, "get_chat_model", lambda: model)
+    monkeypatch.setattr(chat_node_module, "get_chat_model", lambda: model)
+
+
 def _router_output(
     route: Literal["chat", "rag"],
     answer_request: str | None = None,
     retrieval_query: str | None = None,
     style_override: Literal["easy"] | None = None,
-) -> workflow_graph.RouterNodeOutput:
-    return workflow_graph.RouterNodeOutput(
+) -> object:
+    return route_node_module.RouterNodeOutput(
         route=route,
         answer_request=answer_request if route == "rag" else "",
         retrieval_query=retrieval_query if route == "rag" else "",
@@ -142,8 +152,8 @@ def _stub_rag_dependencies(monkeypatch, answers: list[str] | None = None):
             return generated_answers.pop(0)
         return generated_answers[0]
 
-    monkeypatch.setattr(workflow_graph, "PaperRetriever", FakeRetriever)
-    monkeypatch.setattr(workflow_graph, "generate_answer", fake_generate_answer)
+    monkeypatch.setattr(rag_node_module, "PaperRetriever", FakeRetriever)
+    monkeypatch.setattr(rag_node_module, "generate_answer", fake_generate_answer)
     return built, retrieval_queries, generation_calls
 
 
@@ -161,16 +171,16 @@ def test_router_returns_both_supported_routes(
     retrieval_query: str,
 ):
     model = FakeRouterModel(_router_output(route, answer_request, retrieval_query))
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
 
-    result = workflow_graph.route_node(_state(question="Current question"))
+    result = route_node_module.route_node(_state(question="Current question"))
 
     assert result["route"] == route
     assert result["answer_request"] == answer_request
     assert result["retrieval_query"] == retrieval_query
     assert model.messages is not None
     assert isinstance(model.messages[0], SystemMessage)
-    assert model.messages[0].content == workflow_graph.ROUTER_SYSTEM_PROMPT
+    assert model.messages[0].content == route_node_module.ROUTER_SYSTEM_PROMPT
     assert "Current question" in model.messages[1].content
 
 
@@ -196,9 +206,9 @@ def test_router_applies_only_an_easy_style_override(
             style_override,
         )
     )
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
 
-    result = workflow_graph.route_node(_state(selected_mode))
+    result = route_node_module.route_node(_state(selected_mode))
 
     assert result["answer_mode"] == expected_mode
     assert result["answer_request"] == "Explain multi-head attention in simple terms."
@@ -209,13 +219,13 @@ def test_router_receives_conversation_history_separately_from_the_current_messag
     model = FakeRouterModel(
         _router_output("rag", "Explain the encoder.", "Transformer encoder")
     )
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
     messages = [
         HumanMessage(content="What is attention?"),
         AIMessage(content="Attention weighs relevant tokens [P1]."),
     ]
 
-    workflow_graph.route_node(
+    route_node_module.route_node(
         _state(question="What about the encoder?", messages=messages)
     )
 
@@ -228,10 +238,10 @@ def test_router_receives_conversation_history_separately_from_the_current_messag
 
 
 def test_router_wraps_model_failures(monkeypatch):
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: FailingModel())
+    _stub_chat_model(monkeypatch, FailingModel())
 
     with pytest.raises(RuntimeError, match="Could not generate an answer") as raised:
-        workflow_graph.route_node(_state())
+        route_node_module.route_node(_state())
 
     assert isinstance(raised.value.__cause__, OSError)
 
@@ -246,12 +256,10 @@ def test_router_wraps_model_failures(monkeypatch):
 def test_invalid_router_response_falls_back_to_rag_with_raw_question(
     monkeypatch, output: object
 ):
-    monkeypatch.setattr(
-        workflow_graph, "get_chat_model", lambda: FakeRouterModel(output)
-    )
+    _stub_chat_model(monkeypatch, FakeRouterModel(output))
     state = _state(answer_mode="easy", question="What is attention?")
 
-    result = workflow_graph.route_node(state)
+    result = route_node_module.route_node(state)
 
     assert result == {
         "route": "rag",
@@ -262,11 +270,9 @@ def test_invalid_router_response_falls_back_to_rag_with_raw_question(
 
 
 def test_invalid_structured_router_output_falls_back_to_rag(monkeypatch):
-    monkeypatch.setattr(
-        workflow_graph, "get_chat_model", lambda: InvalidRouterOutputModel()
-    )
+    _stub_chat_model(monkeypatch, InvalidRouterOutputModel())
 
-    result = workflow_graph.route_node(_state(question="What is attention?"))
+    result = route_node_module.route_node(_state(question="What is attention?"))
 
     assert result["route"] == "rag"
     assert result["answer_request"] == "What is attention?"
@@ -294,14 +300,14 @@ def test_route_edge_rejects_an_unknown_route():
 
 def test_chat_node_uses_history_and_returns_no_evidence(monkeypatch):
     model = FakeConversationModel([], ["Hi! I can help with the ingested papers."])
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
     state = _state(
         question="What can you do?",
         messages=[HumanMessage(content="Hi"), AIMessage(content="Hello!")],
     )
     state["current_built_context"] = _built_context()
 
-    result = workflow_graph.chat_node(state)
+    result = chat_node_module.chat_node(state)
 
     assert result["answer"] == "Hi! I can help with the ingested papers."
     assert result["current_built_context"] is None
@@ -309,16 +315,16 @@ def test_chat_node_uses_history_and_returns_no_evidence(monkeypatch):
         "What can you do?",
         "Hi! I can help with the ingested papers.",
     ]
-    assert model.chat_prompts[0][0].content == workflow_graph.CHAT_SYSTEM_PROMPT
+    assert model.chat_prompts[0][0].content == chat_node_module.CHAT_SYSTEM_PROMPT
     assert "Hi" in model.chat_prompts[0][1].content
     assert "What can you do?" in model.chat_prompts[0][1].content
 
 
 def test_chat_node_wraps_model_failures(monkeypatch):
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: FailingModel())
+    _stub_chat_model(monkeypatch, FailingModel())
 
     with pytest.raises(RuntimeError, match="Could not generate an answer") as raised:
-        workflow_graph.chat_node(_state(question="Hi"))
+        chat_node_module.chat_node(_state(question="Hi"))
 
     assert isinstance(raised.value.__cause__, OSError)
 
@@ -333,10 +339,10 @@ def test_chat_node_wraps_model_failures(monkeypatch):
 )
 def test_chat_node_rejects_urls_and_passage_markers(monkeypatch, reply, error):
     model = FakeConversationModel([], [reply])
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
 
     with pytest.raises(RuntimeError, match=error):
-        workflow_graph.chat_node(_state(question="Hi"))
+        chat_node_module.chat_node(_state(question="Hi"))
 
 
 def test_rag_node_retrieves_with_the_search_query_and_generates_with_the_answer_request(monkeypatch):
@@ -345,7 +351,7 @@ def test_rag_node_retrieves_with_the_search_query_and_generates_with_the_answer_
     state["answer_request"] = "Explain multi-head attention simply."
     state["retrieval_query"] = "What is multi-head attention?"
 
-    result = workflow_graph.rag_node(state)
+    result = rag_node_module.rag_node(state)
 
     assert retrieval_queries == ["What is multi-head attention?"]
     assert generation_calls == [
@@ -372,7 +378,7 @@ def test_rag_node_requires_both_router_outputs(monkeypatch, missing_field):
     state[missing_field] = None
 
     with pytest.raises(ValueError, match=f"{missing_field} must not be None"):
-        workflow_graph.rag_node(state)
+        rag_node_module.rag_node(state)
 
 
 def test_invoke_resets_turn_only_state(monkeypatch):
@@ -404,13 +410,13 @@ def test_invoke_resets_turn_only_state(monkeypatch):
 
 def test_default_retriever_is_not_constructed_for_a_chat_turn(monkeypatch):
     model = FakeConversationModel([_router_output("chat")], ["Hello!"])
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
 
     class UnexpectedRetriever:
         def __init__(self):
             raise AssertionError("A chat turn must not construct the paper retriever")
 
-    monkeypatch.setattr(workflow_graph, "PaperRetriever", UnexpectedRetriever)
+    monkeypatch.setattr(rag_node_module, "PaperRetriever", UnexpectedRetriever)
 
     result = workflow_graph.invoke_workflow_graph("Hi", f"test-lazy-{uuid4()}")
 
@@ -423,7 +429,7 @@ def test_compiled_graph_chat_route_never_retrieves(monkeypatch):
         [_router_output("chat")],
         ["Hello! Ask me about the ingested papers."],
     )
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
     _, retrieval_queries, generation_calls = _stub_rag_dependencies(monkeypatch)
 
     result = workflow_graph.invoke_workflow_graph("Hi", f"test-chat-{uuid4()}")
@@ -445,7 +451,7 @@ def test_compiled_graph_rag_route_returns_current_evidence(monkeypatch):
             )
         ]
     )
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
     built, retrieval_queries, generation_calls = _stub_rag_dependencies(monkeypatch)
 
     result = workflow_graph.invoke_workflow_graph(
@@ -475,7 +481,7 @@ def test_same_thread_retains_messages_for_a_follow_up(monkeypatch):
             ),
         ]
     )
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
     _stub_rag_dependencies(
         monkeypatch,
         ["Attention answer [P1].", "Encoder answer [P1]."],
@@ -504,7 +510,7 @@ def test_different_thread_starts_without_previous_messages(monkeypatch):
         ],
         ["First reply", "Second reply"],
     )
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
     _stub_rag_dependencies(monkeypatch)
 
     workflow_graph.invoke_workflow_graph("Hi from the first thread", f"thread-a-{uuid4()}")
@@ -533,7 +539,7 @@ def test_each_rag_follow_up_retrieves_fresh_evidence(monkeypatch):
             ),
         ]
     )
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
     _, retrieval_queries, generation_calls = _stub_rag_dependencies(
         monkeypatch,
         ["Attention answer [P1].", "Simple attention answer [P1]."],
@@ -560,7 +566,7 @@ def test_chat_turn_clears_the_previous_turns_exposed_evidence(monkeypatch):
         ],
         ["You're welcome!"],
     )
-    monkeypatch.setattr(workflow_graph, "get_chat_model", lambda: model)
+    _stub_chat_model(monkeypatch, model)
     _stub_rag_dependencies(monkeypatch)
     thread_id = f"test-clear-evidence-{uuid4()}"
 
