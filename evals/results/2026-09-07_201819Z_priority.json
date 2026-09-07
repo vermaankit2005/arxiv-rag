@@ -1,0 +1,189 @@
+{
+  "suite": "priority",
+  "commit": "09f11f1e056e1f14b145f0dbd8ee38989ab8bee3",
+  "generator_model": "gemma4:26b",
+  "judge_model": "gemma4:26b",
+  "started_at": "2026-09-07T20:18:19+00:00",
+  "finished_at": "2026-09-07T20:18:26+00:00",
+  "duration_seconds": 7.1,
+  "uploaded": false,
+  "status": "FAIL",
+  "metrics": [
+    {
+      "metric": "generation_groundedness.groundedness",
+      "dataset": "generation_quality_dataset",
+      "scores": [],
+      "completed": 0,
+      "expected": 12,
+      "average": null,
+      "threshold": 0.95,
+      "duration_seconds": 1.4,
+      "status": "FAIL",
+      "passed": false,
+      "error": null
+    },
+    {
+      "metric": "generation_fact_citation.fact_citation",
+      "dataset": "generation_quality_dataset",
+      "scores": [
+        {
+          "example_id": "gen-004",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-005",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-001",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-012",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-010",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-007",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-014",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-015",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-018",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-019",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-024",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-021",
+          "score": 0.0
+        }
+      ],
+      "completed": 12,
+      "expected": 12,
+      "average": 0.0,
+      "threshold": 0.95,
+      "duration_seconds": 0.8,
+      "status": "FAIL",
+      "passed": false,
+      "error": null
+    },
+    {
+      "metric": "generation_correctness.correctness",
+      "dataset": "generation_quality_dataset",
+      "scores": [],
+      "completed": 0,
+      "expected": 12,
+      "average": null,
+      "threshold": 0.9,
+      "duration_seconds": 0.8,
+      "status": "FAIL",
+      "passed": false,
+      "error": null
+    },
+    {
+      "metric": "pipeline_required_fact_coverage.required_fact_coverage",
+      "dataset": "pipeline_required_fact_coverage_dataset",
+      "scores": [],
+      "completed": 0,
+      "expected": 12,
+      "average": null,
+      "threshold": 0.85,
+      "duration_seconds": 1.5,
+      "status": "FAIL",
+      "passed": false,
+      "error": null
+    },
+    {
+      "metric": "pipeline_fact_citation.fact_citation",
+      "dataset": "pipeline_required_fact_coverage_dataset",
+      "scores": [
+        {
+          "example_id": "gen-001",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-004",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-005",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-007",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-010",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-012",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-014",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-015",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-018",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-019",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-021",
+          "score": 0.0
+        },
+        {
+          "example_id": "gen-024",
+          "score": 0.0
+        }
+      ],
+      "completed": 12,
+      "expected": 12,
+      "average": 0.0,
+      "threshold": 0.95,
+      "duration_seconds": 1.3,
+      "status": "FAIL",
+      "passed": false,
+      "error": null
+    },
+    {
+      "metric": "pipeline_evidence_behavior.evidence_behavior",
+      "dataset": "pipeline_evidence_behavior_dataset",
+      "scores": [],
+      "completed": 0,
+      "expected": 9,
+      "average": null,
+      "threshold": 0.9,
+      "duration_seconds": 1.4,
+      "status": "FAIL",
+      "passed": false,
+      "error": null
+    }
+  ]
+}
