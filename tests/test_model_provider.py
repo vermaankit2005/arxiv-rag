@@ -1,4 +1,4 @@
-from arxiv_rag.answering import chat_model
+from arxiv_rag import model_provider
 
 
 def _write_config(path):
@@ -22,21 +22,21 @@ embeddings:
     )
 
 
-def test_get_chat_model_uses_yaml_configuration_and_cloudflare_headers(monkeypatch, tmp_path):
+def test_get_model_provider_uses_yaml_configuration_and_cloudflare_headers(monkeypatch, tmp_path):
     captured_options = {}
     sentinel = object()
     config_file = tmp_path / "config.yaml"
     _write_config(config_file)
-    monkeypatch.setattr(chat_model, "CONFIG_FILE", config_file)
+    monkeypatch.setattr(model_provider, "CONFIG_FILE", config_file)
     monkeypatch.setenv("CF-ACCESS-CLIENT-ID", "client-id")
     monkeypatch.setenv("CF-ACCESS-CLIENT-SECRET", "client-secret")
     monkeypatch.setattr(
-        chat_model,
+        model_provider,
         "ChatOpenAI",
         lambda **options: captured_options.update(options) or sentinel,
     )
 
-    result = chat_model.get_chat_model()
+    result = model_provider.get_chat_model()
 
     assert result is sentinel
     assert captured_options == {
@@ -56,14 +56,14 @@ def test_get_embeddings_uses_local_ollama_yaml_configuration(monkeypatch, tmp_pa
     sentinel = object()
     config_file = tmp_path / "config.yaml"
     _write_config(config_file)
-    monkeypatch.setattr(chat_model, "CONFIG_FILE", config_file)
+    monkeypatch.setattr(model_provider, "CONFIG_FILE", config_file)
     monkeypatch.setattr(
-        chat_model,
+        model_provider,
         "OllamaEmbeddings",
         lambda **options: captured_options.update(options) or sentinel,
     )
 
-    result = chat_model.get_embeddings()
+    result = model_provider.get_embeddings()
 
     assert result is sentinel
     assert captured_options == {

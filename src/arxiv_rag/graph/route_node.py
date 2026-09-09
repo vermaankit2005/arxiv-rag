@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Literal
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from arxiv_rag.answering.chat_model import get_chat_model
+from arxiv_rag.model_provider import get_chat_model
 from arxiv_rag.graph.prompts import ROUTER_SYSTEM_PROMPT
 from arxiv_rag.logging import get_logger
 

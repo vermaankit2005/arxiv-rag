@@ -11,7 +11,7 @@ from langchain_core.language_models import BaseChatModel  # pyright: ignore[repo
 from langchain_ollama import OllamaEmbeddings  # pyright: ignore[reportMissingImports]
 from langchain_openai import ChatOpenAI  # pyright: ignore[reportMissingImports]
 
-CONFIG_FILE = Path(__file__).parents[3] / "config.yaml"
+CONFIG_FILE = Path(__file__).parents[2] / "config.yaml"
 ENVIRONMENT_VALUE = re.compile(r"^\$\{([A-Za-z_][A-Za-z0-9_-]*)\}$")
 
 

@@ -10,7 +10,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langsmith import Client
 
-from arxiv_rag.answering.chat_model import get_generator_model_name, get_judge_model_name
+from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_name
 
 # One switch for the whole regression run, not per evaluation. The --upload flag
 # turns uploading on; this variable is how CI and .env do the same thing.

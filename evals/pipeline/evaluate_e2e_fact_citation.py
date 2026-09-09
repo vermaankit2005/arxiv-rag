@@ -8,7 +8,7 @@ the questions by LangSmith.
 
 from langsmith import Client
 
-from arxiv_rag.answering.chat_model import get_generator_model_name, get_judge_model_name
+from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_name
 from evals.fact_citation import (
     EVALUATOR_VERSION,
     build_fact_citation_judge,

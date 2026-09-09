@@ -5,7 +5,7 @@ from uuid import uuid4
 from langchain_chroma import Chroma  # pyright: ignore[reportMissingImports]
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
 
-from arxiv_rag.answering.chat_model import get_embeddings
+from arxiv_rag.model_provider import get_embeddings
 from arxiv_rag.logging import get_logger
 
 CHROMA_DIRECTORY = Path(__file__).parents[3] / "chroma_db"
