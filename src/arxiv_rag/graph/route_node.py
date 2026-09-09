@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Literal
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from arxiv_rag.model_provider import get_chat_model
 from arxiv_rag.graph.prompts import ROUTER_SYSTEM_PROMPT
 from arxiv_rag.logging import get_logger
+from arxiv_rag.model_provider import get_chat_model
 
 if TYPE_CHECKING:
     from arxiv_rag.graph.workflow_graph import WorkflowGraphState

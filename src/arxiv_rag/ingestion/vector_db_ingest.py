@@ -5,8 +5,8 @@ from uuid import uuid4
 from langchain_chroma import Chroma  # pyright: ignore[reportMissingImports]
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
 
-from arxiv_rag.model_provider import get_embeddings
 from arxiv_rag.logging import get_logger
+from arxiv_rag.model_provider import get_embeddings
 
 CHROMA_DIRECTORY = Path(__file__).parents[3] / "chroma_db"
 CHROMA_DATABASE_FILE = CHROMA_DIRECTORY / "chroma.sqlite3"

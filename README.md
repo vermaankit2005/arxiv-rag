@@ -371,13 +371,12 @@ uv sync
 
 ```bash
 cp .env.example .env
-cp config.example.yaml config.yaml
 ollama pull qwen3-embedding:4b
 ```
 
 Set the Cloudflare Access service-token values in `.env`. Configure the
 OpenAI-compatible vLLM chat model and local Ollama embedding model in
-`config.yaml`. LangSmith tracing is optional.
+`application.yaml`. LangSmith tracing is optional.
 
 **3. Build the local index**
 

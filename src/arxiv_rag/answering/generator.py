@@ -6,8 +6,8 @@ from langchain_core.language_models import (  # pyright: ignore[reportMissingImp
 )
 from langsmith import traceable
 
-from arxiv_rag.model_provider import get_chat_model
 from arxiv_rag.logging import get_logger
+from arxiv_rag.model_provider import get_chat_model
 from arxiv_rag.retrieval import RetrievalContext
 
 log = get_logger(__name__)
