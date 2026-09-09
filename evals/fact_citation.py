@@ -1,7 +1,4 @@
-"""Check each citation group against its naturally attached factual claim.
-
-All passages cited in the group are judged together using the complete answer.
-"""
+"""Check whether each citation group supports its attached factual claim."""
 
 import re
 from collections.abc import Callable
@@ -15,25 +12,14 @@ EVALUATOR_VERSION = "fact-citation-v3"
 CITATION_GROUP_PATTERN = re.compile(rf"(?:{CITATION_MARKER_PATTERN.pattern}\s*)+")
 
 FACT_CITATION_PROMPT = """
-You are checking one citation group in a complete answer.
+Check whether the cited passages support the factual claim attached to the citation
+wrapped in <TARGET_CITATION> tags. Consider the cited passages together and use
+only their evidence. Return supported=true only if they support the entire claim.
 
-The citation being checked is wrapped in `<TARGET_CITATION>` tags. Identify only
-the factual claim or closely related claim group naturally attached to that marked
-citation. Read Markdown normally: a citation after a list item supports that item,
-and a citation after closely related sentences may support that group.
-Ignore headings, introductory labels, transitions, formatting, and clearly
-introduced analogies unless they make a factual claim covered by the citation.
-
-Consider all cited passages together. Mark the citation group supported only when
-they support every factual claim naturally attached to it. Check precise wording
-and quantities. Detailed evidence overrides a loose summary when they conflict.
-Judge only citation support; never require this claim group to answer the complete
-user question. Use no outside knowledge.
-
-Complete answer and citation group to check:
+Complete answer:
 {inputs}
 
-Cited evidence passages:
+Cited passages:
 {outputs}
 """
 
@@ -59,7 +45,6 @@ def extract_citation_groups(answer: str) -> list[tuple[str, ...]]:
 
 
 def build_fact_citation_judge() -> Callable:
-    """Build the structured judge shared by both evaluation levels."""
     return create_llm_as_judge(
         prompt=FACT_CITATION_PROMPT,
         feedback_key="fact_citation_judgement",
@@ -68,92 +53,56 @@ def build_fact_citation_judge() -> Callable:
     )
 
 
-def _format_evidence(passage: dict) -> dict:
-    return {
-        "paper": passage.get("arxiv_id") or passage.get("label", ""),
-        "section": " > ".join(passage.get("section_path", [])),
-        "location": passage.get("location", ""),
-        "text": passage.get("text", ""),
-    }
+def evaluate_fact_citations(answer: str, passages_by_id: dict[str, dict], fact_judge: Callable) -> dict:
+    """Return the share of citation groups fully supported by their passages."""
+    matches = list(CITATION_GROUP_PATTERN.finditer(answer))
+    groups = extract_citation_groups(answer)
 
+    if not groups:
+        return _evaluation_result(0, [])
 
-def evaluate_fact_citations(
-    answer: str,
-    passages_by_id: dict[str, dict],
-    fact_judge: Callable,
-) -> dict:
-    """Return fully supported citation groups divided by all citation groups."""
-    citation_matches = list(CITATION_GROUP_PATTERN.finditer(answer))
-    citation_groups = [
-        tuple(dict.fromkeys(CITATION_ID_PATTERN.findall(match.group())))
-        for match in citation_matches
-    ]
-    if not citation_groups:
-        return {
-            "key": "fact_citation",
-            "score": 0.0,
-            "comment": "The answer contained no citation groups.",
-            "metadata": {
-                "evaluator_version": EVALUATOR_VERSION,
-                "citation_group_count": 0,
-            },
-        }
-
-    unknown_ids = sorted(
-        {
-            citation_id
-            for citation_group in citation_groups
-            for citation_id in citation_group
-            if citation_id not in passages_by_id
-        }
-    )
+    cited_ids = {citation_id for group in groups for citation_id in group}
+    unknown_ids = sorted(cited_ids - passages_by_id.keys())
     if unknown_ids:
         raise ValueError(f"Answer used unknown citation IDs: {', '.join(unknown_ids)}")
 
-    group_results = []
-    for group_number, (citation_ids, citation_match) in enumerate(
-        zip(citation_groups, citation_matches, strict=True), start=1
-    ):
+    results = []
+    for number, (match, citation_ids) in enumerate(zip(matches, groups, strict=True), start=1):
         marked_answer = (
-            answer[:citation_match.start()]
-            + "<TARGET_CITATION>"
-            + citation_match.group()
-            + "</TARGET_CITATION>"
-            + answer[citation_match.end():]
+            f"{answer[:match.start()]}<TARGET_CITATION>{match.group()}"
+            f"</TARGET_CITATION>{answer[match.end():]}"
         )
         result = fact_judge(
-            inputs={
-                "answer_with_target": marked_answer,
-                "citation_ids": list(citation_ids),
-            },
+            inputs={"answer_with_target": marked_answer},
             outputs={
                 "evidence_passages": [
-                    _format_evidence(passages_by_id[citation_id])
+                    passages_by_id[citation_id].get("text", "")
                     for citation_id in citation_ids
                 ]
             },
         )
-        if result.get("supported") not in (True, False):
-            raise ValueError(
-                f"Fact-citation judge returned an invalid result: {result!r}"
-            )
-        group_results.append(
-            {
-                "group_number": group_number,
-                "citation_ids": list(citation_ids),
-                **result,
-            }
-        )
+        if not isinstance(result.get("supported"), bool):
+            raise ValueError(f"Fact-citation judge returned an invalid result: {result!r}")
 
-    supported_count = sum(
-        1 for group_result in group_results if group_result["supported"]
-    )
-    group_count = len(citation_groups)
+        results.append({
+            "group_number": number,
+            "citation_ids": list(citation_ids),
+            **result,
+        })
+
+    supported_count = sum(result["supported"] for result in results)
+    return _evaluation_result(supported_count, results)
+
+
+def _evaluation_result(supported_count: int, group_results: list[dict]) -> dict:
+    group_count = len(group_results)
     return {
         "key": "fact_citation",
-        "score": supported_count / group_count,
+        "score": supported_count / group_count if group_count else 0.0,
         "comment": (
             f"{supported_count}/{group_count} citation groups were fully supported."
+            if group_count
+            else "The answer contained no citation groups."
         ),
         "metadata": {
             "evaluator_version": EVALUATOR_VERSION,
