@@ -45,31 +45,16 @@ def test_chroma_round_trip_preserves_document_content_and_metadata(tmp_path):
     assert stored[0].metadata == documents[0].metadata
 
 
-def test_vector_store_sends_cloudflare_access_headers(monkeypatch):
-    captured_options = {}
+def test_vector_store_uses_the_configured_embeddings(monkeypatch):
+    embeddings = object()
     expected_store = object()
-    headers = {
-        "CF-Access-Client-Id": "client-id",
-        "CF-Access-Client-Secret": "client-secret",
-    }
 
-    monkeypatch.setattr(
-        vector_db_ingest,
-        "get_ollama_connection",
-        lambda: ("https://ollama.test", headers),
-    )
-    monkeypatch.setattr(
-        vector_db_ingest,
-        "OllamaEmbeddings",
-        lambda **options: captured_options.update(options) or object(),
-    )
+    monkeypatch.setattr(vector_db_ingest, "get_embeddings", lambda: embeddings)
     monkeypatch.setattr(vector_db_ingest, "ChromaStore", lambda *args, **kwargs: expected_store)
 
     store = vector_db_ingest.get_vector_store(create_if_missing=True, collection_name="test")
 
     assert store is expected_store
-    assert captured_options["base_url"] == "https://ollama.test"
-    assert captured_options["client_kwargs"] == {"headers": headers}
 
 
 def test_activating_collection_replaces_active_pointer(monkeypatch, tmp_path):

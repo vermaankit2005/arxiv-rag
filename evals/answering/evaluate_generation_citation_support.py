@@ -8,10 +8,10 @@ score is the average across all questions.
 import re
 
 from langsmith import Client
-from openevals.llm import create_llm_as_judge
+from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
+from arxiv_rag.answering.chat_model import get_generator_model_name, get_judge_model_name
 from arxiv_rag.answering.generator import CITATION_ID_PATTERN, CITATION_MARKER_PATTERN
-from arxiv_rag.ollama_config import get_generator_model, get_judge_model
 from evals.answering import context as evaluation_context
 from evals.judges import build_judge_model
 
@@ -22,8 +22,8 @@ EXPERIMENT_PREFIX = "generation_citation_support"
 EXPERIMENT_METADATA = {
     "metric": "citation_support",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": get_generator_model(),
-    "judge_model": get_judge_model(),
+    "generator_model": get_generator_model_name(),
+    "judge_model": get_judge_model_name(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
     "statement_citation_pairing": "all_statements_in_citation_group",

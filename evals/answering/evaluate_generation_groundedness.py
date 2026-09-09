@@ -8,8 +8,8 @@ from langsmith import Client
 from openevals import prompts  # pyright: ignore[reportMissingImports]
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
+from arxiv_rag.answering.chat_model import get_generator_model_name, get_judge_model_name
 from evals.answering import context as evaluation_context
-from arxiv_rag.ollama_config import get_generator_model, get_judge_model
 from evals.judges import build_judge_model
 
 DESCRIPTION = __doc__
@@ -19,11 +19,11 @@ EXPERIMENT_PREFIX = "generation_groundedness"
 EXPERIMENT_METADATA = {
     "metric": "groundedness",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": get_generator_model(),
+    "generator_model": get_generator_model_name(),
     "embedding_model": "qwen3-embedding:4b",
     "corpus": "12-papers-384-documents",
     "vector_db": "chroma",
-    "judge_model": get_judge_model(),
+    "judge_model": get_judge_model_name(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
 }

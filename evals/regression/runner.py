@@ -10,7 +10,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langsmith import Client
 
-from arxiv_rag.ollama_config import get_generator_model, get_judge_model
+from arxiv_rag.answering.chat_model import get_generator_model_name, get_judge_model_name
 
 # One switch for the whole regression run, not per evaluation. The --upload flag
 # turns uploading on; this variable is how CI and .env do the same thing.
@@ -207,8 +207,8 @@ def build_results(suite: str, started_at: datetime, uploaded: bool, passed: bool
     return {
         "suite": suite,
         "commit": _commit_sha(),
-        "generator_model": get_generator_model(),
-        "judge_model": get_judge_model(),
+        "generator_model": get_generator_model_name(),
+        "judge_model": get_judge_model_name(),
         "started_at": started_at.isoformat(timespec="seconds"),
         "finished_at": finished_at.isoformat(timespec="seconds"),
         "duration_seconds": round((finished_at - started_at).total_seconds(), 1),

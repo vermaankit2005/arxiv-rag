@@ -1,0 +1,16 @@
+---
+# Copy this file to config.yaml. Service-token values stay in .env.
+chat:
+  provider: openai
+  base_url: https://vllm.trueworks.in/v1
+  model: gemma4-summarizer
+  api_key: unused
+  temperature: 0
+  default_headers:
+    CF-Access-Client-Id: ${CF-ACCESS-CLIENT-ID}
+    CF-Access-Client-Secret: ${CF-ACCESS-CLIENT-SECRET}
+
+embeddings:
+  provider: ollama
+  base_url: http://localhost:11434
+  model: qwen3-embedding:4b

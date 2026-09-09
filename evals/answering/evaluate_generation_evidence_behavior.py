@@ -9,8 +9,8 @@ average.
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
+from arxiv_rag.answering.chat_model import get_generator_model_name, get_judge_model_name
 from arxiv_rag.answering.generator import INSUFFICIENT_EVIDENCE_ANSWER
-from arxiv_rag.ollama_config import get_generator_model, get_judge_model
 from evals.answering import context as evaluation_context
 from evals.judges import build_judge_model
 
@@ -21,8 +21,8 @@ ALLOWED_SCORES = {0, 0.5, 1}
 EXPERIMENT_METADATA = {
     "metric": "evidence_behavior",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": get_generator_model(),
-    "judge_model": get_judge_model(),
+    "generator_model": get_generator_model_name(),
+    "judge_model": get_judge_model_name(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
 }

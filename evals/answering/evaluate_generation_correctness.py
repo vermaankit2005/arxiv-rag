@@ -8,10 +8,10 @@ final score is the average across all questions.
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
+from arxiv_rag.answering.chat_model import get_generator_model_name, get_judge_model_name
 from evals.answering import context as evaluation_context
-from arxiv_rag.ollama_config import get_generator_model, get_judge_model
-from evals.judges import build_judge_model
 from evals.answering.references import build_fact_references
+from evals.judges import build_judge_model
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
@@ -20,8 +20,8 @@ ALLOWED_SCORES = {0, 0.25, 0.5, 0.75, 1}
 EXPERIMENT_METADATA = {
     "metric": "correctness",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": get_generator_model(),
-    "judge_model": get_judge_model(),
+    "generator_model": get_generator_model_name(),
+    "judge_model": get_judge_model_name(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
 }

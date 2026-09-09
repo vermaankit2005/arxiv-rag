@@ -1,45 +1,29 @@
 from evals import judges
 
 
-def test_build_judge_model_uses_env_model_and_cloudflare_headers(monkeypatch):
-    captured_options = {}
+def test_build_judge_model_uses_configured_chat_model(monkeypatch):
     expected_model = object()
-    headers = {
-        "CF-Access-Client-Id": "client-id",
-        "CF-Access-Client-Secret": "client-secret",
-    }
-
-    monkeypatch.setenv("JUDGE_MODEL", "judge-from-env")
-    monkeypatch.setattr(judges, "get_ollama_connection", lambda: ("https://ollama.test", headers))
+    captured_model_name = []
     monkeypatch.setattr(
         judges,
-        "ChatOllama",
-        lambda **options: captured_options.update(options) or expected_model,
+        "get_chat_model",
+        lambda model_name=None: captured_model_name.append(model_name) or expected_model,
     )
 
     model = judges.build_judge_model()
 
     assert model is expected_model
-    assert captured_options == {
-        "model": "judge-from-env",
-        "base_url": "https://ollama.test",
-        "temperature": 0,
-        "client_kwargs": {"headers": headers},
-        "reasoning": False,
-        "num_ctx": 8192,
-    }
+    assert captured_model_name == [None]
 
 
-def test_build_judge_model_uses_caller_model(monkeypatch):
-    captured_options = {}
-
-    monkeypatch.setattr(judges, "get_ollama_connection", lambda: ("https://ollama.test", {}))
+def test_build_judge_model_passes_a_caller_model_override(monkeypatch):
+    captured_model_name = []
     monkeypatch.setattr(
         judges,
-        "ChatOllama",
-        lambda **options: captured_options.update(options) or object(),
+        "get_chat_model",
+        lambda model_name=None: captured_model_name.append(model_name) or object(),
     )
 
-    judges.build_judge_model("custom-model:latest")
+    judges.build_judge_model("custom-model")
 
-    assert captured_options["model"] == "custom-model:latest"
+    assert captured_model_name == ["custom-model"]

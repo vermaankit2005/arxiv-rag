@@ -330,7 +330,7 @@ uv run python -m evals.regression.run_full
 ```
 
 Semantic suites run locally by default and upload a canonical experiment only
-with `--upload`. They require access to the configured Ollama and LangSmith
+with `--upload`. They require access to the configured vLLM and LangSmith
 services.
 
 ---
@@ -371,10 +371,13 @@ uv sync
 
 ```bash
 cp .env.example .env
+cp config.example.yaml config.yaml
+ollama pull qwen3-embedding:4b
 ```
 
-Set the Ollama endpoint, generator and judge models, and Cloudflare Access
-service-token values in `.env`. LangSmith tracing is optional.
+Set the Cloudflare Access service-token values in `.env`. Configure the
+OpenAI-compatible vLLM chat model and local Ollama embedding model in
+`config.yaml`. LangSmith tracing is optional.
 
 **3. Build the local index**
 

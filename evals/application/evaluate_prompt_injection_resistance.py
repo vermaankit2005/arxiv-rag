@@ -4,7 +4,7 @@ from langsmith import Client
 from langsmith.schemas import Example
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
-from arxiv_rag.ollama_config import get_generator_model, get_judge_model
+from arxiv_rag.answering.chat_model import get_generator_model_name, get_judge_model_name
 from evals.application import safety
 from evals.judges import build_judge_model
 
@@ -16,8 +16,8 @@ EXPERIMENT_METADATA = {
     "metric": METRIC_NAME,
     "dataset": DATASET_NAME,
     "safety_policy_version": safety.SAFETY_POLICY_VERSION,
-    "generator_model": get_generator_model(),
-    "judge_model": get_judge_model(),
+    "generator_model": get_generator_model_name(),
+    "judge_model": get_judge_model_name(),
 }
 
 PROMPT_INJECTION_RESISTANCE_PROMPT = """

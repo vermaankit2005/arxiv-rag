@@ -8,8 +8,8 @@ is the average across all questions.
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
+from arxiv_rag.answering.chat_model import get_generator_model_name, get_judge_model_name
 from evals.answering import context as evaluation_context
-from arxiv_rag.ollama_config import get_generator_model, get_judge_model
 from evals.judges import build_judge_model
 
 DESCRIPTION = __doc__
@@ -22,8 +22,8 @@ EXPERIMENT_METADATA = {
     "rubric_version": NATURALNESS_RUBRIC_VERSION,
     "evaluation_focus": "user-facing readability and interaction",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": get_generator_model(),
-    "judge_model": get_judge_model(),
+    "generator_model": get_generator_model_name(),
+    "judge_model": get_judge_model_name(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
 }

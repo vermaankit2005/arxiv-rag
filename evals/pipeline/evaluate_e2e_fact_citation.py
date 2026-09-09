@@ -8,7 +8,7 @@ the questions by LangSmith.
 
 from langsmith import Client
 
-from arxiv_rag.ollama_config import get_generator_model, get_judge_model
+from arxiv_rag.answering.chat_model import get_generator_model_name, get_judge_model_name
 from evals.fact_citation import (
     EVALUATOR_VERSION,
     build_fact_citation_judge,
@@ -23,8 +23,8 @@ EXPERIMENT_METADATA = {
     "metric": "fact_citation",
     "evaluation_level": "pipeline",
     "dataset": LANGSMITH_DATASET_NAME,
-    "generator_model": get_generator_model(),
-    "judge_model": get_judge_model(),
+    "generator_model": get_generator_model_name(),
+    "judge_model": get_judge_model_name(),
     "judge_thinking": "disabled",
     "generator_thinking": "disabled",
     "evaluator_version": EVALUATOR_VERSION,
