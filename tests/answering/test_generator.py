@@ -82,7 +82,10 @@ def test_generate_answer_returns_normal_text_with_valid_inline_citations():
     assert model.prompt is not None
     assert "Question:\nHow does it work?" in model.prompt
     assert "[P1]" in model.prompt
-    assert "Use natural, clear language while keeping useful technical detail" in model.prompt
+    assert "Use clear, simple English and organize the explanation in a logical flow" in model.prompt
+    assert "Keep the technical depth needed to answer accurately" in model.prompt
+    assert "do not replace precise technical concepts with vague explanations" in model.prompt
+    assert "explain them briefly in plain language" in model.prompt
     assert "Answer directly in natural prose" in model.prompt
     assert "Use Markdown only when it genuinely improves readability" in model.prompt
     assert "do not announce what will follow or repeat the question" in model.prompt

@@ -219,7 +219,7 @@
 <main class="shell" id="main"></main>
 
 <footer class="shell">
-  Generator and judge <span class="mono">gemma4:26b</span> · embeddings <span class="mono">qwen3-embedding:4b</span> · store <span class="mono">chroma</span> · scores from LangSmith, 4 Sep 2026
+  Generator and judge <span class="mono">gemma4:26b</span> · embeddings <span class="mono">qwen3-embedding:4b</span> · store <span class="mono">chroma</span> · scores from LangSmith, 7 Sep 2026
 </footer>
 
 <script>
@@ -265,7 +265,7 @@
       id:"answering", name:"Answering",
       what:"The generator alone, handed frozen correct context. Retrieval is held constant, so failures here are the model's writing or citing.",
       setup:"24 questions · 9 behaviour cases · context supplied, not searched",
-      state:"Facts are strong. Citations have slipped and the prose reads like a report.",
+      state:"Facts and citations are strong. The prose still reads like a report.",
       evals:[
         { key:"correctness", short:"correctness", benchmark:0.90, actual:0.9896, n:24,
           def:"Judged factual accuracy of what the answer states, against the required facts. Scored 0 / 0.25 / 0.5 / 0.75 / 1. Omissions are not penalised — completeness covers those.",
@@ -276,9 +276,9 @@
         { key:"groundedness", short:"groundedness", benchmark:0.95, actual:0.9792, n:24,
           def:"Whether every factual claim traces back to the supplied passages rather than the model's own knowledge. Scored 0 to 1.",
           runs:[{s:1.000,d:"31 Aug"},{s:0.9792,d:"1 Sep"}] },
-        { key:"citation_support", short:"citations", benchmark:0.90, actual:0.7954, n:24,
-          def:"Supported statement–passage pairs ÷ all cited pairs. A trailing [P1] attaches to every statement in the group before it, and each pair is judged separately.",
-          runs:[{s:0.9319,d:"31 Aug"},{s:0.8563,d:"1 Sep"},{s:0.8181,d:"1 Sep"},{s:0.8510,d:"4 Sep"},{s:0.7954,d:"4 Sep"}] },
+        { key:"fact_citation", short:"citations", benchmark:0.95, actual:1.000, n:24,
+          def:"Fully supported cited fact groups ÷ all cited fact groups. Multiple citations attached to one fact group are judged together against their combined evidence.",
+          runs:[{s:1.000,d:"7 Sep"}] },
         { key:"naturalness", short:"naturalness", benchmark:0.70, actual:0.5104, n:24,
           def:"Judged readability of the prose on a 0–1 rubric, independent of factual quality. 0.75 is “natural overall”, 0.5 is “clear but obviously templated”.",
           runs:[{s:0.7174,d:"31 Aug"},{s:0.5104,d:"1 Sep"}] },
@@ -289,16 +289,16 @@
     },
     {
       id:"pipeline", name:"Pipeline",
-      what:"Live retrieval feeding live generation, end to end. Benchmarks sit below their component equivalents because retrieval and generation errors compound.",
+      what:"Live retrieval feeding live generation, end to end. It checks whether required facts survive the full path and whether citations remain supported.",
       setup:"24 questions · 9 behaviour cases · live retrieval",
-      state:"Holds together. Citations slip the same way they do in isolation.",
+      state:"Holds together. Fact-level citations meet the same release floor as generation in isolation.",
       evals:[
         { key:"required_fact_coverage", short:"fact coverage", benchmark:0.85, actual:0.9792, n:24,
           def:"Hidden required facts the final answer covers ÷ all required facts, with live retrieval feeding the generator.",
           runs:[{s:0.9792,d:"1 Sep"}] },
-        { key:"citation_support", short:"citations", benchmark:0.85, actual:0.8215, n:24,
-          def:"Supported statement–passage pairs ÷ all cited pairs, judged against the passages live retrieval returned rather than a curated set.",
-          runs:[{s:0.8215,d:"1 Sep"}] },
+        { key:"fact_citation", short:"citations", benchmark:0.95, actual:1.000, n:24,
+          def:"Fully supported cited fact groups ÷ all cited fact groups, judged against the passages returned by live retrieval. Multiple citations in one group are judged together.",
+          runs:[{s:1.000,d:"7 Sep"}] },
         { key:"evidence_behavior", short:"behaviour", benchmark:0.90, actual:1.000, n:9,
           def:"Answer, partial-answer or refusal behaviour, judged against the passages live retrieval actually returned. Scored 0 / 0.5 / 1.",
           runs:[{s:1.000,d:"1 Sep"}] }

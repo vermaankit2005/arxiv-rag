@@ -20,8 +20,9 @@ URL_PATTERN = re.compile(r"https?://", re.IGNORECASE)
 AnswerMode = Literal["standard", "easy"]
 
 STANDARD_MODE_RULES = (
-    "- Use natural, clear language while keeping useful technical detail.\n"
-    "- Define uncommon technical terms when needed.\n"
+    "- Use clear, simple English and organize the explanation in a logical flow.\n"
+    "- Keep the technical depth needed to answer accurately; do not replace precise technical concepts with vague explanations.\n"
+    "- When specialized terms are necessary, explain them briefly in plain language.\n"
 )
 # Previous Easy-mode citation rule, kept here for quick rollback:
 # "- Put supporting passage IDs immediately after factual analogy sentences, just like every other factual sentence.\n"

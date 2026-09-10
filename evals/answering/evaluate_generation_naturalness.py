@@ -29,38 +29,38 @@ EXPERIMENT_METADATA = {
 }
 
 NATURALNESS_PROMPT = """
-You are evaluating how natural a generated research answer feels to a user who
-is reading it and interacting with an assistant.
-
-Judge whether the answer is direct, smoothly written, and pleasant to read. It
-should synthesize the requested information instead of looking like facts copied
-into a standard response template. Technical language is appropriate when the
-question requires it, but a polished report is not automatically a natural
-assistant response.
-
-Reduce the score for unnecessary headings, excessive bullet lists, canned
-introductions such as "the following results were reported," repetitive sentence
-patterns, fragmented facts, or formatting that makes a short answer feel like a
-report. Bullets are acceptable when they genuinely improve a complex answer, but
-a list question does not automatically make a rigid list feel natural. Do not
-reward verbosity, chattiness, jokes, enthusiasm, or extra detail.
-
-Ignore citation markers such as [P1] when judging the prose. Do not score factual
-correctness, completeness, groundedness, or citation support; those are evaluated
-separately.
-
-Question:
-{inputs}
-
-Generated answer:
-{outputs}
-
-Return one of these scores:
-- 1: effortless, direct, and pleasant to read as a user-facing assistant response.
-- 0.75: natural overall, but somewhat formal or structured in a way a user may notice.
-- 0.5: clear and understandable, but obviously generated, templated, or report-like.
-- 0.25: strongly robotic, fragmented, repetitive, or overloaded with formatting.
-- 0: highly unnatural and difficult for a user to read or interact with.
+    You are evaluating how natural a generated research answer feels to a user who
+    is reading it and interacting with an assistant.
+    
+    Judge whether the answer is direct, smoothly written, and pleasant to read. It
+    should synthesize the requested information instead of looking like facts copied
+    into a standard response template. Technical language is appropriate when the
+    question requires it, but a polished report is not automatically a natural
+    assistant response.
+    
+    Reduce the score for unnecessary headings, excessive bullet lists, canned
+    introductions such as "the following results were reported," repetitive sentence
+    patterns, fragmented facts, or formatting that makes a short answer feel like a
+    report. Bullets are acceptable when they genuinely improve a complex answer, but
+    a list question does not automatically make a rigid list feel natural. Do not
+    reward verbosity, chattiness, jokes, enthusiasm, or extra detail.
+    
+    Ignore citation markers such as [P1] when judging the prose. Do not score factual
+    correctness, completeness, groundedness, or citation support; those are evaluated
+    separately.
+    
+    Question:
+    {inputs}
+    
+    Generated answer:
+    {outputs}
+    
+    Return one of these scores:
+    - 1: effortless, direct, and pleasant to read as a user-facing assistant response.
+    - 0.75: natural overall, but somewhat formal or structured in a way a user may notice.
+    - 0.5: clear and understandable, but obviously generated, templated, or report-like.
+    - 0.25: strongly robotic, fragmented, repetitive, or overloaded with formatting.
+    - 0: highly unnatural and difficult for a user to read or interact with.
 """
 
 judge_model = build_judge_model()

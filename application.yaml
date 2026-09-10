@@ -3,7 +3,7 @@ chat:
   base_url: https://vllm.trueworks.in/v1
   model: gemma4-summarizer
   api_key: unused
-  temperature: 0
+  temperature: 0.5
 
 embeddings:
   base_url: http://localhost:11434
