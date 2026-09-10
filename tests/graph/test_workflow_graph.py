@@ -107,7 +107,6 @@ def _state(
         "answer_request": None,
         "retrieval_query": None,
         "answer_mode": answer_mode,
-        "current_evidence": None,
         "current_built_context": None,
         "answer": "",
     }
@@ -361,7 +360,7 @@ def test_retrieval_and_answer_nodes_are_separate(monkeypatch):
         "answer_mode": "easy",
     }]
     assert result["answer"] == "Grounded answer [P1]."
-    assert result["current_built_context"] is built
+    assert retrieval_result["current_built_context"] is built
 
 
 def test_retrieval_node_requires_query():
@@ -375,7 +374,7 @@ def test_answer_node_requires_evidence():
     state = _state()
     state["answer_request"] = "Explain attention."
 
-    with pytest.raises(ValueError, match="current_evidence must not be None"):
+    with pytest.raises(ValueError, match="current_built_context must not be None"):
         answer_node_module.answer_node(state)
 
 
@@ -399,7 +398,6 @@ def test_invoke_resets_turn_only_state(monkeypatch):
     assert result["route"] is None
     assert result["answer_request"] is None
     assert result["retrieval_query"] is None
-    assert result["current_evidence"] is None
     assert result["current_built_context"] is None
     assert result["answer"] == ""
     assert result["answer_mode"] == "easy"
@@ -439,7 +437,7 @@ def test_compiled_graph_chat_route_never_retrieves(monkeypatch):
     assert generation_calls == []
 
 
-def test_compiled_graph_rag_route_returns_current_evidence(monkeypatch):
+def test_compiled_graph_rag_route_returns_current_built_context(monkeypatch):
     model = FakeConversationModel(
         [
             _router_output(

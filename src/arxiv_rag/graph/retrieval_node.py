@@ -7,5 +7,5 @@ def retrieval_node(state: WorkflowGraphState) -> dict:
     if state["retrieval_query"] is None:
         raise ValueError("retrieval_query must not be None for RAG route")
 
-    evidence = PaperRetriever().retrieve_context_with_details(state["retrieval_query"])
-    return {"current_evidence": evidence}
+    built_context = PaperRetriever().retrieve_context_with_details(state["retrieval_query"])
+    return {"current_built_context": built_context}
