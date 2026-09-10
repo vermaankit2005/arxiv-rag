@@ -186,13 +186,12 @@ def _select_passages(built_context: BuiltContext, passage_ids: list[str]) -> Bui
 
 class PaperRetriever:
 
-    def __init__(self, vector_store: VectorStore | None = None, top_k: int = DEFAULT_TOP_K,
-                 reranker: Callable[[dict[str, str], str], list[str]] | None = None) -> None:
+    def __init__(self, vector_store: VectorStore | None = None, top_k: int = DEFAULT_TOP_K) -> None:
         if top_k < 1:
             raise ValueError("top_k must be at least 1")
         self._vector_store = vector_store or get_vector_store()
         self._top_k = top_k
-        self._reranker = reranker or rerank_passages
+        self._reranker = rerank_passages
 
     @traceable(
         name="retrieve",
