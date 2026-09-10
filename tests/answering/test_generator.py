@@ -281,7 +281,7 @@ def _stub_graph(monkeypatch, captured: dict | None = None) -> BuiltContext:
             captured.update(question=question, thread_id=thread_id, answer_mode=answer_mode)
         yield {
             "answer": "Answer [P1].",
-            "current_built_context": built,
+            "current_context": built,
             "route": "rag",
             "answer_request": question,
             "answer_mode": answer_mode,
@@ -356,7 +356,7 @@ def test_answer_question_returns_the_effective_mode_from_the_workflow(monkeypatc
     def fake_stream(question, thread_id, answer_mode="standard"):
         yield {
             "answer": "Simple answer [P1].",
-            "current_built_context": built,
+            "current_context": built,
             "route": "rag",
             "answer_mode": "easy",
         }

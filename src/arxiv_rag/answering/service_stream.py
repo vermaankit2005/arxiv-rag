@@ -1,14 +1,13 @@
 import uuid
 from collections.abc import Iterator
-from dataclasses import dataclass
 
 from arxiv_rag.answering import AnswerMode
-from arxiv_rag.answering.models import AnsweredQuestion, AnswerChunk, AnswerComplete
+from arxiv_rag.answering.models import AnswerChunk, AnswerComplete, AnsweredQuestion
 from arxiv_rag.graph.workflow_graph import stream_workflow_graph
 from arxiv_rag.retrieval import RetrievalContext
 
-
 AnswerEvent = AnswerChunk | AnswerComplete
+
 
 def answer_question_stream(question: str, thread_id: str | None = None,
                            answer_mode: AnswerMode = "standard") -> Iterator[AnswerEvent]:
@@ -25,7 +24,7 @@ def answer_question_stream(question: str, thread_id: str | None = None,
     if final_state is None:
         raise RuntimeError("The workflow did not complete successfully.")
 
-    built_context = final_state.get("current_built_context")
+    built_context = final_state.get("current_context")
     answer_type = final_state["route"]
     if answer_type is None:
         raise RuntimeError("The workflow completed without selecting an answer route.")

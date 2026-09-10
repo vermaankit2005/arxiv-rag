@@ -8,10 +8,8 @@ from langchain_core.messages import (  # pyright: ignore[reportMissingImports]
     SystemMessage,
 )
 
-import arxiv_rag.graph.answer_node as answer_node_module
 import arxiv_rag.graph.chat_node as chat_node_module
-import arxiv_rag.graph.rerank_node as rerank_node_module
-import arxiv_rag.graph.retrieval_node as retrieval_node_module
+import arxiv_rag.graph.rag_node as rag_node_module
 import arxiv_rag.graph.route_node as route_node_module
 from arxiv_rag.answering import AnswerMode
 from arxiv_rag.graph import workflow_graph
@@ -108,8 +106,7 @@ def _state(
         "answer_request": None,
         "retrieval_query": None,
         "answer_mode": answer_mode,
-        "current_built_context": None,
-        "current_reranked_context": None,
+        "current_context": None,
         "answer": "",
     }
 
@@ -136,7 +133,7 @@ def _stub_rag_dependencies(monkeypatch, answers: list[str] | None = None):
     generated_answers = list(answers or ["Grounded answer [P1]."])
 
     class FakeRetriever:
-        def retrieve_context_with_details(self, question: str) -> BuiltContext:
+        def retrieve(self, question: str) -> BuiltContext:
             retrieval_queries.append(question)
             return built
 
@@ -152,9 +149,8 @@ def _stub_rag_dependencies(monkeypatch, answers: list[str] | None = None):
             return generated_answers.pop(0)
         return generated_answers[0]
 
-    monkeypatch.setattr(retrieval_node_module, "PaperRetriever", FakeRetriever)
-    monkeypatch.setattr(rerank_node_module, "rerank_context", lambda context, _query: context)
-    monkeypatch.setattr(answer_node_module, "generate_answer", fake_generate_answer)
+    monkeypatch.setattr(rag_node_module, "PaperRetriever", FakeRetriever)
+    monkeypatch.setattr(rag_node_module, "generate_answer", fake_generate_answer)
     return built, retrieval_queries, generation_calls
 
 
@@ -282,7 +278,7 @@ def test_invalid_structured_router_output_falls_back_to_rag(monkeypatch):
 
 @pytest.mark.parametrize(
     ("route", "expected_node"),
-    [("chat", "chat_node"), ("rag", "retrieval_node")],
+    [("chat", "chat_node"), ("rag", "rag_node")],
 )
 def test_route_edge_selects_the_expected_node(route, expected_node):
     state = _state()
@@ -306,12 +302,12 @@ def test_chat_node_uses_history_and_returns_no_evidence(monkeypatch):
         question="What can you do?",
         messages=[HumanMessage(content="Hi"), AIMessage(content="Hello!")],
     )
-    state["current_built_context"] = _built_context()
+    state["current_context"] = _built_context()
 
     result = chat_node_module.chat_node(state)
 
     assert result["answer"] == "Hi! I can help with the ingested papers."
-    assert result["current_built_context"] is None
+    assert result["current_context"] is None
     assert [message.content for message in result["messages"]] == [
         "What can you do?",
         "Hi! I can help with the ingested papers.",
@@ -346,17 +342,13 @@ def test_chat_node_rejects_urls_and_passage_markers(monkeypatch, reply, error):
         chat_node_module.chat_node(_state(question="Hi"))
 
 
-def test_retrieval_rerank_and_answer_nodes_are_separate(monkeypatch):
+def test_rag_node_retrieves_and_answers(monkeypatch):
     built, retrieval_queries, generation_calls = _stub_rag_dependencies(monkeypatch)
     state = _state(answer_mode="easy", question="Explain it simply")
     state["answer_request"] = "Explain multi-head attention simply."
     state["retrieval_query"] = "What is multi-head attention?"
 
-    retrieval_result = retrieval_node_module.retrieval_node(state)
-    state.update(retrieval_result)
-    rerank_result = rerank_node_module.rerank_node(state)
-    state.update(rerank_result)
-    result = answer_node_module.answer_node(state)
+    result = rag_node_module.rag_node(state)
 
     assert retrieval_queries == ["What is multi-head attention?"]
     assert generation_calls == [{
@@ -365,23 +357,23 @@ def test_retrieval_rerank_and_answer_nodes_are_separate(monkeypatch):
         "answer_mode": "easy",
     }]
     assert result["answer"] == "Grounded answer [P1]."
-    assert retrieval_result["current_built_context"] is built
-    assert rerank_result["current_reranked_context"] is built
+    assert result["current_context"] is built
 
 
-def test_retrieval_node_requires_query():
-    state = _state()
-
-    with pytest.raises(ValueError, match="retrieval_query must not be None"):
-        retrieval_node_module.retrieval_node(state)
-
-
-def test_answer_node_requires_evidence():
+def test_rag_node_requires_query():
     state = _state()
     state["answer_request"] = "Explain attention."
 
-    with pytest.raises(ValueError, match="current_reranked_context must not be None"):
-        answer_node_module.answer_node(state)
+    with pytest.raises(ValueError, match="retrieval_query must not be None"):
+        rag_node_module.rag_node(state)
+
+
+def test_rag_node_requires_answer_request():
+    state = _state()
+    state["retrieval_query"] = "attention"
+
+    with pytest.raises(ValueError, match="answer_request must not be None"):
+        rag_node_module.rag_node(state)
 
 
 def test_invoke_resets_turn_only_state(monkeypatch):
@@ -404,8 +396,7 @@ def test_invoke_resets_turn_only_state(monkeypatch):
     assert result["route"] is None
     assert result["answer_request"] is None
     assert result["retrieval_query"] is None
-    assert result["current_built_context"] is None
-    assert result["current_reranked_context"] is None
+    assert result["current_context"] is None
     assert result["answer"] == ""
     assert result["answer_mode"] == "easy"
     assert captured["config"] == {"configurable": {"thread_id": "conversation-1"}}
@@ -419,7 +410,7 @@ def test_default_retriever_is_not_constructed_for_a_chat_turn(monkeypatch):
         def __init__(self):
             raise AssertionError("A chat turn must not construct the paper retriever")
 
-    monkeypatch.setattr(retrieval_node_module, "PaperRetriever", UnexpectedRetriever)
+    monkeypatch.setattr(rag_node_module, "PaperRetriever", UnexpectedRetriever)
 
     result = workflow_graph.invoke_workflow_graph("Hi", f"test-lazy-{uuid4()}")
 
@@ -439,12 +430,12 @@ def test_compiled_graph_chat_route_never_retrieves(monkeypatch):
 
     assert result["route"] == "chat"
     assert result["answer"] == "Hello! Ask me about the ingested papers."
-    assert result["current_built_context"] is None
+    assert result["current_context"] is None
     assert retrieval_queries == []
     assert generation_calls == []
 
 
-def test_compiled_graph_rag_route_returns_current_built_context(monkeypatch):
+def test_compiled_graph_rag_route_returns_current_context(monkeypatch):
     model = FakeConversationModel(
         [
             _router_output(
@@ -463,10 +454,10 @@ def test_compiled_graph_rag_route_returns_current_built_context(monkeypatch):
 
     assert result["route"] == "rag"
     assert result["answer"] == "Grounded answer [P1]."
-    current_built_context = result["current_built_context"]
-    assert current_built_context is not None
-    assert current_built_context is built
-    assert current_built_context.passages_by_id == {
+    current_context = result["current_context"]
+    assert current_context is not None
+    assert current_context is built
+    assert current_context.passages_by_id == {
         "P1": "Transformers use attention."
     }
     assert retrieval_queries == ["What is multi-head attention?"]
@@ -576,6 +567,6 @@ def test_chat_turn_clears_the_previous_turns_exposed_evidence(monkeypatch):
     first = workflow_graph.invoke_workflow_graph("Explain attention", thread_id)
     second = workflow_graph.invoke_workflow_graph("Thanks", thread_id)
 
-    assert first["current_built_context"] is not None
+    assert first["current_context"] is not None
     assert second["route"] == "chat"
-    assert second["current_built_context"] is None
+    assert second["current_context"] is None

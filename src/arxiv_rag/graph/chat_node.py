@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from arxiv_rag.answering.generator import CITATION_MARKER_PATTERN, URL_PATTERN
-from arxiv_rag.model_provider import get_chat_model
 from arxiv_rag.graph.prompts import CHAT_SYSTEM_PROMPT
 from arxiv_rag.logging import get_logger
+from arxiv_rag.model_provider import get_chat_model
 
 if TYPE_CHECKING:
     from arxiv_rag.graph.workflow_graph import WorkflowGraphState
@@ -67,5 +67,5 @@ def chat_node(state: WorkflowGraphState) -> dict:
     return {
         "messages": messages,
         "answer": answer,
-        "current_built_context": None,
+        "current_context": None,
     }

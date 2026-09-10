@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
@@ -6,6 +7,7 @@ from langsmith import traceable
 
 from arxiv_rag.ingestion.vector_db_ingest import VectorStore, get_vector_store
 from arxiv_rag.logging import get_logger
+from arxiv_rag.retrieval.reranker import rerank_passages
 
 DEFAULT_TOP_K = 8
 
@@ -155,47 +157,70 @@ def build_context(results: list[tuple[Document, float]]) -> RetrievalContext:
     return build_context_with_details(results).context
 
 
+def _select_passages(built_context: BuiltContext, passage_ids: list[str]) -> BuiltContext:
+    passages_by_id = {}
+    citations = {}
+    context_blocks = []
+
+    for passage_id in passage_ids:
+        passage = built_context.passages_by_id[passage_id]
+        citation = built_context.context.citations[passage_id]
+        section = citation.label.partition(" — ")[2] or citation.label
+
+        passages_by_id[passage_id] = passage
+        citations[passage_id] = citation
+        context_blocks.append(
+            f"[{passage_id}]\n"
+            f"Section: {section}\n"
+            f"Text: {passage}"
+        )
+
+    return BuiltContext(
+        context=RetrievalContext(
+            text="\n\n---\n\n".join(context_blocks),
+            citations=citations,
+        ),
+        passages_by_id=passages_by_id,
+    )
+
+
 class PaperRetriever:
 
-    def __init__(self, vector_store: VectorStore | None = None, top_k: int = DEFAULT_TOP_K, ) -> None:
+    def __init__(self, vector_store: VectorStore | None = None, top_k: int = DEFAULT_TOP_K,
+                 reranker: Callable[[dict[str, str], str], list[str]] | None = None) -> None:
         if top_k < 1:
             raise ValueError("top_k must be at least 1")
         self._vector_store = vector_store or get_vector_store()
         self._top_k = top_k
+        self._reranker = reranker or rerank_passages
 
     @traceable(
         name="retrieve",
-        process_outputs=lambda outputs: {"num_documents": len(outputs)},
+        process_outputs=lambda outputs: {"num_passages": len(outputs.passages_by_id)},
     )
-    def retrieve(self, question: str) -> list[tuple[Document, float]]:
-        """Return ranked retrieval Documents for a non-empty question."""
+    def retrieve(self, question: str) -> BuiltContext:
+        """Return final reranked evidence for a non-empty question."""
         question = question.strip()
         if not question:
             raise ValueError("question must not be empty")
 
         try:
             results = self._vector_store.similarity_search_with_score(question, k=self._top_k)
-
         except Exception as error:
             log.exception("evidence retrieval failed (top_k=%d)", self._top_k)
             raise RuntimeError("Could not retrieve evidence.") from error
 
         log.info("retrieved %d documents (top_k=%d)", len(results), self._top_k)
 
-        return results
-
-
-    def retrieve_context_with_details(self, question: str) -> BuiltContext:
-
-        """Retrieve context and keep the passage text callers need to show evidence."""
-        retrieved_docs = self.retrieve(question)
-        return build_context_with_details(retrieved_docs)
+        built_context = build_context_with_details(results)
+        ranked_passage_ids = self._reranker(built_context.passages_by_id, question)
+        return _select_passages(built_context, ranked_passage_ids)
 
 
 if __name__ == "__main__":
     retriever = PaperRetriever()
     question = "Explain what is decoder?"
-    context = retriever.retrieve_context_with_details(question)
+    context = retriever.retrieve(question)
     print(f"Context text:\n{context.context.text}\n")
     print("Citations:")
     for citation_id, citation in context.context.citations.items():

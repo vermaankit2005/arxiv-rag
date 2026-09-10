@@ -14,6 +14,5 @@ class WorkflowGraphState(TypedDict):
     answer_request: str | None
     retrieval_query: str | None
     answer_mode: Literal["standard", "easy"]
-    current_built_context: BuiltContext | None
-    current_reranked_context: BuiltContext | None
+    current_context: BuiltContext | None
     answer: str

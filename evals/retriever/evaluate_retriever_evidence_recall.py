@@ -3,6 +3,7 @@
 from langsmith import Client
 
 from arxiv_rag import retrieval
+from arxiv_rag.ingestion.vector_db_ingest import get_vector_store
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "retrieval_evidence_dataset"
@@ -18,8 +19,9 @@ EXPERIMENT_METADATA = {
 
 def fetch_docs_for_evaluation(inputs: dict) -> dict | None:
     # Opened here, not at import, so listing the suites never needs a database.
-    retriever = retrieval.PaperRetriever()
-    retrieved_doc_list = retriever.retrieve(inputs["question"])
+    retrieved_doc_list = get_vector_store().similarity_search_with_score(
+        inputs["question"], k=retrieval.DEFAULT_TOP_K
+    )
 
     if not retrieved_doc_list:
         return None

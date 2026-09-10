@@ -45,24 +45,46 @@ def _passage(text, location="#S6.T2", section_path=None):
     }
 
 
+def _keep_passage_order(passages_by_id, _query):
+    return list(passages_by_id)
+
+
 def test_retriever_uses_the_configured_top_k():
     store = RecordingStore()
-    paper_retriever = retrieval.PaperRetriever(store, top_k=5)
+    paper_retriever = retrieval.PaperRetriever(store, top_k=5, reranker=_keep_passage_order)
 
-    paper_retriever.retrieve_context_with_details("  How does attention work?  ")
+    paper_retriever.retrieve("  How does attention work?  ")
 
     assert store.query == "How does attention work?"
     assert store.k == 5
 
 
-def test_retrieve_context_with_details_keeps_the_passage_text():
+def test_retrieve_returns_final_context_with_passage_text():
     document = _document([_passage("The model achieved 28.4 BLEU.")])
     store = RecordingStore([(document, 0.5)])
 
-    built = retrieval.PaperRetriever(store).retrieve_context_with_details("How good is it?")
+    built = retrieval.PaperRetriever(store, reranker=_keep_passage_order).retrieve("How good is it?")
 
     assert "[P1]" in built.context.text
     assert built.passages_by_id == {"P1": "The model achieved 28.4 BLEU."}
+
+
+def test_retrieve_uses_the_reranker_order():
+    document = _document([
+        _passage("First passage."),
+        _passage("Second passage.", "#S6.p3"),
+    ])
+    store = RecordingStore([(document, 0.5)])
+
+    def reverse_passages(passages_by_id, query):
+        assert query == "attention"
+        return list(reversed(passages_by_id))
+
+    built = retrieval.PaperRetriever(store, reranker=reverse_passages).retrieve("attention")
+
+    assert list(built.passages_by_id) == ["P2", "P1"]
+    assert list(built.context.citations) == ["P2", "P1"]
+    assert built.context.text.startswith("[P2]")
 
 
 def test_build_context_pairs_each_passage_with_its_exact_anchor():
@@ -171,13 +193,15 @@ def test_retrieval_failure_is_logged_and_chained_to_a_runtime_error(caplog):
     assert not any(question in message for message in messages)
 
 
-def test_traceable_retrieve_still_returns_ranked_documents():
+def test_traceable_retrieve_still_returns_built_context():
     document = _document([_passage("The model achieved 28.4 BLEU.")])
     store = RecordingStore(results=[(document, 0.2)])
-    results = retrieval.PaperRetriever(store).retrieve("How does attention work?")
+    built = retrieval.PaperRetriever(store, reranker=_keep_passage_order).retrieve(
+        "How does attention work?"
+    )
 
-    assert results == [(document, 0.2)]
-    assert not isinstance(results, dict)
+    assert built.passages_by_id == {"P1": "The model achieved 28.4 BLEU."}
+    assert not isinstance(built, dict)
 
 
 def test_traceable_build_context_still_returns_retrieval_context():
