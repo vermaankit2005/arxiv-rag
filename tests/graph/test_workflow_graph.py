@@ -10,6 +10,7 @@ from langchain_core.messages import (  # pyright: ignore[reportMissingImports]
 
 import arxiv_rag.graph.answer_node as answer_node_module
 import arxiv_rag.graph.chat_node as chat_node_module
+import arxiv_rag.graph.rerank_node as rerank_node_module
 import arxiv_rag.graph.retrieval_node as retrieval_node_module
 import arxiv_rag.graph.route_node as route_node_module
 from arxiv_rag.answering import AnswerMode
@@ -108,6 +109,7 @@ def _state(
         "retrieval_query": None,
         "answer_mode": answer_mode,
         "current_built_context": None,
+        "current_reranked_context": None,
         "answer": "",
     }
 
@@ -151,6 +153,7 @@ def _stub_rag_dependencies(monkeypatch, answers: list[str] | None = None):
         return generated_answers[0]
 
     monkeypatch.setattr(retrieval_node_module, "PaperRetriever", FakeRetriever)
+    monkeypatch.setattr(rerank_node_module, "rerank_context", lambda context, _query: context)
     monkeypatch.setattr(answer_node_module, "generate_answer", fake_generate_answer)
     return built, retrieval_queries, generation_calls
 
@@ -343,7 +346,7 @@ def test_chat_node_rejects_urls_and_passage_markers(monkeypatch, reply, error):
         chat_node_module.chat_node(_state(question="Hi"))
 
 
-def test_retrieval_and_answer_nodes_are_separate(monkeypatch):
+def test_retrieval_rerank_and_answer_nodes_are_separate(monkeypatch):
     built, retrieval_queries, generation_calls = _stub_rag_dependencies(monkeypatch)
     state = _state(answer_mode="easy", question="Explain it simply")
     state["answer_request"] = "Explain multi-head attention simply."
@@ -351,6 +354,8 @@ def test_retrieval_and_answer_nodes_are_separate(monkeypatch):
 
     retrieval_result = retrieval_node_module.retrieval_node(state)
     state.update(retrieval_result)
+    rerank_result = rerank_node_module.rerank_node(state)
+    state.update(rerank_result)
     result = answer_node_module.answer_node(state)
 
     assert retrieval_queries == ["What is multi-head attention?"]
@@ -361,6 +366,7 @@ def test_retrieval_and_answer_nodes_are_separate(monkeypatch):
     }]
     assert result["answer"] == "Grounded answer [P1]."
     assert retrieval_result["current_built_context"] is built
+    assert rerank_result["current_reranked_context"] is built
 
 
 def test_retrieval_node_requires_query():
@@ -374,7 +380,7 @@ def test_answer_node_requires_evidence():
     state = _state()
     state["answer_request"] = "Explain attention."
 
-    with pytest.raises(ValueError, match="current_built_context must not be None"):
+    with pytest.raises(ValueError, match="current_reranked_context must not be None"):
         answer_node_module.answer_node(state)
 
 
@@ -399,6 +405,7 @@ def test_invoke_resets_turn_only_state(monkeypatch):
     assert result["answer_request"] is None
     assert result["retrieval_query"] is None
     assert result["current_built_context"] is None
+    assert result["current_reranked_context"] is None
     assert result["answer"] == ""
     assert result["answer_mode"] == "easy"
     assert captured["config"] == {"configurable": {"thread_id": "conversation-1"}}

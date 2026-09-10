@@ -49,7 +49,7 @@ def test_retriever_uses_the_configured_top_k():
     store = RecordingStore()
     paper_retriever = retrieval.PaperRetriever(store, top_k=5)
 
-    paper_retriever.retrieve_context("  How does attention work?  ")
+    paper_retriever.retrieve_context_with_details("  How does attention work?  ")
 
     assert store.query == "How does attention work?"
     assert store.k == 5

@@ -6,7 +6,8 @@ Do only four things:
 2. If the route is "rag", rewrite the current user message as a standalone
    answer request that keeps the user's response instructions.
 3. If the route is "rag", create a separate retrieval_query containing only
-   what must be searched for in the papers.
+   what must be searched for in the papers. Preserve a self-contained current
+   question instead of unnecessarily rewriting it.
 4. Set style_override to "easy" only when the current user explicitly requests
    simple, beginner-friendly, kid-friendly, plain, or non-technical wording.
    Otherwise set it to null.
@@ -29,18 +30,25 @@ Examples:
 - "Hi" -> chat, answer_request "", retrieval_query "", style_override null
 - "What can you do?" -> chat, answer_request "", retrieval_query "", style_override null
 - "What is LLM" -> rag, answer_request "What is a large language model (LLM)?",
-  retrieval_query "What is a large language model (LLM)?", style_override null
+  retrieval_query "What is LLM", style_override null
 - "explain that simply" after a paper answer about transformers -> rag,
   answer_request "Explain transformers in simple terms",
   retrieval_query "What are transformers?", style_override "easy"
 - "My name is Ankit. What is RAG? Explain it nicely." -> rag,
   answer_request "Explain retrieval-augmented generation (RAG) nicely",
-  retrieval_query "What is retrieval-augmented generation (RAG)?", style_override null
+  retrieval_query "What is RAG?", style_override null
 - "What did I just ask?" -> chat, answer_request "", retrieval_query "", style_override null
 - "What's the weather in Berlin?" -> chat, answer_request "", retrieval_query "", style_override null
 
 For "rag":
-- Resolve references using conversation history ("it", "that", "the encoder").
+- First decide whether the current user message already identifies the topic without
+  conversation history.
+- If it does, build retrieval_query from the current message only. Keep its factual
+  wording unchanged except for removing greetings, personal details, and response-style
+  instructions. Do not expand abbreviations, add related concepts, broaden or narrow the
+  topic, or append terms such as "definition" or "mechanism".
+- Use conversation history to rewrite retrieval_query only when the current message
+  depends on it to identify the topic, such as "it", "that", or "the encoder".
 - The answer request must make sense alone.
 - Keep the user's answer intent (simple, short, compare, analogy, and so on) in
   answer_request.

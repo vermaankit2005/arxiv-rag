@@ -175,6 +175,7 @@ class PaperRetriever:
 
         try:
             results = self._vector_store.similarity_search_with_score(question, k=self._top_k)
+
         except Exception as error:
             log.exception("evidence retrieval failed (top_k=%d)", self._top_k)
             raise RuntimeError("Could not retrieve evidence.") from error
@@ -183,21 +184,19 @@ class PaperRetriever:
 
         return results
 
-    def retrieve_context_with_details(self, question: str) -> BuiltContext:
-        """Retrieve context and keep the passage text callers need to show evidence."""
-        retrieved_docs_with_rank = self.retrieve(question)
-        return build_context_with_details(retrieved_docs_with_rank)
 
-    def retrieve_context(self, question: str) -> RetrievalContext:
-        """Retrieve and expand a question into exact source-passage context."""
-        return self.retrieve_context_with_details(question).context
+    def retrieve_context_with_details(self, question: str) -> BuiltContext:
+
+        """Retrieve context and keep the passage text callers need to show evidence."""
+        retrieved_docs = self.retrieve(question)
+        return build_context_with_details(retrieved_docs)
 
 
 if __name__ == "__main__":
     retriever = PaperRetriever()
     question = "Explain what is decoder?"
-    context = retriever.retrieve_context(question)
-    print(f"Context text:\n{context.text}\n")
+    context = retriever.retrieve_context_with_details(question)
+    print(f"Context text:\n{context.context.text}\n")
     print("Citations:")
-    for citation_id, citation in context.citations.items():
+    for citation_id, citation in context.context.citations.items():
         print(f"{citation_id}: {citation.label} -> {citation.url}")

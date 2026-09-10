@@ -8,12 +8,12 @@ from arxiv_rag.graph.state import WorkflowGraphState
 def answer_node(state: WorkflowGraphState) -> dict:
     if state["answer_request"] is None:
         raise ValueError("answer_request must not be None for RAG route")
-    if state["current_built_context"] is None:
-        raise ValueError("current_built_context must not be None for RAG route")
+    if state["current_reranked_context"] is None:
+        raise ValueError("current_reranked_context must not be None for RAG route")
 
     answer = generate_answer(
         state["answer_request"],
-        state["current_built_context"].context,
+        state["current_reranked_context"].context,
         answer_mode=state["answer_mode"],
     )
 
