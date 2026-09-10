@@ -8,11 +8,13 @@ Run it from the project root so the pipeline finds .env and chroma_db:
 import random
 import time
 import uuid
-from concurrent.futures import ThreadPoolExecutor, wait
 
 import streamlit as st
 from citations import build_sources, link_citation_markers
-from pipeline import answer_in_conversation
+from pipeline import AnswerChunk, AnswerComplete, stream_answer_in_conversation
+
+# Non-streaming implementation import, kept for quick rollback/testing:
+# from concurrent.futures import ThreadPoolExecutor, wait
 
 # Missing .env keys, a missing Chroma database and a rejected answer all reach
 # the UI as one of these, and all of them are worth showing the reader.
@@ -107,20 +109,31 @@ if question:
         started = time.perf_counter()
         labels = thinking_labels()
         try:
-            with st.status(f":shimmer[{next(labels)}…]", type="compact") as status:
-                with ThreadPoolExecutor(max_workers=1) as pool:
-                    pending = pool.submit(answer_in_conversation, question, st.session_state.thread_id, answer_mode)
-                    while not wait([pending], timeout=PHRASE_SECONDS).done:
-                        status.update(label=f":shimmer[{next(labels)}… {time.perf_counter() - started:.0f}s]")
+            status = st.status(f":shimmer[{next(labels)}…]", type="compact")
+            answer_placeholder = st.empty()
+            streamed_answer = ""
+            result = None
 
-                result = pending.result()
-                elapsed = time.perf_counter() - started
+            for event in stream_answer_in_conversation(
+                question, st.session_state.thread_id, answer_mode
+            ):
+                if isinstance(event, AnswerChunk):
+                    streamed_answer += event.text
+                    answer_placeholder.markdown(streamed_answer + "▌")
+                elif isinstance(event, AnswerComplete):
+                    result = event.result
 
-                if result.answer_type == "rag":
-                    st.write(f"Found {len(result.context.citations)} passages.")
-                    status.update(label=f"Read the papers in {elapsed:.0f}s", state="complete")
-                else:
-                    status.update(label=f"Answered in {elapsed:.0f}s", state="complete")
+            if result is None:
+                raise RuntimeError("The answer stream ended without a completed result.")
+
+            elapsed = time.perf_counter() - started
+            if result.answer_type == "rag":
+                status.update(
+                    label=f"Read the papers in {elapsed:.0f}s",
+                    state="complete",
+                )
+            else:
+                status.update(label=f"Answered in {elapsed:.0f}s", state="complete")
         except PIPELINE_ERRORS as error:
             st.error(str(error), icon=":material/error:")
         else:
@@ -132,6 +145,24 @@ if question:
                 linked_answer = result.answer
                 sources = []
 
-            st.markdown(linked_answer)
+            # Replace the streamed plain-text citation markers with links once
+            # the final context arrives, rather than rendering the answer twice.
+            answer_placeholder.markdown(linked_answer)
             render_sources(sources)
             st.session_state.messages.append({"question": question, "answer": linked_answer, "sources": sources})
+
+        # Non-streaming version kept temporarily for quick rollback/testing:
+        # with st.status(f":shimmer[{next(labels)}…]", type="compact") as status:
+        #     with ThreadPoolExecutor(max_workers=1) as pool:
+        #         pending = pool.submit(
+        #             answer_in_conversation,
+        #             question,
+        #             st.session_state.thread_id,
+        #             answer_mode,
+        #         )
+        #         while not wait([pending], timeout=PHRASE_SECONDS).done:
+        #             status.update(
+        #                 label=f":shimmer[{next(labels)}… "
+        #                       f"{time.perf_counter() - started:.0f}s]"
+        #             )
+        #     result = pending.result()

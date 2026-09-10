@@ -90,7 +90,7 @@ def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltCo
 
     context_blocks = []
     citations = {}
-    passages_by_id = {}
+    passages_text_by_id = {}
     seen_passages = set()
     valid_documents = 0
 
@@ -123,7 +123,7 @@ def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltCo
             citation_id = f"P{len(citations) + 1}"
             citations[citation_id] = Citation(label=f"{arxiv_id} — {section_bread_crumbs}", url=url)
 
-            passages_by_id[citation_id] = source_passage.text
+            passages_text_by_id[citation_id] = source_passage.text
 
             context_blocks.append(
                 f"[{citation_id}]\n"
@@ -146,7 +146,7 @@ def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltCo
 
     return BuiltContext(
         context=retrieval_context,
-        passages_by_id=passages_by_id,
+        passages_by_id=passages_text_by_id,
     )
 
 

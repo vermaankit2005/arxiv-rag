@@ -52,7 +52,7 @@ def chat_node(state: WorkflowGraphState) -> dict:
         log.exception("Ollama answer generation failed")
         raise RuntimeError("Could not generate an answer.") from error
 
-    answer = response.content.strip()
+    answer = str(response.text).strip()
     try:
         _validate_chat_answer(answer)
     except RuntimeError as error:

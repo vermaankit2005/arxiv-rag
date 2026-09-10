@@ -1,8 +1,9 @@
 # State typedict for the workflow graph
 # pyright: reportMissingImports=false
+from collections.abc import Iterator
 from typing import Annotated, Literal, TypedDict
 
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AIMessageChunk, BaseMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.constants import END, START
 from langgraph.graph import StateGraph, add_messages
@@ -92,18 +93,42 @@ def invoke_workflow_graph(question: str, thread_id: str, answer_mode: AnswerMode
     return final_state
 
 
-if __name__ == "__main__":
-    thread_id = "example_thread_id"
-    answer_mode = "standard"
+def stream_workflow_graph(question: str, thread_id: str, answer_mode: AnswerMode = "standard") \
+        -> Iterator[WorkflowGraphState | str]:
+    config = {"configurable": {"thread_id": thread_id}}
 
-    while True:
-        question = input("Enter your question (or 'exit' to quit): ")
-        if (
-                question.lower() == "exit"
-                or question.lower() == "quit"
-                or question.lower() == "bye"
-        ):
-            break
+    state = workflow_graph.stream(
+        input={
+            "original_question": question,
+            "route": None,
+            "answer_request": None,
+            "retrieval_query": None,
+            "answer_mode": answer_mode,
+            "current_evidence": None,
+            "current_built_context": None,
+            "answer": "",
+        },
+        config=config,
+        stream_mode=["messages", "values"],
+    )
+    final_state = None
 
-        result = invoke_workflow_graph(question, thread_id, answer_mode)
-        print(result["messages"][-1].content)  # Print the last message content
+    for stream_mode, data in state:
+        if stream_mode == "values":
+            final_state = data
+            continue
+
+        message, metadata = data
+
+        if metadata.get("langgraph_node") not in {"chat_node", "rag_node"}:
+            continue
+        if not isinstance(message, AIMessageChunk):
+            continue
+
+        if isinstance(message.content, str) and message.content:
+            yield message.content
+
+    if final_state is None:
+        raise RuntimeError("The workflow did not produce any output.")
+
+    yield final_state

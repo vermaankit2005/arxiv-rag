@@ -88,7 +88,7 @@ def run_required_fact_coverage() -> None:
     client = Client()
 
     client.evaluate(
-        evaluation_context.generate_pipeline_answer_for_evaluation,
+        evaluation_context.generate_pipeline_answer_and_passages_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_required_fact_coverage],
         metadata=EXPERIMENT_METADATA,

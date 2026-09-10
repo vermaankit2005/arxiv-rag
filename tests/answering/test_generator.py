@@ -10,6 +10,7 @@ from arxiv_rag.answering import generator, renderer
 from arxiv_rag.retrieval import BuiltContext, Citation, RetrievalContext
 
 service = import_module("arxiv_rag.answering.service")
+service_stream = import_module("arxiv_rag.answering.service_stream")
 
 
 class RecordingModel(FakeListChatModel):
@@ -82,10 +83,14 @@ def test_generate_answer_returns_normal_text_with_valid_inline_citations():
     assert model.prompt is not None
     assert "Question:\nHow does it work?" in model.prompt
     assert "[P1]" in model.prompt
-    assert "Use clear, simple English and organize the explanation in a logical flow" in model.prompt
-    assert "Keep the technical depth needed to answer accurately" in model.prompt
-    assert "do not replace precise technical concepts with vague explanations" in model.prompt
-    assert "explain them briefly in plain language" in model.prompt
+    assert "Begin with the main idea in one clear sentence" in model.prompt
+    assert "step-by-step flow when the question asks how something works" in model.prompt
+    assert "Use precise technical terms only when they add useful meaning" in model.prompt
+    assert "explain each term briefly the first time it appears" in model.prompt
+    assert "Translate academic source wording into natural language" in model.prompt
+    assert "Keep the technical depth needed for accuracy" in model.prompt
+    assert "do not include mathematical or implementation details unless they help" in model.prompt
+    assert "Prefer a clear practical explanation over dense academic phrasing" in model.prompt
     assert "Answer directly in natural prose" in model.prompt
     assert "Use Markdown only when it genuinely improves readability" in model.prompt
     assert "do not announce what will follow or repeat the question" in model.prompt
@@ -271,10 +276,10 @@ def _built_context() -> BuiltContext:
 def _stub_graph(monkeypatch, captured: dict | None = None) -> BuiltContext:
     built = _built_context()
 
-    def fake_invoke(question, thread_id, answer_mode="standard"):
+    def fake_stream(question, thread_id, answer_mode="standard"):
         if captured is not None:
             captured.update(question=question, thread_id=thread_id, answer_mode=answer_mode)
-        return {
+        yield {
             "answer": "Answer [P1].",
             "current_built_context": built,
             "route": "rag",
@@ -282,19 +287,19 @@ def _stub_graph(monkeypatch, captured: dict | None = None) -> BuiltContext:
             "answer_mode": answer_mode,
         }
 
-    monkeypatch.setattr(service, "invoke_workflow_graph", fake_invoke)
+    monkeypatch.setattr(service_stream, "stream_workflow_graph", fake_stream)
     return built
 
 
 def _stub_chat_graph(monkeypatch) -> None:
-    def fake_invoke(question, thread_id, answer_mode="standard"):
-        return {
+    def fake_stream(question, thread_id, answer_mode="standard"):
+        yield {
             "answer": "Hi, I help you read the ingested papers.",
             "route": "chat",
             "answer_mode": answer_mode,
         }
 
-    monkeypatch.setattr(service, "invoke_workflow_graph", fake_invoke)
+    monkeypatch.setattr(service_stream, "stream_workflow_graph", fake_stream)
 
 
 def test_command_line_entry_asks_a_question_and_prints_the_answer(monkeypatch, capsys):
@@ -348,15 +353,15 @@ def test_answer_question_passes_easy_mode_to_the_workflow_graph(monkeypatch):
 def test_answer_question_returns_the_effective_mode_from_the_workflow(monkeypatch):
     built = _built_context()
 
-    def fake_invoke(question, thread_id, answer_mode="standard"):
-        return {
+    def fake_stream(question, thread_id, answer_mode="standard"):
+        yield {
             "answer": "Simple answer [P1].",
             "current_built_context": built,
             "route": "rag",
             "answer_mode": "easy",
         }
 
-    monkeypatch.setattr(service, "invoke_workflow_graph", fake_invoke)
+    monkeypatch.setattr(service_stream, "stream_workflow_graph", fake_stream)
 
     result = service.answer_question("Explain it simply")
 

@@ -55,7 +55,6 @@ def priority_specs() -> list[dict]:
     from evals.pipeline import evaluate_e2e_required_fact_coverage as pipeline_coverage
 
     generate = answering_context.generate_answer_for_evaluation
-    pipeline_generate = pipeline_context.generate_pipeline_answer_for_evaluation
     pipeline_generate_with_passages = (
         pipeline_context.generate_pipeline_answer_and_passages_for_evaluation
     )
@@ -94,7 +93,7 @@ def priority_specs() -> list[dict]:
         _spec(
             "pipeline_required_fact_coverage",
             pipeline_coverage,
-            pipeline_generate,
+            pipeline_generate_with_passages,
             pipeline_coverage.evaluate_required_fact_coverage,
             ("required_fact_coverage",),
             12,
@@ -142,15 +141,14 @@ def full_specs() -> list[dict]:
         evaluate_passage_anchor_validity_and_probe_recall as passage_recall,
     )
     from evals.pipeline import context as pipeline_context
-    from evals.pipeline import evaluate_e2e_fact_citation as pipeline_fact_citation
     from evals.pipeline import evaluate_e2e_evidence_behavior as pipeline_evidence
+    from evals.pipeline import evaluate_e2e_fact_citation as pipeline_fact_citation
     from evals.pipeline import evaluate_e2e_required_fact_coverage as pipeline_coverage
     from evals.retriever import evaluate_retriever_document_precision as precision
     from evals.retriever import evaluate_retriever_evidence_recall as recall
     from evals.retriever import evaluate_retriever_mean_reciprocal_rank as mrr
 
     generate = answering_context.generate_answer_for_evaluation
-    pipeline_generate = pipeline_context.generate_pipeline_answer_for_evaluation
     pipeline_generate_with_passages = (
         pipeline_context.generate_pipeline_answer_and_passages_for_evaluation
     )
@@ -253,7 +251,7 @@ def full_specs() -> list[dict]:
         _spec(
             "pipeline_required_fact_coverage",
             pipeline_coverage,
-            pipeline_generate,
+            pipeline_generate_with_passages,
             pipeline_coverage.evaluate_required_fact_coverage,
             ("required_fact_coverage",),
             24,

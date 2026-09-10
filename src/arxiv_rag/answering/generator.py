@@ -20,9 +20,12 @@ URL_PATTERN = re.compile(r"https?://", re.IGNORECASE)
 AnswerMode = Literal["standard", "easy"]
 
 STANDARD_MODE_RULES = (
-    "- Use clear, simple English and organize the explanation in a logical flow.\n"
-    "- Keep the technical depth needed to answer accurately; do not replace precise technical concepts with vague explanations.\n"
-    "- When specialized terms are necessary, explain them briefly in plain language.\n"
+    "- Begin with the main idea in one clear sentence.\n"
+    "- Explain the answer in a logical, step-by-step flow when the question asks how something works.\n"
+    "- Use precise technical terms only when they add useful meaning, and explain each term briefly the first time it appears.\n"
+    "- Translate academic source wording into natural language instead of copying its style.\n"
+    "- Keep the technical depth needed for accuracy, but do not include mathematical or implementation details unless they help answer the question.\n"
+    "- Prefer a clear practical explanation over dense academic phrasing.\n"
 )
 # Previous Easy-mode citation rule, kept here for quick rollback:
 # "- Put supporting passage IDs immediately after factual analogy sentences, just like every other factual sentence.\n"
@@ -131,8 +134,10 @@ def generate_answer(question: str, context: RetrievalContext, model: BaseChatMod
                     answer_mode: AnswerMode = "standard", ) -> str:
     """Generate a grounded answer in the requested explanation style."""
     question = question.strip()
+
     if not question:
         raise ValueError("question must not be empty")
+
     if answer_mode not in ("standard", "easy"):
         raise ValueError("answer_mode must be 'standard' or 'easy'")
 
