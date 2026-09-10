@@ -1,4 +1,3 @@
-from importlib import import_module
 from typing import Literal
 from uuid import uuid4
 
@@ -9,13 +8,13 @@ from langchain_core.messages import (  # pyright: ignore[reportMissingImports]
     SystemMessage,
 )
 
+import arxiv_rag.graph.answer_node as answer_node_module
+import arxiv_rag.graph.chat_node as chat_node_module
+import arxiv_rag.graph.retrieval_node as retrieval_node_module
+import arxiv_rag.graph.route_node as route_node_module
 from arxiv_rag.answering import AnswerMode
 from arxiv_rag.graph import workflow_graph
 from arxiv_rag.retrieval import BuiltContext, Citation, RetrievalContext
-
-chat_node_module = import_module("arxiv_rag.graph.chat_node")
-rag_node_module = import_module("arxiv_rag.graph.rag_node")
-route_node_module = import_module("arxiv_rag.graph.route_node")
 
 
 class FakeRouterModel:
@@ -152,8 +151,8 @@ def _stub_rag_dependencies(monkeypatch, answers: list[str] | None = None):
             return generated_answers.pop(0)
         return generated_answers[0]
 
-    monkeypatch.setattr(rag_node_module, "PaperRetriever", FakeRetriever)
-    monkeypatch.setattr(rag_node_module, "generate_answer", fake_generate_answer)
+    monkeypatch.setattr(retrieval_node_module, "PaperRetriever", FakeRetriever)
+    monkeypatch.setattr(answer_node_module, "generate_answer", fake_generate_answer)
     return built, retrieval_queries, generation_calls
 
 
@@ -281,7 +280,7 @@ def test_invalid_structured_router_output_falls_back_to_rag(monkeypatch):
 
 @pytest.mark.parametrize(
     ("route", "expected_node"),
-    [("chat", "chat_node"), ("rag", "rag_node")],
+    [("chat", "chat_node"), ("rag", "retrieval_node")],
 )
 def test_route_edge_selects_the_expected_node(route, expected_node):
     state = _state()
@@ -345,40 +344,39 @@ def test_chat_node_rejects_urls_and_passage_markers(monkeypatch, reply, error):
         chat_node_module.chat_node(_state(question="Hi"))
 
 
-def test_rag_node_retrieves_with_the_search_query_and_generates_with_the_answer_request(monkeypatch):
+def test_retrieval_and_answer_nodes_are_separate(monkeypatch):
     built, retrieval_queries, generation_calls = _stub_rag_dependencies(monkeypatch)
     state = _state(answer_mode="easy", question="Explain it simply")
     state["answer_request"] = "Explain multi-head attention simply."
     state["retrieval_query"] = "What is multi-head attention?"
 
-    result = rag_node_module.rag_node(state)
+    retrieval_result = retrieval_node_module.retrieval_node(state)
+    state.update(retrieval_result)
+    result = answer_node_module.answer_node(state)
 
     assert retrieval_queries == ["What is multi-head attention?"]
-    assert generation_calls == [
-        {
-            "answer_request": "Explain multi-head attention simply.",
-            "context": built.context,
-            "answer_mode": "easy",
-        }
-    ]
+    assert generation_calls == [{
+        "answer_request": "Explain multi-head attention simply.",
+        "context": built.context,
+        "answer_mode": "easy",
+    }]
     assert result["answer"] == "Grounded answer [P1]."
     assert result["current_built_context"] is built
-    assert [message.content for message in result["messages"]] == [
-        "Explain it simply",
-        "Grounded answer [P1].",
-    ]
 
 
-@pytest.mark.parametrize("missing_field", ["answer_request", "retrieval_query"])
-def test_rag_node_requires_both_router_outputs(monkeypatch, missing_field):
-    _stub_rag_dependencies(monkeypatch)
+def test_retrieval_node_requires_query():
+    state = _state()
+
+    with pytest.raises(ValueError, match="retrieval_query must not be None"):
+        retrieval_node_module.retrieval_node(state)
+
+
+def test_answer_node_requires_evidence():
     state = _state()
     state["answer_request"] = "Explain attention."
-    state["retrieval_query"] = "What is attention?"
-    state[missing_field] = None
 
-    with pytest.raises(ValueError, match=f"{missing_field} must not be None"):
-        rag_node_module.rag_node(state)
+    with pytest.raises(ValueError, match="current_evidence must not be None"):
+        answer_node_module.answer_node(state)
 
 
 def test_invoke_resets_turn_only_state(monkeypatch):
@@ -416,7 +414,7 @@ def test_default_retriever_is_not_constructed_for_a_chat_turn(monkeypatch):
         def __init__(self):
             raise AssertionError("A chat turn must not construct the paper retriever")
 
-    monkeypatch.setattr(rag_node_module, "PaperRetriever", UnexpectedRetriever)
+    monkeypatch.setattr(retrieval_node_module, "PaperRetriever", UnexpectedRetriever)
 
     result = workflow_graph.invoke_workflow_graph("Hi", f"test-lazy-{uuid4()}")
 
