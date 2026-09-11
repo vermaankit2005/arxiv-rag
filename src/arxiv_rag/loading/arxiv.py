@@ -6,18 +6,17 @@ from arxiv_rag.loading.html_parser import ArxivHtmlParser
 from arxiv_rag.loading.models import LoadedPaper
 from arxiv_rag.logging import get_logger
 
-ROOT = Path(__file__).resolve().parents[3]
-HTML_DIR = ROOT / "data" / "raw" / "sampled_html"
-
 log = get_logger(__name__)
+
+NO_HTML_NOTE = "no arXiv HTML published"
 
 # Fetch HTML from arXiv, caching it locally. The cache is a simple text file,
 # empty if arXiv has no HTML for the paper.
-def _fetch_arxiv_html(arxiv_id: str, client: httpx.Client) -> str | None:
+def _fetch_arxiv_html(arxiv_id: str, client: httpx.Client, html_dir: Path) -> str | None:
     """Download the LaTeXML page. Returns None when arXiv published none."""
 
-    HTML_DIR.mkdir(parents=True, exist_ok=True)
-    cached = HTML_DIR / f"{arxiv_id.replace('/', '_')}.html"
+    html_dir.mkdir(parents=True, exist_ok=True)
+    cached = html_dir / f"{arxiv_id.replace('/', '_')}.html"
 
     if cached.exists():
         text = cached.read_text(encoding="utf-8", errors="ignore")
@@ -37,17 +36,6 @@ def _fetch_arxiv_html(arxiv_id: str, client: httpx.Client) -> str | None:
 
 
 # Fetch and parse an arXiv paper into the application's loading model.
-def load_paper(arxiv_id: str, client: httpx.Client) -> LoadedPaper:
-    html = _fetch_arxiv_html(arxiv_id, client)
-
-    if html is None:
-        log.warning("arXiv %s has no HTML published", arxiv_id)
-        return LoadedPaper(arxiv_id, [], note="no arXiv HTML published")
-
-    return _load_paper_from_html(arxiv_id, html)
-
-
-# Fetch and parse an arXiv paper into the application's loading model.
 def _load_paper_from_html(arxiv_id: str, arxiv_html: str) -> LoadedPaper:
     parser = ArxivHtmlParser()
     parser.feed(arxiv_html)
@@ -62,10 +50,12 @@ def _load_paper_from_html(arxiv_id: str, arxiv_html: str) -> LoadedPaper:
         images=parser.images,
     )
 
+# Fetch and parse an arXiv paper into the application's loading model.
+def load_paper(arxiv_id: str, client: httpx.Client, html_dir: Path) -> LoadedPaper:
+    html = _fetch_arxiv_html(arxiv_id, client, html_dir)
 
-if __name__ == "__main__":
-    with httpx.Client() as client:
-        paper = load_paper("1706.03762v7", client)
-        print(f"\n=== {paper.arxiv_id}  {len(paper.passages)} passages  {paper.note}")
-        for p in paper.passages:
-            print(f"  [{p.location or '-'}] ({p.section}) {p.text}")
+    if html is None:
+        log.warning("arXiv %s has no HTML published", arxiv_id)
+        return LoadedPaper(arxiv_id, [], note=NO_HTML_NOTE)
+
+    return _load_paper_from_html(arxiv_id, html)

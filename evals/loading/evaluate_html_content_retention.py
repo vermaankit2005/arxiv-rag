@@ -2,11 +2,11 @@
 
 import hashlib
 import re
+import unicodedata
 from collections import Counter
 from pathlib import Path
 
 import httpx
-import unicodedata
 from dotenv import load_dotenv
 from langsmith import Client
 
@@ -49,7 +49,7 @@ def load_paper_for_content_retention(inputs: dict) -> dict:
     html_content = cached_html_path(arxiv_id).read_bytes()
 
     with httpx.Client(follow_redirects=True) as http_client:
-        paper = load_paper(arxiv_id, http_client)
+        paper = load_paper(arxiv_id, http_client, CACHED_HTML_DIRECTORY)
 
     return {
         "html_sha256": hashlib.sha256(html_content).hexdigest(),
@@ -134,10 +134,10 @@ def run_html_content_retention_evaluation() -> None:
     """Run the evaluator against the frozen LangSmith dataset."""
     load_dotenv()
     client = Client()
-    client.evaluate(
+    client.evaluate(  # pyright: ignore[reportCallIssue, reportArgumentType]
         load_paper_for_content_retention,
         data=LANGSMITH_DATASET_NAME,
-        evaluators=[evaluate_html_content_retention],
+        evaluators=[evaluate_html_content_retention],  # pyright: ignore[reportArgumentType]
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,

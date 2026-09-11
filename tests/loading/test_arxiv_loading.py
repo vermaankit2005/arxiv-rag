@@ -19,9 +19,8 @@ STUB_PAGE = "<html><body>No HTML is available for this paper.</body></html>"
 
 
 @pytest.fixture
-def cache(tmp_path, monkeypatch):
+def cache(tmp_path):
     """Send the download cache to a throwaway folder, never data/raw/sampled_html."""
-    monkeypatch.setattr("arxiv_rag.loading.arxiv.HTML_DIR", tmp_path)
     return tmp_path
 
 
@@ -38,8 +37,8 @@ def test_load_paper_returns_content_when_fetch_returns_html():
 
     with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html",
                return_value=mock_html) as mock_fetch_html:
-        loaded = load_paper("test_html", client)
-        mock_fetch_html.assert_called_once_with("test_html", client)
+        loaded = load_paper("test_html", client, HTML_DIR)
+        mock_fetch_html.assert_called_once_with("test_html", client, HTML_DIR)
 
         assert loaded.arxiv_id == "test_html"
         # 69 prose passages + 9 captions + 4 serialised data tables.
@@ -56,8 +55,8 @@ def test_load_paper_returns_empty_loaded_paper_when_fetch_returns_none():
 
     with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html",
                return_value=None) as mock_fetch_html:
-        loaded = load_paper("dummy_arxiv_id", client)
-        mock_fetch_html.assert_called_once_with("dummy_arxiv_id", client)
+        loaded = load_paper("dummy_arxiv_id", client, HTML_DIR)
+        mock_fetch_html.assert_called_once_with("dummy_arxiv_id", client, HTML_DIR)
 
         assert loaded.arxiv_id == "dummy_arxiv_id"
         assert loaded.passages == []
@@ -68,7 +67,7 @@ def test_every_passage_has_a_location_that_is_in_the_page():
     mock_html = FIXTURE.read_text(encoding="utf-8")
 
     with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html", return_value=mock_html):
-        loaded = load_paper("test_html", Mock())
+        loaded = load_paper("test_html", Mock(), HTML_DIR)
 
     for passage in loaded.passages:
         assert passage.location, f"passage {passage.order} has no location: {passage.text[:60]}"
@@ -84,8 +83,8 @@ def test_loading_the_same_paper_twice_gives_the_same_result():
     mock_html = FIXTURE.read_text(encoding="utf-8")
 
     with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html", return_value=mock_html):
-        first = load_paper("test_html", Mock())
-        second = load_paper("test_html", Mock())
+        first = load_paper("test_html", Mock(), HTML_DIR)
+        second = load_paper("test_html", Mock(), HTML_DIR)
 
     assert first == second
 
@@ -95,8 +94,8 @@ def test_every_cached_html_has_basic_correctness(html_path: Path):
     html = html_path.read_text(encoding="utf-8")
 
     with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html", return_value=html):
-        loaded = load_paper(html_path.stem, Mock())
-        loaded_again = load_paper(html_path.stem, Mock())
+        loaded = load_paper(html_path.stem, Mock(), HTML_DIR)
+        loaded_again = load_paper(html_path.stem, Mock(), HTML_DIR)
 
     assert loaded == loaded_again
 
@@ -129,7 +128,7 @@ def test_every_cached_html_has_basic_correctness(html_path: Path):
 def load_paper_fixture():
     mock_html = FIXTURE.read_text(encoding="utf-8")
     with patch("arxiv_rag.loading.arxiv._fetch_arxiv_html", return_value=mock_html):
-        return load_paper("test_html", Mock()), mock_html
+        return load_paper("test_html", Mock(), HTML_DIR), mock_html
 
 
 def test_figure_two_caption_is_one_complete_citable_passage():
@@ -286,7 +285,7 @@ def test_a_downloaded_paper_is_returned_and_kept_on_disk(cache):
     client = Mock()
     client.get.return_value = fake_response(200, REAL_PAGE)
 
-    assert _fetch_arxiv_html("1706.03762v7", client) == REAL_PAGE
+    assert _fetch_arxiv_html("1706.03762v7", client, cache) == REAL_PAGE
     assert (cache / "1706.03762v7.html").read_text(encoding="utf-8") == REAL_PAGE
 
 
@@ -296,14 +295,14 @@ def test_the_no_html_stub_is_not_mistaken_for_a_paper(cache):
     client = Mock()
     client.get.return_value = fake_response(200, STUB_PAGE)
 
-    assert _fetch_arxiv_html("2101.00001", client) is None
+    assert _fetch_arxiv_html("2101.00001", client, cache) is None
 
 
 def test_a_paper_already_on_disk_is_not_downloaded_again(cache):
     (cache / "1706.03762v7.html").write_text(REAL_PAGE, encoding="utf-8")
     client = Mock()
 
-    assert _fetch_arxiv_html("1706.03762v7", client) == REAL_PAGE
+    assert _fetch_arxiv_html("1706.03762v7", client, cache) == REAL_PAGE
     client.get.assert_not_called()
 
 
@@ -313,8 +312,8 @@ def test_a_paper_known_to_have_no_html_is_not_asked_for_twice(cache):
     client = Mock()
     client.get.return_value = fake_response(200, STUB_PAGE)
 
-    assert _fetch_arxiv_html("2101.00001", client) is None
-    assert _fetch_arxiv_html("2101.00001", client) is None
+    assert _fetch_arxiv_html("2101.00001", client, cache) is None
+    assert _fetch_arxiv_html("2101.00001", client, cache) is None
     assert client.get.call_count == 1
 
 
@@ -323,7 +322,7 @@ def test_arxiv_being_unreachable_is_reported_to_the_ingestion_pipeline(cache):
     client.get.side_effect = httpx.ConnectError("no route to host")
 
     with pytest.raises(httpx.ConnectError, match="no route to host"):
-        _fetch_arxiv_html("1706.03762v7", client)
+        _fetch_arxiv_html("1706.03762v7", client, cache)
 
 
 def test_arxiv_being_unreachable_is_not_recorded_as_no_html(cache):
@@ -334,13 +333,13 @@ def test_arxiv_being_unreachable_is_not_recorded_as_no_html(cache):
     client.get.side_effect = httpx.ConnectError("no route to host")
 
     with pytest.raises(httpx.ConnectError):
-        _fetch_arxiv_html("1706.03762v7", client)
+        _fetch_arxiv_html("1706.03762v7", client, cache)
     assert not (cache / "1706.03762v7.html").exists()
 
     # Network comes back: the paper is fetched, not skipped forever.
     client.get.side_effect = None
     client.get.return_value = fake_response(200, REAL_PAGE)
-    assert _fetch_arxiv_html("1706.03762v7", client) == REAL_PAGE
+    assert _fetch_arxiv_html("1706.03762v7", client, cache) == REAL_PAGE
 
 
 @pytest.mark.parametrize("status", [403, 429, 500])
@@ -355,6 +354,6 @@ def test_http_failures_are_not_cached_as_missing_html(cache, status):
     client.get.return_value = response
 
     with pytest.raises(httpx.HTTPStatusError):
-        _fetch_arxiv_html("1706.03762v7", client)
+        _fetch_arxiv_html("1706.03762v7", client, cache)
 
     assert not (cache / "1706.03762v7.html").exists()

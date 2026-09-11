@@ -23,9 +23,15 @@ class ArxivSampleHTMLLoader(DocumentLoader):
     def get_docs_name(self) -> list[str]:
         """Load documents from the specified directory."""
         documents_name = []
+
         for file_path in Path(self.CACHED_HTML_DIRECTORY).glob("*.html"):
             documents_name.append(file_path.name)
         return documents_name
+
+
+def getLoader() -> DocumentLoader:
+    """Get the appropriate document loader based on the environment."""
+    return ArxivSampleHTMLLoader()
 
 
 if __name__ == "__main__":

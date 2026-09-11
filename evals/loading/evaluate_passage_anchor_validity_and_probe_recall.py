@@ -37,7 +37,7 @@ def load_passages_for_evaluation(inputs: dict) -> dict:
     html_content = cached_html_path(arxiv_id).read_bytes()
 
     with httpx.Client(follow_redirects=True) as http_client:
-        paper = load_paper(arxiv_id, http_client)
+        paper = load_paper(arxiv_id, http_client, CACHED_HTML_DIRECTORY)
 
     return {
         "html_sha256": hashlib.sha256(html_content).hexdigest(),
@@ -92,10 +92,10 @@ def run_passage_anchor_and_probe_recall_evaluation() -> None:
     """Run both evaluators against the frozen LangSmith dataset."""
     load_dotenv()
     langsmith_client = Client()
-    langsmith_client.evaluate(
+    langsmith_client.evaluate(  # pyright: ignore[reportCallIssue, reportArgumentType]
         load_passages_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
-        evaluators=[evaluate_passage_anchor_validity_and_probe_recall],
+        evaluators=[evaluate_passage_anchor_validity_and_probe_recall],  # pyright: ignore[reportArgumentType]
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,

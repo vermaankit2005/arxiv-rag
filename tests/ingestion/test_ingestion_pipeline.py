@@ -17,6 +17,12 @@ class FakeLoader:
         return ["paper-1.html", "paper-2.html"]
 
 
+class FakeLoadedPaper:
+    def __init__(self, arxiv_id):
+        self.arxiv_id = arxiv_id
+        self.note = None
+
+
 class RecordingStore:
     def __init__(self, fail_on_add=None, fail_on_delete=False):
         self.fail_on_add = fail_on_add
@@ -37,13 +43,17 @@ class RecordingStore:
 
 
 def _patch_loading(monkeypatch):
-    monkeypatch.setattr(ingestion_pipeline, "ArxivSampleHTMLLoader", FakeLoader)
+    monkeypatch.setattr(ingestion_pipeline, "getLoader", lambda: FakeLoader())
     monkeypatch.setattr(ingestion_pipeline.httpx, "Client", FakeHttpClient)
-    monkeypatch.setattr(ingestion_pipeline, "load_paper", lambda arxiv_id, client: arxiv_id)
+    monkeypatch.setattr(
+        ingestion_pipeline,
+        "load_paper",
+        lambda arxiv_id, client, html_dir: FakeLoadedPaper(arxiv_id),
+    )
     monkeypatch.setattr(
         ingestion_pipeline,
         "convert_loaded_paper_to_documents",
-        lambda loaded_paper: [f"document-for-{loaded_paper}"],
+        lambda loaded_paper: [f"document-for-{loaded_paper.arxiv_id}"],
     )
 
 
@@ -51,11 +61,12 @@ def test_parse_failure_processes_later_papers_but_does_not_stage_partial_corpus(
     _patch_loading(monkeypatch)
     loaded = []
 
-    def load(arxiv_id, client):
+    def load(arxiv_id, client, html_dir):
+        assert html_dir == ingestion_pipeline.HTML_DIR
         loaded.append(arxiv_id)
         if arxiv_id == "paper-1":
             raise RuntimeError("parse failed")
-        return arxiv_id
+        return FakeLoadedPaper(arxiv_id)
 
     monkeypatch.setattr(ingestion_pipeline, "load_paper", load)
     monkeypatch.setattr(
@@ -105,7 +116,7 @@ def test_empty_input_stops_before_creating_staging_collection(monkeypatch):
         def get_docs_name(self):
             return []
 
-    monkeypatch.setattr(ingestion_pipeline, "ArxivSampleHTMLLoader", EmptyLoader)
+    monkeypatch.setattr(ingestion_pipeline, "getLoader", lambda: EmptyLoader())
     monkeypatch.setattr(
         ingestion_pipeline,
         "get_vector_store",
