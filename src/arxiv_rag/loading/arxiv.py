@@ -13,8 +13,8 @@ NO_HTML_NOTE = "no arXiv HTML published"
 # Fetch HTML from arXiv, caching it locally. The cache is a simple text file,
 # empty if arXiv has no HTML for the paper.
 def _fetch_arxiv_html(arxiv_id: str, client: httpx.Client, html_dir: Path) -> str | None:
-    """Download the LaTeXML page. Returns None when arXiv published none."""
 
+    """Download the LaTeXML page. Returns None when arXiv published none."""
     html_dir.mkdir(parents=True, exist_ok=True)
     cached = html_dir / f"{arxiv_id.replace('/', '_')}.html"
 
@@ -31,7 +31,9 @@ def _fetch_arxiv_html(arxiv_id: str, client: httpx.Client, html_dir: Path) -> st
     # arXiv answers with a "no HTML for this paper" stub, not a 404.
     missing = "ltx_page_main" not in r.text
 
+    # Writing the html file in the folder
     cached.write_text("" if missing else r.text, encoding="utf-8")
+    log.info("downloaded arXiv HTML for %s", arxiv_id)
     return None if missing else r.text
 
 

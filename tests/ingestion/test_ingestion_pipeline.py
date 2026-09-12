@@ -1,4 +1,16 @@
+import json
+from typing import Any, cast
+
+import pytest
+from langchain_core.documents import Document
+
 from arxiv_rag.ingestion import ingestion_pipeline
+
+
+@pytest.fixture(autouse=True)
+def isolated_checkpoint(monkeypatch, tmp_path):
+    monkeypatch.setattr(ingestion_pipeline, "INGESTION_CHECKPOINT_FILE", tmp_path / "ingestion_checkpoint.json")
+    monkeypatch.setattr(ingestion_pipeline.time, "sleep", lambda seconds: None)
 
 
 class FakeHttpClient:
@@ -14,7 +26,7 @@ class FakeHttpClient:
 
 class FakeLoader:
     def get_docs_name(self):
-        return ["paper-1.html", "paper-2.html"]
+        return ["paper-1", "paper-2"]
 
 
 class FakeLoadedPaper:
@@ -28,7 +40,9 @@ class RecordingStore:
         self.fail_on_add = fail_on_add
         self.fail_on_delete = fail_on_delete
         self.added = []
+        self.activated = False
         self.deleted = False
+        self.closed = False
 
     def add(self, documents):
         if len(self.added) + 1 == self.fail_on_add:
@@ -36,14 +50,20 @@ class RecordingStore:
         self.added.append(documents)
         return []
 
+    def activate(self):
+        self.activated = True
+
     def delete(self):
         self.deleted = True
         if self.fail_on_delete:
             raise RuntimeError("cleanup failed")
 
+    def close(self):
+        self.closed = True
+
 
 def _patch_loading(monkeypatch):
-    monkeypatch.setattr(ingestion_pipeline, "getLoader", lambda: FakeLoader())
+    monkeypatch.setattr(ingestion_pipeline, "get_loader", lambda: FakeLoader())
     monkeypatch.setattr(ingestion_pipeline.httpx, "Client", FakeHttpClient)
     monkeypatch.setattr(
         ingestion_pipeline,
@@ -57,48 +77,37 @@ def _patch_loading(monkeypatch):
     )
 
 
-def test_parse_failure_processes_later_papers_but_does_not_stage_partial_corpus(monkeypatch):
+def test_parse_failure_deletes_staging_and_stops_before_later_papers(monkeypatch):
     _patch_loading(monkeypatch)
+    store = RecordingStore()
     loaded = []
 
     def load(arxiv_id, client, html_dir):
-        assert html_dir == ingestion_pipeline.HTML_DIR
+        assert html_dir == ingestion_pipeline.SAMPLE_HTML_DIR
         loaded.append(arxiv_id)
-        if arxiv_id == "paper-1":
-            raise RuntimeError("parse failed")
-        return FakeLoadedPaper(arxiv_id)
+        raise RuntimeError("parse failed")
 
     monkeypatch.setattr(ingestion_pipeline, "load_paper", load)
-    monkeypatch.setattr(
-        ingestion_pipeline,
-        "get_vector_store",
-        lambda **kwargs: (_ for _ in ()).throw(AssertionError("must not create staging collection")),
-    )
-    monkeypatch.setattr(
-        ingestion_pipeline,
-        "activate_collection",
-        lambda name: (_ for _ in ()).throw(AssertionError("must not activate collection")),
-    )
+    monkeypatch.setattr(ingestion_pipeline, "get_vector_store", lambda **kwargs: store)
 
     try:
         ingestion_pipeline.ingest_documents()
     except RuntimeError as error:
-        assert "paper-1" in str(error)
+        assert str(error) == "parse failed"
     else:
         raise AssertionError("Expected parsing to fail")
 
-    assert loaded == ["paper-1", "paper-2"]
+    assert loaded == ["paper-1"]
+    assert store.added == []
+    assert store.activated is False
+    assert store.deleted is False
+    assert store.closed is True
 
 
-def test_embedding_failure_deletes_staging_and_leaves_active_collection_untouched(monkeypatch):
+def test_embedding_failure_preserves_staging_and_leaves_active_collection_untouched(monkeypatch):
     _patch_loading(monkeypatch)
     store = RecordingStore(fail_on_add=2)
     monkeypatch.setattr(ingestion_pipeline, "get_vector_store", lambda **kwargs: store)
-    monkeypatch.setattr(
-        ingestion_pipeline,
-        "activate_collection",
-        lambda name: (_ for _ in ()).throw(AssertionError("must not activate collection")),
-    )
 
     try:
         ingestion_pipeline.ingest_documents()
@@ -108,7 +117,11 @@ def test_embedding_failure_deletes_staging_and_leaves_active_collection_untouche
         raise AssertionError("Expected embedding to fail")
 
     assert store.added == [["document-for-paper-1"]]
-    assert store.deleted is True
+    assert store.activated is False
+    assert store.deleted is False
+    assert store.closed is True
+    checkpoint = json.loads(ingestion_pipeline.INGESTION_CHECKPOINT_FILE.read_text(encoding="utf-8"))
+    assert checkpoint["next_index"] == 1
 
 
 def test_empty_input_stops_before_creating_staging_collection(monkeypatch):
@@ -116,7 +129,7 @@ def test_empty_input_stops_before_creating_staging_collection(monkeypatch):
         def get_docs_name(self):
             return []
 
-    monkeypatch.setattr(ingestion_pipeline, "getLoader", lambda: EmptyLoader())
+    monkeypatch.setattr(ingestion_pipeline, "get_loader", lambda: EmptyLoader())
     monkeypatch.setattr(
         ingestion_pipeline,
         "get_vector_store",
@@ -131,14 +144,11 @@ def test_empty_input_stops_before_creating_staging_collection(monkeypatch):
         raise AssertionError("Expected empty ingestion to fail")
 
 
-def test_zero_prepared_documents_stops_before_creating_staging_collection(monkeypatch):
+def test_zero_prepared_documents_deletes_staging_collection(monkeypatch):
     _patch_loading(monkeypatch)
+    store = RecordingStore()
     monkeypatch.setattr(ingestion_pipeline, "convert_loaded_paper_to_documents", lambda paper: [])
-    monkeypatch.setattr(
-        ingestion_pipeline,
-        "get_vector_store",
-        lambda **kwargs: (_ for _ in ()).throw(AssertionError("must not create staging collection")),
-    )
+    monkeypatch.setattr(ingestion_pipeline, "get_vector_store", lambda **kwargs: store)
 
     try:
         ingestion_pipeline.ingest_documents()
@@ -147,20 +157,60 @@ def test_zero_prepared_documents_stops_before_creating_staging_collection(monkey
     else:
         raise AssertionError("Expected document-free ingestion to fail")
 
+    assert store.added == []
+    assert store.activated is False
+    assert store.deleted is False
+    assert store.closed is True
 
-def test_cleanup_failure_preserves_the_embedding_failure(monkeypatch):
+
+def test_add_retries_five_times_and_respects_retry_after(monkeypatch):
+    class RetryableError(RuntimeError):
+        error = {"retry_after": 60}
+
+    class RetryStore(RecordingStore):
+        def __init__(self):
+            super().__init__()
+            self.attempts = 0
+
+        def add(self, documents):
+            self.attempts += 1
+            if self.attempts < 5:
+                raise RetryableError("temporary failure")
+            return super().add(documents)
+
+    delays = []
+    store = RetryStore()
+    monkeypatch.setattr(ingestion_pipeline.time, "sleep", delays.append)
+
+    ingestion_pipeline._add_documents_with_retry(cast(Any, store), [Document(page_content="document")])
+
+    assert store.attempts == 5
+    assert delays == [60, 60, 60, 60]
+
+
+def test_resume_uses_same_collection_and_starts_at_first_unfinished_paper(monkeypatch):
     _patch_loading(monkeypatch)
-    store = RecordingStore(fail_on_add=1, fail_on_delete=True)
-    monkeypatch.setattr(ingestion_pipeline, "get_vector_store", lambda **kwargs: store)
+    first_store = RecordingStore(fail_on_add=2)
+    second_store = RecordingStore()
+    stores = iter([first_store, second_store])
+    requested_collections = []
 
-    try:
+    def get_store(**kwargs):
+        requested_collections.append(kwargs["collection_name"])
+        return next(stores)
+
+    monkeypatch.setattr(ingestion_pipeline, "get_vector_store", get_store)
+
+    with pytest.raises(RuntimeError, match="embedding failed"):
         ingestion_pipeline.ingest_documents()
-    except RuntimeError as error:
-        assert str(error) == "embedding failed"
-    else:
-        raise AssertionError("Expected embedding to fail")
 
-    assert store.deleted is True
+    returned_store = ingestion_pipeline.ingest_documents()
+
+    assert returned_store is second_store
+    assert requested_collections[0] == requested_collections[1]
+    assert second_store.added == [["document-for-paper-2"]]
+    assert second_store.activated is True
+    assert not ingestion_pipeline.INGESTION_CHECKPOINT_FILE.exists()
 
 
 def test_ingestion_main_returns_failure_status(monkeypatch):
@@ -173,22 +223,32 @@ def test_ingestion_main_returns_failure_status(monkeypatch):
     assert ingestion_pipeline.main() == 1
 
 
+def test_ingestion_main_closes_the_store(monkeypatch):
+    store = RecordingStore()
+    monkeypatch.setattr(ingestion_pipeline, "ingest_documents", lambda: store)
+
+    assert ingestion_pipeline.main() == 0
+    assert store.closed is True
+
+
 def test_complete_staging_collection_is_activated_after_all_writes(monkeypatch):
     _patch_loading(monkeypatch)
     store = RecordingStore()
-    requested_collections = []
-    activated_collections = []
+    factory_calls = []
 
     def get_store(**kwargs):
-        requested_collections.append(kwargs["collection_name"])
+        factory_calls.append(kwargs)
         return store
 
     monkeypatch.setattr(ingestion_pipeline, "get_vector_store", get_store)
-    monkeypatch.setattr(ingestion_pipeline, "activate_collection", activated_collections.append)
 
     returned_store = ingestion_pipeline.ingest_documents()
 
     assert returned_store is store
     assert store.added == [["document-for-paper-1"], ["document-for-paper-2"]]
-    assert activated_collections == requested_collections
-    assert requested_collections[0].startswith("arxiv_papers_staging_")
+    assert store.activated is True
+    assert len(factory_calls) == 1
+    assert factory_calls[0]["create_if_missing"] is True
+    assert factory_calls[0]["staging"] is True
+    assert factory_calls[0]["collection_name"].startswith("arxiv_papers_")
+    assert not ingestion_pipeline.INGESTION_CHECKPOINT_FILE.exists()

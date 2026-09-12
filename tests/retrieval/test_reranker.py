@@ -1,10 +1,23 @@
+from contextlib import nullcontext
+
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
 
 import arxiv_rag.retrieval.reranker as reranker_module
 
 
 def test_rerank_passages_returns_passage_ids_in_relevance_order(monkeypatch):
+    client_closed = []
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            client_closed.append(True)
+
     class FakeReranker:
+        client = FakeClient()
+
         def compress_documents(self, documents, query):
             assert query == "attention"
             assert [document.page_content for document in documents] == [
@@ -23,10 +36,13 @@ def test_rerank_passages_returns_passage_ids_in_relevance_order(monkeypatch):
     )
 
     assert ranked_ids == ["P2"]
+    assert client_closed == [True]
 
 
 def test_rerank_passages_wraps_cohere_failures(monkeypatch):
     class FailingReranker:
+        client = nullcontext()
+
         def compress_documents(self, documents, query):
             raise OSError("Cohere unavailable")
 

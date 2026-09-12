@@ -15,7 +15,12 @@ def rag_node(state: WorkflowGraphState) -> dict:
     if retrieval_query is None:
         raise ValueError("retrieval_query must not be None for RAG route")
 
-    built_context = PaperRetriever().retrieve(retrieval_query)
+    retriever = PaperRetriever()
+    try:
+        built_context = retriever.retrieve(retrieval_query)
+    finally:
+        retriever.close()
+
     answer = generate_answer(
         answer_request,
         built_context.context,

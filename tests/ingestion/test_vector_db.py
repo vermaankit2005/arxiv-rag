@@ -1,10 +1,13 @@
+from datetime import UTC, datetime
+
 from langchain_core.embeddings import (  # pyright: ignore[reportMissingImports]
     DeterministicFakeEmbedding,
 )
 
 from arxiv_rag.ingestion import vector_db_ingest
+from arxiv_rag.ingestion.chroma_vector_store import ChromaStore
 from arxiv_rag.ingestion.documents import convert_loaded_paper_to_documents
-from arxiv_rag.ingestion.vector_db_ingest import ChromaStore
+from arxiv_rag.ingestion.vector_store import versioned_collection_name
 from arxiv_rag.loading.models import LoadedPaper, Passage
 
 
@@ -37,7 +40,9 @@ def test_chroma_round_trip_preserves_document_content_and_metadata(tmp_path):
     documents = _documents()
 
     store.add(documents)
-    stored = store.get([documents[0].id])
+    document_id = documents[0].id
+    assert document_id is not None
+    stored = store.get([document_id])
 
     assert len(stored) == 1
     assert stored[0].id == documents[0].id
@@ -45,27 +50,49 @@ def test_chroma_round_trip_preserves_document_content_and_metadata(tmp_path):
     assert stored[0].metadata == documents[0].metadata
 
 
-def test_vector_store_uses_the_configured_embeddings(monkeypatch):
+def test_vector_store_factory_hides_the_configured_backend(monkeypatch):
     embeddings = object()
     expected_store = object()
+    opened_with = {}
+
+    def open_store(**kwargs):
+        opened_with.update(kwargs)
+        return expected_store
 
     monkeypatch.setattr(vector_db_ingest, "get_embeddings", lambda: embeddings)
-    monkeypatch.setattr(vector_db_ingest, "ChromaStore", lambda *args, **kwargs: expected_store)
+    monkeypatch.setattr(vector_db_ingest, "application_config", lambda: {"loading": {"active": {"vector_store": "CHROMA"}}})
+    monkeypatch.setattr(vector_db_ingest, "get_chroma_store", open_store)
 
-    store = vector_db_ingest.get_vector_store(create_if_missing=True, collection_name="test")
+    store = vector_db_ingest.get_vector_store(create_if_missing=True, staging=True)
 
     assert store is expected_store
+    assert opened_with == {
+        "embeddings": embeddings,
+        "create_if_missing": True,
+        "staging": True,
+        "collection_name": None,
+    }
 
 
-def test_activating_collection_replaces_active_pointer(monkeypatch, tmp_path):
+def test_versioned_collection_name_contains_utc_date_and_time():
+    timestamp = datetime(2026, 9, 12, 15, 45, 11, tzinfo=UTC)
+
+    assert versioned_collection_name("arxiv_papers", timestamp) == "arxiv_papers_20260912_154511"
+
+
+def test_activating_collection_replaces_active_pointer(tmp_path):
     active_collection_file = tmp_path / "active_collection.txt"
     active_collection_file.write_text("old_collection", encoding="utf-8")
-    monkeypatch.setattr(vector_db_ingest, "CHROMA_DIRECTORY", tmp_path)
-    monkeypatch.setattr(vector_db_ingest, "ACTIVE_COLLECTION_FILE", active_collection_file)
+    store = ChromaStore(
+        embeddings=DeterministicFakeEmbedding(size=8),
+        persist_directory=tmp_path / "chroma",
+        collection_name="complete_collection",
+        active_collection_file=active_collection_file,
+    )
 
-    vector_db_ingest.activate_collection("complete_collection")
+    store.activate()
 
-    assert vector_db_ingest.get_active_collection_name() == "complete_collection"
+    assert active_collection_file.read_text(encoding="utf-8") == "complete_collection"
     assert list(tmp_path.glob(".active_collection.txt.*")) == []
 
 

@@ -45,6 +45,7 @@ THRESHOLDS: dict[str, float] = {
     # outright wrong decision does not.
     "generation_evidence_behavior.evidence_behavior": 0.90,
     "pipeline_required_fact_coverage.required_fact_coverage": 0.85,
+    "pipeline_answer_quality.answer_quality": 0.75,
     "pipeline_fact_citation.fact_citation": 0.95,
     "pipeline_evidence_behavior.evidence_behavior": 0.90,
     # Ten binary cases each. 0.90 tolerates one failure; 0.80 would tolerate two,

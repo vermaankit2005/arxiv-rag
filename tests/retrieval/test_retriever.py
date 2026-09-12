@@ -3,7 +3,7 @@ import json
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag import retrieval
-from arxiv_rag.ingestion.vector_db_ingest import VectorStore
+from arxiv_rag.ingestion.vector_store import VectorStore
 
 
 class RecordingStore(VectorStore):
@@ -11,6 +11,7 @@ class RecordingStore(VectorStore):
         self.results = results or []
         self.query = None
         self.k = None
+        self.closed = False
 
     def add(self, documents):
         return [str(document.id) for document in documents]
@@ -23,8 +24,14 @@ class RecordingStore(VectorStore):
         self.k = k
         return self.results
 
+    def activate(self):
+        return None
+
     def delete(self):
         return None
+
+    def close(self):
+        self.closed = True
 
 
 def _document(source_passages, arxiv_id="1706.03762v7"):

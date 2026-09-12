@@ -137,6 +137,9 @@ def _stub_rag_dependencies(monkeypatch, answers: list[str] | None = None):
             retrieval_queries.append(question)
             return built
 
+        def close(self) -> None:
+            pass
+
     def fake_generate_answer(answer_request, context, answer_mode="standard"):
         generation_calls.append(
             {
@@ -358,6 +361,27 @@ def test_rag_node_retrieves_and_answers(monkeypatch):
     }]
     assert result["answer"] == "Grounded answer [P1]."
     assert result["current_context"] is built
+
+
+def test_rag_node_closes_the_retriever_when_retrieval_fails(monkeypatch):
+    closed = []
+
+    class FailingRetriever:
+        def retrieve(self, question):
+            raise RuntimeError("retrieval failed")
+
+        def close(self):
+            closed.append(True)
+
+    monkeypatch.setattr(rag_node_module, "PaperRetriever", FailingRetriever)
+    state = _state()
+    state["answer_request"] = "Explain attention."
+    state["retrieval_query"] = "attention"
+
+    with pytest.raises(RuntimeError, match="retrieval failed"):
+        rag_node_module.rag_node(state)
+
+    assert closed == [True]
 
 
 def test_rag_node_requires_query():

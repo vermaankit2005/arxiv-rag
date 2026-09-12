@@ -38,9 +38,10 @@ jobs:
       - name: Write placeholder .env
         run: |
           cat > .env <<'ENV'
-          OLLAMA_BASE_URL=http://localhost:11434
           CF-ACCESS-CLIENT-ID=placeholder
           CF-ACCESS-CLIENT-SECRET=placeholder
+          OLLAMA-CF-ACCESS-CLIENT-ID=placeholder
+          OLLAMA-CF-ACCESS-CLIENT-SECRET=placeholder
           GENERATOR_MODEL=placeholder-generator
           JUDGE_MODEL=placeholder-judge
           LANGSMITH_TRACING=false

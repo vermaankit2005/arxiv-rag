@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 
 import pytest  # pyright: ignore[reportMissingImports]
 
-from arxiv_rag.ingestion import vector_db_ingest
 from evals.regression.runner import (
     UPLOAD_ENV_NAME,
     _error_record,
@@ -23,8 +22,10 @@ def test_suites_can_be_listed_without_a_chroma_database(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     """CI lists the suites on a runner that has not ingested the corpus yet."""
+    from arxiv_rag.ingestion import chroma_vector_store
+
     monkeypatch.setattr(
-        vector_db_ingest, "CHROMA_DATABASE_FILE", tmp_path / "missing.sqlite3"
+        chroma_vector_store, "CHROMA_DATABASE_FILE", tmp_path / "missing.sqlite3"
     )
     for module_name in list(sys.modules):
         if module_name.startswith("evals."):

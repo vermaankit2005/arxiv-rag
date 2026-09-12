@@ -1,4 +1,4 @@
-from arxiv_rag import model_provider
+from arxiv_rag import model_provider, util
 
 
 def _write_config(path):
@@ -10,7 +10,7 @@ chat:
   api_key: unused
   temperature: 0
 embeddings:
-  base_url: http://localhost:11434
+  base_url: https://ollama.test
   model: qwen3-embedding:4b
 """,
         encoding="utf-8",
@@ -22,7 +22,7 @@ def test_get_model_provider_uses_yaml_configuration_and_cloudflare_headers(monke
     sentinel = object()
     application_file = tmp_path / "application.yaml"
     _write_config(application_file)
-    monkeypatch.setattr(model_provider, "APPLICATION_FILE", application_file)
+    monkeypatch.setattr(util, "APPLICATION_FILE", application_file)
     monkeypatch.setenv("CF-ACCESS-CLIENT-ID", "client-id")
     monkeypatch.setenv("CF-ACCESS-CLIENT-SECRET", "client-secret")
     monkeypatch.setattr(
@@ -46,12 +46,16 @@ def test_get_model_provider_uses_yaml_configuration_and_cloudflare_headers(monke
     }
 
 
-def test_get_embeddings_uses_local_ollama_yaml_configuration(monkeypatch, tmp_path):
+def test_get_embeddings_uses_remote_ollama_configuration_and_cloudflare_headers(
+    monkeypatch, tmp_path
+):
     captured_options = {}
     sentinel = object()
     application_file = tmp_path / "application.yaml"
     _write_config(application_file)
-    monkeypatch.setattr(model_provider, "APPLICATION_FILE", application_file)
+    monkeypatch.setattr(util, "APPLICATION_FILE", application_file)
+    monkeypatch.setenv("OLLAMA-CF-ACCESS-CLIENT-ID", "ollama-client-id")
+    monkeypatch.setenv("OLLAMA-CF-ACCESS-CLIENT-SECRET", "ollama-client-secret")
     monkeypatch.setattr(
         model_provider,
         "OllamaEmbeddings",
@@ -63,5 +67,11 @@ def test_get_embeddings_uses_local_ollama_yaml_configuration(monkeypatch, tmp_pa
     assert result is sentinel
     assert captured_options == {
         "model": "qwen3-embedding:4b",
-        "base_url": "http://localhost:11434",
+        "base_url": "https://ollama.test",
+        "client_kwargs": {
+            "headers": {
+                "CF-Access-Client-Id": "ollama-client-id",
+                "CF-Access-Client-Secret": "ollama-client-secret",
+            }
+        },
     }

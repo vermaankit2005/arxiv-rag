@@ -5,7 +5,11 @@ from arxiv_rag.retrieval import PaperRetriever
 def generate_pipeline_answer_and_passages_for_evaluation(inputs: dict) -> dict:
     """Run the pipeline and expose its retrieved evidence to evaluators."""
     question = inputs.get("question", "")
-    built = PaperRetriever().retrieve(question)
+    retriever = PaperRetriever()
+    try:
+        built = retriever.retrieve(question)
+    finally:
+        retriever.close()
     answer = generate_answer(question, built.context)
     return {
         "answer": answer,

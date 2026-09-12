@@ -5,7 +5,7 @@ Read the latest relevant code and documentation before proposing work.
 ## How we build
 
 - Keep Python code simple and direct. Avoid clever or unnecessary abstractions.
-- Keep Python function signatures and imports on one line when they fit reasonably.
+- Always keep Python function signatures and imports on one line, even when the line is long.
 - Never run Ruff in this repository, including Ruff lint, fix, or format commands.
   Preserve the existing code formatting and do not run any formatter unless the
   user explicitly requests it.

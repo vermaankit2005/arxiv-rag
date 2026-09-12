@@ -141,6 +141,7 @@ def full_specs() -> list[dict]:
         evaluate_passage_anchor_validity_and_probe_recall as passage_recall,
     )
     from evals.pipeline import context as pipeline_context
+    from evals.pipeline import evaluate_e2e_answer_quality as pipeline_quality
     from evals.pipeline import evaluate_e2e_evidence_behavior as pipeline_evidence
     from evals.pipeline import evaluate_e2e_fact_citation as pipeline_fact_citation
     from evals.pipeline import evaluate_e2e_required_fact_coverage as pipeline_coverage
@@ -254,6 +255,14 @@ def full_specs() -> list[dict]:
             pipeline_generate_with_passages,
             pipeline_coverage.evaluate_required_fact_coverage,
             ("required_fact_coverage",),
+            24,
+        ),
+        _spec(
+            "pipeline_answer_quality",
+            pipeline_quality,
+            pipeline_generate_with_passages,
+            pipeline_quality.evaluate_answer_quality,
+            ("answer_quality",),
             24,
         ),
         _spec(

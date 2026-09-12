@@ -8,6 +8,8 @@ __pycache__/
 experiments/**/output/
 .idea/
 *.stackdump
+.claude/
+/nul
 
 # Publish README.md and one canonical release-status document. Keep detailed
 # sprint notes and other working material local.
@@ -28,3 +30,4 @@ experiments/
 # The published benchmark page ships; `docs/` above would otherwise catch it.
 !evals/docs/
 chroma_db/
+weaviate_db/

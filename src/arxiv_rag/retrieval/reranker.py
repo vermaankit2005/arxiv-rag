@@ -5,7 +5,7 @@ from langchain_core.documents import Document
 from arxiv_rag.logging import get_logger
 
 COHERE_RERANK_MODEL = "rerank-v4.0-pro"
-RERANK_TOP_N = 10
+RERANK_TOP_N = 15
 
 log = get_logger(__name__)
 
@@ -32,7 +32,9 @@ def rerank_passages(passages_by_id: dict[str, str], query: str) -> list[str]:
     )
 
     try:
-        reranked_documents = _get_reranker().compress_documents(documents, query)
+        reranker = _get_reranker()
+        with reranker.client:
+            reranked_documents = reranker.compress_documents(documents, query)
     except Exception as error:
         log.exception("Cohere passage reranking failed")
         raise RuntimeError("Could not rerank retrieved evidence.") from error

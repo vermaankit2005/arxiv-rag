@@ -1,11 +1,11 @@
 import json
-from collections.abc import Callable
 from dataclasses import dataclass
 
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
 from langsmith import traceable
 
-from arxiv_rag.ingestion.vector_db_ingest import VectorStore, get_vector_store
+from arxiv_rag.ingestion.vector_db_ingest import get_vector_store
+from arxiv_rag.ingestion.vector_store import VectorStore
 from arxiv_rag.logging import get_logger
 from arxiv_rag.retrieval.reranker import rerank_passages
 
@@ -189,6 +189,7 @@ class PaperRetriever:
     def __init__(self, vector_store: VectorStore | None = None, top_k: int = DEFAULT_TOP_K) -> None:
         if top_k < 1:
             raise ValueError("top_k must be at least 1")
+        self._owns_vector_store = vector_store is None
         self._vector_store = vector_store or get_vector_store()
         self._top_k = top_k
         self._reranker = rerank_passages
@@ -215,12 +216,19 @@ class PaperRetriever:
         ranked_passage_ids = self._reranker(built_context.passages_by_id, question)
         return _select_passages(built_context, ranked_passage_ids)
 
+    def close(self) -> None:
+        if self._owns_vector_store:
+            self._vector_store.close()
+
 
 if __name__ == "__main__":
     retriever = PaperRetriever()
-    question = "Explain what is decoder?"
-    context = retriever.retrieve(question)
-    print(f"Context text:\n{context.context.text}\n")
-    print("Citations:")
-    for citation_id, citation in context.context.citations.items():
-        print(f"{citation_id}: {citation.label} -> {citation.url}")
+    try:
+        question = "Explain what is decoder?"
+        context = retriever.retrieve(question)
+        print(f"Context text:\n{context.context.text}\n")
+        print("Citations:")
+        for citation_id, citation in context.context.citations.items():
+            print(f"{citation_id}: {citation.label} -> {citation.url}")
+    finally:
+        retriever.close()

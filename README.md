@@ -264,9 +264,10 @@ measures **18.75%**.
 Ingestion:
 
 - parses the complete corpus first;
-- writes to a uniquely named staging collection;
-- switches the active pointer atomically only after every paper is stored; and
-- cleans up failed builds, so readers never search a partial index.
+- writes to a uniquely named staging collection with deterministic document IDs;
+- retries temporary embedding failures and checkpoints each completed paper;
+- resumes an interrupted staging build from its first unfinished paper; and
+- switches the active pointer atomically only after every paper is stored.
 
 Observability:
 
@@ -371,11 +372,11 @@ uv sync
 
 ```bash
 cp .env.example .env
-ollama pull qwen3-embedding:4b
 ```
 
-Set the Cloudflare Access service-token values in `.env`. Configure the
-OpenAI-compatible vLLM chat model and local Ollama embedding model in
+Set the separate chat (`CF-ACCESS-*`) and Ollama
+(`OLLAMA-CF-ACCESS-*`) Cloudflare Access service tokens in `.env`. Configure
+the OpenAI-compatible vLLM chat model and remote Ollama embedding model in
 `application.yaml`. LangSmith tracing is optional.
 
 **3. Build the local index**
