@@ -11,6 +11,7 @@ from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_n
 from evals.generation import context as evaluation_context
 from evals.generation.references import build_fact_references
 from evals.judges import build_judge_model
+from evals.utils import local_evals_enabled, print_local_score
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
@@ -86,15 +87,22 @@ def evaluate_completeness(inputs: dict, outputs: dict, reference_outputs: dict) 
 def run_completeness() -> None:
     """Run completeness against the frozen generation dataset in LangSmith."""
     client = Client()
-    client.evaluate(
+    local = local_evals_enabled()
+    results = client.evaluate(
         evaluation_context.generate_answer_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_completeness],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
-        max_concurrency=1
+        max_concurrency=1,
+        blocking=True,
+        upload_results=not local,
     )
+
+    if local:
+        completed_results = list(results)
+        print_local_score(completed_results, "completeness")
 
 
 if __name__ == "__main__":

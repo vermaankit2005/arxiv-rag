@@ -33,6 +33,9 @@ Read the latest relevant code and documentation before proposing work.
   `LANGSMITH_DATASET_NAME`, `EXPERIMENT_PREFIX`, `EXPERIMENT_METADATA`, target,
   evaluator, then a `run_*` that passes `metadata`, `experiment_prefix`, and a
   `description`.
+- Individual eval commands read `evals.local` from `application.yaml`. Local mode
+  blocks until completion, skips LangSmith result uploads, and reports scores
+  through `evals/utils.py`.
 - Name local eval datasets `<level>_<metric>_dataset.json` and give the published
   LangSmith dataset the same basename.
 - Never change production behavior merely to make an evaluator pass. Evals must

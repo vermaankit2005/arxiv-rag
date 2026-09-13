@@ -5,12 +5,15 @@ facts are correct. Each answer gets 0, 0.25, 0.5, 0.75, or 1. The final score
 is the average across all questions.
 """
 
+from typing import cast
+
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_name
 from evals.generation import context as evaluation_context
 from evals.judges import build_judge_model
+from evals.utils import local_evals_enabled, print_local_score
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
@@ -31,30 +34,30 @@ EXPERIMENT_METADATA = {
 NATURALNESS_PROMPT = """
     You are evaluating how natural a generated research answer feels to a user who
     is reading it and interacting with an assistant.
-    
+
     Judge whether the answer is direct, smoothly written, and pleasant to read. It
     should synthesize the requested information instead of looking like facts copied
     into a standard response template. Technical language is appropriate when the
     question requires it, but a polished report is not automatically a natural
     assistant response.
-    
+
     Reduce the score for unnecessary headings, excessive bullet lists, canned
     introductions such as "the following results were reported," repetitive sentence
     patterns, fragmented facts, or formatting that makes a short answer feel like a
     report. Bullets are acceptable when they genuinely improve a complex answer, but
     a list question does not automatically make a rigid list feel natural. Do not
     reward verbosity, chattiness, jokes, enthusiasm, or extra detail.
-    
+
     Ignore citation markers such as [P1] when judging the prose. Do not score factual
     correctness, completeness, groundedness, or citation support; those are evaluated
     separately.
-    
+
     Question:
     {inputs}
-    
+
     Generated answer:
     {outputs}
-    
+
     Return one of these scores:
     - 1: effortless, direct, and pleasant to read as a user-facing assistant response.
     - 0.75: natural overall, but somewhat formal or structured in a way a user may notice.
@@ -74,10 +77,10 @@ naturalness_judge = create_llm_as_judge(
 
 def evaluate_naturalness(inputs: dict, outputs: dict) -> dict:
     """Judge human-like phrasing without mixing in factual answer quality."""
-    result = naturalness_judge(
+    result = cast(dict, naturalness_judge(
         inputs={"question": inputs.get("question", "")},
         outputs={"answer": outputs.get("answer", "")},
-    )
+    ))
 
     score = result.get("score")
     if score not in ALLOWED_SCORES:
@@ -92,7 +95,8 @@ def evaluate_naturalness(inputs: dict, outputs: dict) -> dict:
 def run_naturalness() -> None:
     """Run naturalness evaluation against the frozen generation dataset."""
     client = Client()
-    client.evaluate(
+    local = local_evals_enabled()
+    results = client.evaluate(
         evaluation_context.generate_answer_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_naturalness],
@@ -100,7 +104,13 @@ def run_naturalness() -> None:
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
         max_concurrency=1,
+        blocking=True,
+        upload_results=not local,
     )
+
+    if local:
+        completed_results = list(results)
+        print_local_score(completed_results, "naturalness")
 
 if __name__ == "__main__":
     run_naturalness()

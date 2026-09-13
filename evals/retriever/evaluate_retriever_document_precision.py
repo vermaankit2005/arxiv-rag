@@ -4,6 +4,7 @@ from langsmith import Client
 
 from arxiv_rag import retrieval
 from arxiv_rag.ingestion.vector_db_ingest import get_vector_store
+from evals.utils import local_evals_enabled, print_local_score
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "retrieval_evidence_dataset"
@@ -81,14 +82,21 @@ def evaluate_document_precision(outputs: dict, reference_outputs: dict) -> dict:
 
 def run_document_precision() -> None:
     client = Client()
-    client.evaluate(
+    local = local_evals_enabled()
+    results = client.evaluate(
         fetch_docs_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_document_precision],
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
+        blocking=True,
+        upload_results=not local,
     )
+
+    if local:
+        completed_results = list(results)
+        print_local_score(completed_results, "document_precision_at_8")
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ from arxiv_rag.generation.generator import INSUFFICIENT_EVIDENCE_ANSWER
 from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_name
 from evals.judges import build_judge_model
 from evals.pipeline import context as evaluation_context
+from evals.utils import local_evals_enabled, print_local_score
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "pipeline_evidence_behavior_dataset"
@@ -107,7 +108,8 @@ def evaluate_evidence_behavior(inputs: dict, outputs: dict) -> dict:
 def run_evidence_behavior() -> None:
     """Run evidence behavior against passages returned by live retrieval."""
     client = Client()
-    client.evaluate(
+    local = local_evals_enabled()
+    results = client.evaluate(
         evaluation_context.generate_pipeline_answer_and_passages_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_evidence_behavior],
@@ -115,7 +117,13 @@ def run_evidence_behavior() -> None:
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
         max_concurrency=1,
+        blocking=True,
+        upload_results=not local,
     )
+
+    if local:
+        completed_results = list(results)
+        print_local_score(completed_results, "evidence_behavior")
 
 
 if __name__ == "__main__":

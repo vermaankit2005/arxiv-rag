@@ -331,8 +331,10 @@ uv run python -m evals.regression.run_full
 ```
 
 Semantic suites run locally by default and upload a canonical experiment only
-with `--upload`. They require access to the configured vLLM and LangSmith
-services.
+with `--upload`. Individual evaluator commands read `evals.local` from
+`application.yaml`; when it is `true`, they wait for completion, skip the result
+upload, and print every example score plus the final average locally. They still
+require access to the configured vLLM and LangSmith dataset services.
 
 ---
 

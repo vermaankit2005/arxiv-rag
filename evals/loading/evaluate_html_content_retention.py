@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from langsmith import Client
 
 from arxiv_rag.loading import load_paper
+from evals.utils import local_evals_enabled, print_local_score
 
 DESCRIPTION = __doc__
 ROOT = Path(__file__).parents[2]
@@ -134,14 +135,22 @@ def run_html_content_retention_evaluation() -> None:
     """Run the evaluator against the frozen LangSmith dataset."""
     load_dotenv()
     client = Client()
-    client.evaluate(  # pyright: ignore[reportCallIssue, reportArgumentType]
+    local = local_evals_enabled()
+    results = client.evaluate(  # pyright: ignore[reportCallIssue, reportArgumentType]
         load_paper_for_content_retention,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_html_content_retention],  # pyright: ignore[reportArgumentType]
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
+        blocking=True,
+        upload_results=not local,
     )
+
+    if local:
+        completed_results = list(results)
+        print_local_score(completed_results, "html_block_coverage")
+        print_local_score(completed_results, "html_word_retention")
 
 
 if __name__ == "__main__":

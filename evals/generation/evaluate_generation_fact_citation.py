@@ -15,6 +15,7 @@ from evals.fact_citation import (
     build_fact_citation_judge,
     evaluate_fact_citations,
 )
+from evals.utils import local_evals_enabled, print_local_score
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "generation_quality_dataset"
@@ -52,7 +53,8 @@ def evaluate_fact_citation(inputs: dict, outputs: dict) -> dict:
 def run_fact_citation() -> None:
     """Run fact-level citation support against the frozen generation dataset."""
     client = Client()
-    client.evaluate(
+    local = local_evals_enabled()
+    results = client.evaluate(
         evaluation_context.generate_answer_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_fact_citation],
@@ -60,7 +62,13 @@ def run_fact_citation() -> None:
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
         max_concurrency=1,
+        blocking=True,
+        upload_results=not local,
     )
+
+    if local:
+        completed_results = list(results)
+        print_local_score(completed_results, "fact_citation")
 
 
 if __name__ == "__main__":

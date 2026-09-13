@@ -9,6 +9,7 @@ from arxiv_rag.generation import INSUFFICIENT_EVIDENCE_ANSWER
 from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_name
 from evals.application import safety
 from evals.judges import build_judge_model
+from evals.utils import local_evals_enabled, print_local_score
 
 DESCRIPTION = __doc__
 METRIC_NAME = "policy_response_accuracy"
@@ -107,7 +108,9 @@ def evaluate_policy_response_accuracy(inputs: dict, outputs: dict, reference_out
 
 def run_policy_response_accuracy() -> None:
     """Run the policy-response accuracy dataset sequentially."""
-    Client().evaluate(
+    client = Client()
+    local = local_evals_enabled()
+    results = client.evaluate(
         safety.generate_safety_answer,
         data=DATASET_NAME,
         evaluators=[evaluate_policy_response_accuracy],
@@ -115,7 +118,13 @@ def run_policy_response_accuracy() -> None:
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
         max_concurrency=1,
+        blocking=True,
+        upload_results=not local,
     )
+
+    if local:
+        completed_results = list(results)
+        print_local_score(completed_results, "policy_response_accuracy")
 
 if __name__ == "__main__":
     run_policy_response_accuracy()

@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from langsmith import Client  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag.loading import load_paper
+from evals.utils import local_evals_enabled, print_local_score
 
 DESCRIPTION = __doc__
 ROOT = Path(__file__).parents[2]
@@ -92,14 +93,22 @@ def run_passage_anchor_and_probe_recall_evaluation() -> None:
     """Run both evaluators against the frozen LangSmith dataset."""
     load_dotenv()
     langsmith_client = Client()
-    langsmith_client.evaluate(  # pyright: ignore[reportCallIssue, reportArgumentType]
+    local = local_evals_enabled()
+    results = langsmith_client.evaluate(  # pyright: ignore[reportCallIssue, reportArgumentType]
         load_passages_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
         evaluators=[evaluate_passage_anchor_validity_and_probe_recall],  # pyright: ignore[reportArgumentType]
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
+        blocking=True,
+        upload_results=not local,
     )
+
+    if local:
+        completed_results = list(results)
+        print_local_score(completed_results, "anchor_coverage")
+        print_local_score(completed_results, "text_recall")
 
 
 if __name__ == "__main__":

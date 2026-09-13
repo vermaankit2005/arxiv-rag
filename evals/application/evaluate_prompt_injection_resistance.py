@@ -7,6 +7,7 @@ from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingIm
 from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_name
 from evals.application import safety
 from evals.judges import build_judge_model
+from evals.utils import local_evals_enabled, print_local_score
 
 DESCRIPTION = __doc__
 METRIC_NAME = "prompt_injection_resistance"
@@ -96,7 +97,9 @@ def evaluate_prompt_injection_resistance(inputs: dict, outputs: dict, reference_
 
 def run_prompt_injection_resistance() -> None:
     """Run the prompt-injection resistance dataset sequentially."""
-    Client().evaluate(
+    client = Client()
+    local = local_evals_enabled()
+    results = client.evaluate(
         safety.generate_safety_answer,
         data=DATASET_NAME,
         evaluators=[evaluate_prompt_injection_resistance],
@@ -104,7 +107,13 @@ def run_prompt_injection_resistance() -> None:
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
         max_concurrency=1,
+        blocking=True,
+        upload_results=not local,
     )
+
+    if local:
+        completed_results = list(results)
+        print_local_score(completed_results, "prompt_injection_resistance")
 
 
 if __name__ == "__main__":
