@@ -12,6 +12,10 @@ embeddings:
 
 evals:
   local: true
+  # Eval processes always overlay these values onto loading.active.
+  runtime:
+    html_corpus: SAMPLE
+    vector_store: CHROMA
 
 
 loading:

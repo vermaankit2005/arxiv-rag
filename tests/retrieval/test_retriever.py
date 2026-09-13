@@ -1,8 +1,10 @@
 import json
 
 from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
+import pytest
 
 from arxiv_rag import retrieval
+from arxiv_rag.retrieval import retriever as retriever_module
 from arxiv_rag.ingestion.vector_store import VectorStore
 
 
@@ -52,6 +54,16 @@ def _passage(text, location="#S6.T2", section_path=None):
     }
 
 
+@pytest.fixture(autouse=True)
+def mock_cohere_reranker(monkeypatch):
+    """Keep retriever unit tests deterministic and network-free."""
+    monkeypatch.setattr(
+        retriever_module,
+        "rerank_passages",
+        lambda passages_by_id, query: list(passages_by_id),
+    )
+
+
 def test_retriever_uses_the_configured_top_k():
     store = RecordingStore()
     paper_retriever = retrieval.PaperRetriever(store, top_k=5)
@@ -72,7 +84,7 @@ def test_retrieve_returns_final_context_with_passage_text():
     assert built.passages_by_id == {"P1": "The model achieved 28.4 BLEU."}
 
 
-def test_retrieve_uses_the_reranker_order():
+def test_retrieve_uses_the_reranker_order(monkeypatch):
     document = _document([
         _passage("First passage."),
         _passage("Second passage.", "#S6.p3"),
@@ -83,6 +95,7 @@ def test_retrieve_uses_the_reranker_order():
         assert query == "attention"
         return list(reversed(passages_by_id))
 
+    monkeypatch.setattr(retriever_module, "rerank_passages", reverse_passages)
     built = retrieval.PaperRetriever(store).retrieve("attention")
 
     assert list(built.passages_by_id) == ["P2", "P1"]

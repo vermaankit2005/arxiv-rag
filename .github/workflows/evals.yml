@@ -51,7 +51,9 @@ env:
   # evals/regression/runner.py are still placeholders, so today this mostly
   # catches incomplete runs and evaluator crashes rather than score drift.
   ENFORCE_THRESHOLDS: "true"
-  EMBEDDING_CACHE_VERSION: "v1"
+  EMBEDDING_CACHE_VERSION: "v2"
+  # Selects evals.runtime from application.yaml for both ingestion and evals.
+  ARXIV_RAG_RUNTIME: "eval"
 
 jobs:
   evaluate:
@@ -88,6 +90,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Validate eval runtime
+        run: >-
+          uv run python -c "from arxiv_rag.util import activate_eval_runtime;
+          activate_eval_runtime()"
+
       # The corpus is the 12 committed HTML files, so the same inputs always
       # produce the same embeddings. Rebuild only when an input changes.
       - name: Restore Chroma corpus
@@ -97,7 +104,7 @@ jobs:
           path: chroma_db
           key: >-
             chroma-${{ runner.os }}-${{ env.EMBEDDING_CACHE_VERSION }}-${{
-              hashFiles('data/raw/sampled_html/**',
+              hashFiles('data/raw/sampled_html/**', 'application.yaml',
               'src/arxiv_rag/ingestion/**',
               'src/arxiv_rag/loading/**', 'uv.lock')
             }}
