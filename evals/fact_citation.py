@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
-from arxiv_rag.answering.generator import CITATION_ID_PATTERN, CITATION_MARKER_PATTERN
+from arxiv_rag.generation.generator import CITATION_ID_PATTERN, CITATION_MARKER_PATTERN
 from evals.judges import build_judge_model
 
 EVALUATOR_VERSION = "fact-citation-v3"

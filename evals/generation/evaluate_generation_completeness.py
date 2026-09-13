@@ -8,8 +8,8 @@ from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_name
-from evals.answering import context as evaluation_context
-from evals.answering.references import build_fact_references
+from evals.generation import context as evaluation_context
+from evals.generation.references import build_fact_references
 from evals.judges import build_judge_model
 
 DESCRIPTION = __doc__

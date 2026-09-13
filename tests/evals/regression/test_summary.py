@@ -1,5 +1,5 @@
-import sys
 from datetime import datetime, timezone
+import sys
 
 import pytest  # pyright: ignore[reportMissingImports]
 
@@ -38,7 +38,7 @@ def test_suites_can_be_listed_without_a_chroma_database(
     assert fresh_priority_specs()
 
 
-def test_priority_suite_is_answering_and_pipeline_only() -> None:
+def test_priority_suite_is_generation_and_pipeline_only() -> None:
     names = [spec["name"] for spec in priority_specs()]
 
     assert names == [

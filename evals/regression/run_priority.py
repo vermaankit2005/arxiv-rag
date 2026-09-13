@@ -1,6 +1,6 @@
 # pyright: reportMissingImports=false
 
-"""Run the merge-gate answering and pipeline evals on the fixed 12-case subset."""
+"""Run the merge-gate generation and pipeline evals on the fixed 12-case subset."""
 from evals.regression.runner import parse_arguments, resolve_upload, run_suite
 from evals.regression.suites import priority_specs
 
@@ -8,7 +8,7 @@ from evals.regression.suites import priority_specs
 def main() -> int:
     """Run the small suite locally unless explicit LangSmith upload is requested."""
     arguments = parse_arguments(
-        "Run the answering and pipeline priority evals on the fixed 12-case subset."
+        "Run the generation and pipeline priority evals on the fixed 12-case subset."
     )
     return run_suite(
         "priority",

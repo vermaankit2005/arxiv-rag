@@ -44,17 +44,17 @@ def _spec(
 
 
 def priority_specs() -> list[dict]:
-    """Return the merge-gate suite: answering and pipeline signal only."""
-    from evals.answering import context as answering_context
-    from evals.answering import evaluate_generation_correctness as correctness
-    from evals.answering import evaluate_generation_fact_citation as citation
-    from evals.answering import evaluate_generation_groundedness as groundedness
+    """Return the merge-gate suite: generation and pipeline signal only."""
+    from evals.generation import context as generation_context
+    from evals.generation import evaluate_generation_correctness as correctness
+    from evals.generation import evaluate_generation_fact_citation as citation
+    from evals.generation import evaluate_generation_groundedness as groundedness
     from evals.pipeline import context as pipeline_context
     from evals.pipeline import evaluate_e2e_evidence_behavior as pipeline_evidence
     from evals.pipeline import evaluate_e2e_fact_citation as pipeline_fact_citation
     from evals.pipeline import evaluate_e2e_required_fact_coverage as pipeline_coverage
 
-    generate = answering_context.generate_answer_for_evaluation
+    generate = generation_context.generate_answer_for_evaluation
     pipeline_generate_with_passages = (
         pipeline_context.generate_pipeline_answer_and_passages_for_evaluation
     )
@@ -122,15 +122,15 @@ def priority_specs() -> list[dict]:
 
 def full_specs() -> list[dict]:
     """Return every active evaluation against its full frozen dataset."""
-    from evals.answering import context as answering_context
-    from evals.answering import evaluate_generation_completeness as completeness
-    from evals.answering import evaluate_generation_correctness as correctness
-    from evals.answering import (
+    from evals.generation import context as generation_context
+    from evals.generation import evaluate_generation_completeness as completeness
+    from evals.generation import evaluate_generation_correctness as correctness
+    from evals.generation import (
         evaluate_generation_evidence_behavior as generation_evidence,
     )
-    from evals.answering import evaluate_generation_fact_citation as citation
-    from evals.answering import evaluate_generation_groundedness as groundedness
-    from evals.answering import evaluate_generation_naturalness as naturalness
+    from evals.generation import evaluate_generation_fact_citation as citation
+    from evals.generation import evaluate_generation_groundedness as groundedness
+    from evals.generation import evaluate_generation_naturalness as naturalness
     from evals.application import evaluate_harmful_content_safety as harmful
     from evals.application import evaluate_policy_response_accuracy as policy
     from evals.application import evaluate_prompt_injection_resistance as injection
@@ -149,7 +149,7 @@ def full_specs() -> list[dict]:
     from evals.retriever import evaluate_retriever_evidence_recall as recall
     from evals.retriever import evaluate_retriever_mean_reciprocal_rank as mrr
 
-    generate = answering_context.generate_answer_for_evaluation
+    generate = generation_context.generate_answer_for_evaluation
     pipeline_generate_with_passages = (
         pipeline_context.generate_pipeline_answer_and_passages_for_evaluation
     )

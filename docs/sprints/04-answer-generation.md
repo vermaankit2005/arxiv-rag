@@ -43,8 +43,8 @@ components unless answer-generation evidence proves one is required now.
 - ✅ Define the smallest answer contract: normal text with supplied inline `[P#]` IDs.
 - ✅ Create a small fixed probe set from the frozen retrieval questions and inspect
   the production answers manually.
-- ✅ Implement answer drafting in `src/arxiv_rag/answering/generator.py`.
-- ✅ Add `python -m arxiv_rag.answering` as a small interactive end-to-end entry point.
+- ✅ Implement answer drafting in `src/arxiv_rag/generation/generator.py`.
+- ✅ Add `python -m arxiv_rag.generation` as a small interactive end-to-end entry point.
 - ✅ Validate that every emitted citation ID exists in the supplied retrieval
   context.
 - ✅ Reject model-written URLs; production code renders supplied IDs as compact
@@ -209,12 +209,12 @@ the contract or metric changes.
   builds plain functions first and adds no branch that has not earned its place.
 - No answer metric or threshold has been accepted yet. The sprint will inspect
   actual generated failures before deciding what deserves an eval.
-- `src/arxiv_rag/answering/generator.py` now owns the Ollama model setup, prompt,
+- `src/arxiv_rag/generation/generator.py` now owns the Ollama model setup, prompt,
   response-type check, and deterministic citation-ID and URL validation. Tests
   inject a tiny fake model instead of calling the network.
 - A real `qwen3.8:27b` smoke check answered the supplied Transformer question in
   one sentence and placed `[P1]` immediately after the supported claim.
-- `src/arxiv_rag/answering/__main__.py` provides the smallest manual path: ask one
+- `src/arxiv_rag/generation/__main__.py` provides the smallest manual path: ask one
   question, retrieve context, generate the cited draft, call the production answer
   renderer, and print the answer.
 - The first open-ended definition answer was grounded but too long and visually
@@ -224,7 +224,7 @@ the contract or metric changes.
   once in a Sources section. The prompt asks for direct Markdown, short
   paragraphs, useful headings only, and no repeated points.
 - Rendering was briefly duplicated between retrieval and the temporary CLI. It is
-  now owned once by `src/arxiv_rag/answering/renderer.py`; retrieval only supplies
+  now owned once by `src/arxiv_rag/generation/renderer.py`; retrieval only supplies
   the trusted citation map, and every caller uses `render_answer()`.
 - Session handoff verified the complete working tree before commit: all **67 tests**
   passed in 3.98 seconds, primary LSP diagnostics were clean across the changed
@@ -288,7 +288,7 @@ the contract or metric changes.
   Ollama `gemma4:26b`; ordinal evaluators permit only `0`, `0.25`, `0.5`, `0.75`,
   or `1`, and binary evaluators use explicit choices.
 - Citation support is implemented in
-  `evals/answering/evaluate_generation_citation_support.py`. It deterministically
+  `evals/generation/evaluate_generation_citation_support.py`. It deterministically
   attaches every `[P#]` marker to the preceding statement, resolves the frozen
   passage ID in code, asks the configured judge for a binary support decision for
   each statement-passage pair, and reports supported pairs divided by all cited
@@ -296,16 +296,16 @@ the contract or metric changes.
   Markdown and decimal punctuation, mixed support, missing citations, unknown
   IDs, and stable frozen passage IDs. The last full-suite run passed **80 tests**.
 - Correctness is implemented in
-  `evals/answering/evaluate_generation_correctness.py`. It judges the generated
+  `evals/generation/evaluate_generation_correctness.py`. It judges the generated
   answer against the frozen required facts and only their named supporting
   passages, uses the restricted five-value score, and leaves omitted facts to the
   completeness metric.
 - Completeness is implemented in
-  `evals/answering/evaluate_generation_completeness.py`. It makes one binary
+  `evals/generation/evaluate_generation_completeness.py`. It makes one binary
   coverage decision per frozen required fact and reports covered facts divided by
   all required facts.
 - Naturalness is implemented in
-  `evals/answering/evaluate_generation_naturalness.py`. The first run,
+  `evals/generation/evaluate_generation_naturalness.py`. The first run,
   `generation_naturalness-4c082e17`, averaged **0.8229** across 24 answers, with
   twelve scores of `1`, seven of `0.75`, and five of `0.5`. Manual review rejected
   that result because the rubric treated polished technical summaries as natural
@@ -314,7 +314,7 @@ the contract or metric changes.
   fact lists, canned introductions, repetitive patterns, and excessive formatting.
   Its version and evaluation focus are recorded in experiment metadata. Shared
   context, judge, and frozen-reference helpers remove duplication across evaluator modules.
-  `evals/answering/context.py` preserves frozen passage IDs and owns the single
+  `evals/generation/context.py` preserves frozen passage IDs and owns the single
   answer-generation target used directly by every generation eval.
 - Evaluator unit tests were removed by project policy: tests cover shipping
   implementation, while evaluator scripts are checked through real eval runs.

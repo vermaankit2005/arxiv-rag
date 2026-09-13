@@ -8,7 +8,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.constants import END, START
 from langgraph.graph import StateGraph
 
-from arxiv_rag.answering import AnswerMode
+from arxiv_rag.generation import AnswerMode
 from arxiv_rag.graph.chat_node import chat_node
 from arxiv_rag.graph.rag_node import rag_node
 from arxiv_rag.graph.route_node import route_node

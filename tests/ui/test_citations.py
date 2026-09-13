@@ -1,4 +1,4 @@
-from arxiv_rag.answering import INSUFFICIENT_EVIDENCE_ANSWER
+from arxiv_rag.generation import INSUFFICIENT_EVIDENCE_ANSWER
 from arxiv_rag.retrieval import Citation
 
 from ui import citations as ui_citations

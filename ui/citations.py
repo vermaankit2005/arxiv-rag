@@ -1,10 +1,10 @@
 """Turn the generator's [P1] markers into citations a browser can render.
 
-The terminal renderer in arxiv_rag.answering writes ANSI escape codes, which a
+The terminal renderer in arxiv_rag.generation writes ANSI escape codes, which a
 browser shows as junk. This module is the browser's version of that job.
 """
 
-from arxiv_rag.answering.generator import CITATION_ID_PATTERN, CITATION_MARKER_PATTERN, citation_ids_in_text
+from arxiv_rag.generation.generator import CITATION_ID_PATTERN, CITATION_MARKER_PATTERN, citation_ids_in_text
 from arxiv_rag.retrieval import Citation
 
 

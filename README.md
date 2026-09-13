@@ -394,7 +394,7 @@ uv run streamlit run ui/streamlit_app.py
 Or ask one question from the terminal:
 
 ```bash
-uv run python -m arxiv_rag.answering
+uv run python -m arxiv_rag.generation
 ```
 
 ---

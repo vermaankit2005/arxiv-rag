@@ -1,4 +1,4 @@
-from arxiv_rag.answering import generate_answer
+from arxiv_rag.generation import generate_answer
 from arxiv_rag.retrieval import PaperRetriever
 
 

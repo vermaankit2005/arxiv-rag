@@ -3,13 +3,13 @@
 # pyright: reportMissingImports=false
 from collections.abc import Iterator
 
-from arxiv_rag.answering import AnswerMode
-from arxiv_rag.answering.service_stream import AnswerChunk, AnswerComplete, answer_question_stream
+from arxiv_rag.generation import AnswerMode
+from arxiv_rag.generation.service_stream import AnswerChunk, AnswerComplete, answer_question_stream
 
 # Keep the non-streaming path nearby while streaming is under development. To
 # switch back, restore this import and function, then restore the commented UI
 # block in streamlit_app.py.
-# from arxiv_rag.answering.service import AnsweredQuestion, answer_question
+# from arxiv_rag.generation.service import AnsweredQuestion, answer_question
 #
 # def answer_in_conversation(question: str, thread_id: str,
 #                            answer_mode: AnswerMode = "standard") -> AnsweredQuestion:

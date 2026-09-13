@@ -2,9 +2,9 @@ import uuid
 
 from langsmith import traceable
 
-from arxiv_rag.answering import AnswerMode
-from arxiv_rag.answering.models import AnsweredQuestion
-from arxiv_rag.answering.service_stream import AnswerComplete, answer_question_stream
+from arxiv_rag.generation import AnswerMode
+from arxiv_rag.generation.models import AnsweredQuestion
+from arxiv_rag.generation.service_stream import AnswerComplete, answer_question_stream
 
 
 def answer_question(question: str, thread_id: str | None = None,

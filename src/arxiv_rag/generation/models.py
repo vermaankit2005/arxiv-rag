@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from arxiv_rag.answering import AnswerMode
+from arxiv_rag.generation import AnswerMode
 from arxiv_rag.graph.workflow_graph import WorkflowGraphState
 from arxiv_rag.retrieval import RetrievalContext
 

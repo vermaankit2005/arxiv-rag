@@ -1,4 +1,4 @@
-from arxiv_rag import answering
+from arxiv_rag import generation
 from arxiv_rag.retrieval import Citation, RetrievalContext
 
 
@@ -38,5 +38,5 @@ def generate_answer_for_evaluation(inputs: dict) -> dict:
     question = inputs.get("question", "")
     context_passages = inputs.get("context_passages", [])
     retrieval_context = build_retrieval_context(context_passages)
-    answer = answering.generate_answer(question, retrieval_context)
+    answer = generation.generate_answer(question, retrieval_context)
     return {"answer": answer}

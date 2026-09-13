@@ -11,7 +11,7 @@ from langchain_core.messages import (  # pyright: ignore[reportMissingImports]
 import arxiv_rag.graph.chat_node as chat_node_module
 import arxiv_rag.graph.rag_node as rag_node_module
 import arxiv_rag.graph.route_node as route_node_module
-from arxiv_rag.answering import AnswerMode
+from arxiv_rag.generation import AnswerMode
 from arxiv_rag.graph import workflow_graph
 from arxiv_rag.retrieval import BuiltContext, Citation, RetrievalContext
 

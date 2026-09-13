@@ -1,8 +1,8 @@
 import uuid
 from collections.abc import Iterator
 
-from arxiv_rag.answering import AnswerMode
-from arxiv_rag.answering.models import AnswerChunk, AnswerComplete, AnsweredQuestion
+from arxiv_rag.generation import AnswerMode
+from arxiv_rag.generation.models import AnswerChunk, AnswerComplete, AnsweredQuestion
 from arxiv_rag.graph.workflow_graph import stream_workflow_graph
 from arxiv_rag.retrieval import RetrievalContext
 

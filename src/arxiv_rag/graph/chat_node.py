@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from arxiv_rag.answering.generator import CITATION_MARKER_PATTERN, URL_PATTERN
+from arxiv_rag.generation.generator import CITATION_MARKER_PATTERN, URL_PATTERN
 from arxiv_rag.graph.prompts import CHAT_SYSTEM_PROMPT
 from arxiv_rag.logging import get_logger
 from arxiv_rag.model_provider import get_chat_model

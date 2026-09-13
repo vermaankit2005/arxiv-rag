@@ -1,8 +1,8 @@
 # pyright: reportMissingImports=false
 import sys
 
-from arxiv_rag.answering import render_answer
-from arxiv_rag.answering.service import answer_question
+from arxiv_rag.generation import render_answer
+from arxiv_rag.generation.service import answer_question
 from arxiv_rag.logging import get_logger
 
 log = get_logger(__name__)

@@ -5,12 +5,12 @@ from langchain_core.language_models.fake_chat_models import (  # pyright: ignore
     FakeListChatModel,
 )
 
-from arxiv_rag.answering import __main__ as answering_cli
-from arxiv_rag.answering import generator, renderer
+from arxiv_rag.generation import __main__ as generation_cli
+from arxiv_rag.generation import generator, renderer
 from arxiv_rag.retrieval import BuiltContext, Citation, RetrievalContext
 
-service = import_module("arxiv_rag.answering.service")
-service_stream = import_module("arxiv_rag.answering.service_stream")
+service = import_module("arxiv_rag.generation.service")
+service_stream = import_module("arxiv_rag.generation.service_stream")
 
 
 class RecordingModel(FakeListChatModel):
@@ -18,15 +18,15 @@ class RecordingModel(FakeListChatModel):
     prompt: str | None = None
 
     def __init__(self, answer: str):
-        super().__init__(responses=[answer], answer=answer)
+        super().__init__(responses=[answer], answer=answer)  # pyright: ignore[reportCallIssue]
 
-    def invoke(self, prompt, config=None, *, stop=None, **kwargs):
-        self.prompt = prompt
-        return super().invoke(prompt, config, stop=stop, **kwargs)
+    def invoke(self, input, config=None, *, stop=None, **kwargs):
+        self.prompt = str(input)
+        return super().invoke(input, config, stop=stop, **kwargs)
 
 
 class FailingModel(FakeListChatModel):
-    def invoke(self, prompt, config=None, *, stop=None, **kwargs):
+    def invoke(self, input, config=None, *, stop=None, **kwargs):
         raise OSError("offline")
 
 
@@ -306,7 +306,7 @@ def test_command_line_entry_asks_a_question_and_prints_the_answer(monkeypatch, c
     _stub_graph(monkeypatch)
     monkeypatch.setattr("builtins.input", lambda _: "How does it work?")
 
-    answering_cli.main()
+    generation_cli.main()
 
     output = capsys.readouterr().out
     assert "Answer [1]." in output
@@ -387,15 +387,15 @@ def test_answer_question_keeps_a_supplied_thread_id(monkeypatch):
     assert captured["thread_id"] == "conversation-1"
 
 
-def test_answering_cli_returns_failure_status_for_an_operational_error(monkeypatch):
+def test_generation_cli_returns_failure_status_for_an_operational_error(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "How does it work?")
     monkeypatch.setattr(
-        answering_cli,
+        generation_cli,
         "answer_question",
         lambda question: (_ for _ in ()).throw(RuntimeError("model unavailable")),
     )
 
-    assert answering_cli.main() == 1
+    assert generation_cli.main() == 1
 
 
 def test_traceable_wrappers_still_return_plain_application_values():
