@@ -16,5 +16,5 @@ evals:
 
 loading:
   active:
-    html_corpus: PROD # PROD or SAMPLE
-    vector_store: WEAVIATE # WEAVIATE or CHROMA
+    html_corpus: SAMPLE # PROD or SAMPLE
+    vector_store: CHROMA # WEAVIATE or CHROMA

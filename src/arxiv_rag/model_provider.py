@@ -9,10 +9,10 @@ from langchain_openai import ChatOpenAI
 from arxiv_rag.util import application_config
 
 
-def _cloudflare_access_headers(environment_prefix: str = "CF-ACCESS") -> dict[str, str]:
+def _cloudflare_access_headers(environment_prefix: str = "CF_ACCESS") -> dict[str, str]:
     return {
-        "CF-Access-Client-Id": os.environ[f"{environment_prefix}-CLIENT-ID"],
-        "CF-Access-Client-Secret": os.environ[f"{environment_prefix}-CLIENT-SECRET"],
+        "CF-Access-Client-Id": os.environ[f"{environment_prefix}_CLIENT_ID"],
+        "CF-Access-Client-Secret": os.environ[f"{environment_prefix}_CLIENT_SECRET"],
     }
 
 
@@ -49,5 +49,5 @@ def get_embeddings() -> Embeddings:
     return OllamaEmbeddings(
         model=config["model"],
         base_url=config["base_url"],
-        client_kwargs={"headers": _cloudflare_access_headers("OLLAMA-CF-ACCESS")},
+        client_kwargs={"headers": _cloudflare_access_headers("OLLAMA_CF_ACCESS")},
     )

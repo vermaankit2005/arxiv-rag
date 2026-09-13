@@ -70,10 +70,10 @@ jobs:
         run: |
           cat > .env <<ENV
           OLLAMA_BASE_URL=${{ secrets.OLLAMA_BASE_URL }}
-          CF-ACCESS-CLIENT-ID=${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF-ACCESS-CLIENT-SECRET=${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          OLLAMA-CF-ACCESS-CLIENT-ID=${{ secrets.OLLAMA_CF_ACCESS_CLIENT_ID }}
-          OLLAMA-CF-ACCESS-CLIENT-SECRET=${{ secrets.OLLAMA_CF_ACCESS_CLIENT_SECRET }}
+          CF_ACCESS_CLIENT_ID=${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET=${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          OLLAMA_CF_ACCESS_CLIENT_ID=${{ secrets.OLLAMA_CF_ACCESS_CLIENT_ID }}
+          OLLAMA_CF_ACCESS_CLIENT_SECRET=${{ secrets.OLLAMA_CF_ACCESS_CLIENT_SECRET }}
           GENERATOR_MODEL=${{ secrets.GENERATOR_MODEL }}
           JUDGE_MODEL=${{ secrets.JUDGE_MODEL }}
           LANGSMITH_TRACING=false

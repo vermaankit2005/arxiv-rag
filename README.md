@@ -376,8 +376,8 @@ uv sync
 cp .env.example .env
 ```
 
-Set the separate chat (`CF-ACCESS-*`) and Ollama
-(`OLLAMA-CF-ACCESS-*`) Cloudflare Access service tokens in `.env`. Configure
+Set the separate chat (`CF_ACCESS_*`) and Ollama
+(`OLLAMA_CF_ACCESS_*`) Cloudflare Access service tokens in `.env`. Configure
 the OpenAI-compatible vLLM chat model and remote Ollama embedding model in
 `application.yaml`. LangSmith tracing is optional.
 

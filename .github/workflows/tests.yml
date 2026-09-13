@@ -38,10 +38,10 @@ jobs:
       - name: Write placeholder .env
         run: |
           cat > .env <<'ENV'
-          CF-ACCESS-CLIENT-ID=placeholder
-          CF-ACCESS-CLIENT-SECRET=placeholder
-          OLLAMA-CF-ACCESS-CLIENT-ID=placeholder
-          OLLAMA-CF-ACCESS-CLIENT-SECRET=placeholder
+          CF_ACCESS_CLIENT_ID=placeholder
+          CF_ACCESS_CLIENT_SECRET=placeholder
+          OLLAMA_CF_ACCESS_CLIENT_ID=placeholder
+          OLLAMA_CF_ACCESS_CLIENT_SECRET=placeholder
           GENERATOR_MODEL=placeholder-generator
           JUDGE_MODEL=placeholder-judge
           LANGSMITH_TRACING=false

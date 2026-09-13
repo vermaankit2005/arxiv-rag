@@ -23,8 +23,8 @@ def test_get_model_provider_uses_yaml_configuration_and_cloudflare_headers(monke
     application_file = tmp_path / "application.yaml"
     _write_config(application_file)
     monkeypatch.setattr(util, "APPLICATION_FILE", application_file)
-    monkeypatch.setenv("CF-ACCESS-CLIENT-ID", "client-id")
-    monkeypatch.setenv("CF-ACCESS-CLIENT-SECRET", "client-secret")
+    monkeypatch.setenv("CF_ACCESS_CLIENT_ID", "client-id")
+    monkeypatch.setenv("CF_ACCESS_CLIENT_SECRET", "client-secret")
     monkeypatch.setattr(
         model_provider,
         "ChatOpenAI",
@@ -54,8 +54,8 @@ def test_get_embeddings_uses_remote_ollama_configuration_and_cloudflare_headers(
     application_file = tmp_path / "application.yaml"
     _write_config(application_file)
     monkeypatch.setattr(util, "APPLICATION_FILE", application_file)
-    monkeypatch.setenv("OLLAMA-CF-ACCESS-CLIENT-ID", "ollama-client-id")
-    monkeypatch.setenv("OLLAMA-CF-ACCESS-CLIENT-SECRET", "ollama-client-secret")
+    monkeypatch.setenv("OLLAMA_CF_ACCESS_CLIENT_ID", "ollama-client-id")
+    monkeypatch.setenv("OLLAMA_CF_ACCESS_CLIENT_SECRET", "ollama-client-secret")
     monkeypatch.setattr(
         model_provider,
         "OllamaEmbeddings",

@@ -130,8 +130,8 @@ def _validate_answer(answer: str, context: RetrievalContext) -> None:
     process_inputs=lambda inputs: {},
     process_outputs=lambda outputs: {"answer": outputs},
 )
-def generate_answer(question: str, context: RetrievalContext, model: BaseChatModel | None = None,
-                    answer_mode: AnswerMode = "standard", ) -> str:
+def generate_answer(question: str, context: RetrievalContext, model: BaseChatModel | None = None, answer_mode: AnswerMode = "standard", ) -> str:
+
     """Generate a grounded answer in the requested explanation style."""
     question = question.strip()
 
