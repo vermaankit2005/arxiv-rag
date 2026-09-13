@@ -9,7 +9,6 @@ def _write_config(path, eval_html_corpus="SAMPLE", eval_vector_store="CHROMA"):
     path.write_text(
         f"""
 evals:
-  upload_results: false
   runtime:
     html_corpus: {eval_html_corpus}
     vector_store: {eval_vector_store}

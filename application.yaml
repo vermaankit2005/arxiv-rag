@@ -11,8 +11,6 @@ embeddings:
 
 
 evals:
-  upload_results: false
-  # Eval processes always overlay these values onto the application runtime.
   runtime:
     html_corpus: SAMPLE
     vector_store: CHROMA

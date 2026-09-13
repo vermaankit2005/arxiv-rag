@@ -5,7 +5,7 @@ from langsmith import Client
 
 from arxiv_rag import retrieval
 from arxiv_rag.ingestion.vector_db_ingest import get_vector_store
-from evals.utils import local_evals_enabled, print_local_score
+from evals.utils import eval_upload_enabled, print_local_score
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "retrieval_evidence_dataset"
@@ -79,7 +79,7 @@ def run_mrr() -> None:
     """Evaluate the retriever by fetching documents for a given question and log to LangSmith."""
     load_dotenv()
     client = Client()
-    local = local_evals_enabled()
+    upload_results = eval_upload_enabled()
     results = client.evaluate(
         fetch_docs_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
@@ -89,10 +89,10 @@ def run_mrr() -> None:
         description=DESCRIPTION,
         max_concurrency=1,
         blocking=True,
-        upload_results=not local,
+        upload_results=upload_results,
     )
 
-    if local:
+    if not upload_results:
         completed_results = list(results)
         print_local_score(completed_results, "mrr_at_8")
 

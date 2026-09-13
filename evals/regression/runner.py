@@ -7,15 +7,10 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from dotenv import load_dotenv
 from langsmith import Client
 
 from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_name
-
-# One switch for the whole regression run, not per evaluation. The --upload flag
-# turns uploading on; this variable is how CI and .env do the same thing.
-UPLOAD_ENV_NAME = "REGRESSION_UPLOAD_TO_LANGSMITH"
-TRUE_VALUES = {"1", "true", "yes", "on"}
+from evals.utils import eval_upload_enabled
 
 # Release floors. Keys use "<evaluation name>.<feedback key>".
 #
@@ -175,14 +170,6 @@ def _print_report(metric_id: str, scores: list[tuple[str, float]], expected: int
     return record["passed"]
 
 
-def resolve_upload(upload_flag: bool) -> bool:
-    """Decide once, for the whole suite, whether results reach LangSmith."""
-    if upload_flag:
-        return True
-    load_dotenv()
-    return os.environ.get(UPLOAD_ENV_NAME, "").strip().lower() in TRUE_VALUES
-
-
 def _elapsed_since(started_at: datetime) -> float:
     """Seconds spent on one evaluation, so a slow metric is visible in the results."""
     return round((datetime.now(timezone.utc) - started_at).total_seconds(), 1)
@@ -237,12 +224,11 @@ def write_results(results_path: Path, results: dict) -> None:
 def run_suite(
     name: str,
     specs: list[dict],
-    upload_results: bool,
     results_path: Path | None = None,
     results_dir: Path | None = None,
 ) -> int:
     """Run each configured evaluation and return zero only when all checks pass."""
-    load_dotenv()
+    upload_results = eval_upload_enabled()
     client = Client()
     started_at = datetime.now(timezone.utc)
     suite_passed = True
@@ -314,13 +300,8 @@ def run_suite(
 
 
 def parse_arguments(description: str) -> argparse.Namespace:
-    """Parse the two run options shared by both regression entry points."""
+    """Parse the result-file options shared by both regression entry points."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument(
-        "--upload",
-        action="store_true",
-        help=f"Upload results to LangSmith. {UPLOAD_ENV_NAME} does the same.",
-    )
     parser.add_argument(
         "--results-json",
         type=Path,

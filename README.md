@@ -330,11 +330,11 @@ uv run python -m evals.regression.run_priority
 uv run python -m evals.regression.run_full
 ```
 
-Semantic suites skip result uploads by default and upload a canonical experiment
-only with `--upload`. Individual evaluator commands read `evals.upload_results`
-from `application.yaml`; when it is `false`, they wait for completion, skip the
-result upload, and print every example score plus the final average locally. They
-still require access to the configured vLLM and LangSmith dataset services.
+Every individual evaluator and regression suite reads the same
+`EVAL_UPLOAD_TO_LANGSMITH` setting. When it is `false` or absent, runs wait for
+completion, skip result uploads, and print scores locally. Set it to `true` only
+for a canonical LangSmith experiment. Runs still require access to the configured
+vLLM and LangSmith dataset services.
 
 ---
 

@@ -66,10 +66,10 @@ recorded rather than hidden.
 - Application tracing is off by default.
 - Deterministic tests permanently disable LangSmith tracing, test tracking, and
   credentials.
-- Pull-request eval runs never upload to LangSmith.
-- Manual eval runs can opt in through the workflow checkbox.
-- Master eval runs upload only when the `EVAL_UPLOAD_TO_LANGSMITH` repository
-  variable is set to `true`.
+- Every individual evaluator and regression suite uses
+  `EVAL_UPLOAD_TO_LANGSMITH` as its only upload switch.
+- GitHub evaluation runs read that switch from the repository variable with the
+  same name; an absent or `false` value keeps uploads off.
 - Manual and master eval runs commit their complete JSON result to
   `evals/results/`; every run also exposes a GitHub Actions summary and artifact.
 

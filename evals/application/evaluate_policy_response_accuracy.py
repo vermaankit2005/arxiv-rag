@@ -1,6 +1,6 @@
 """Pass when the answer chooses the policy-correct response behavior."""
 
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, cast
 
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
@@ -9,7 +9,7 @@ from arxiv_rag.generation import INSUFFICIENT_EVIDENCE_ANSWER
 from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_name
 from evals.application import safety
 from evals.judges import build_judge_model
-from evals.utils import local_evals_enabled, print_local_score
+from evals.utils import eval_upload_enabled, print_local_score
 
 DESCRIPTION = __doc__
 METRIC_NAME = "policy_response_accuracy"
@@ -69,13 +69,13 @@ def _classify_behavior(inputs: dict, answer: str) -> tuple[str, str]:
     if answer == INSUFFICIENT_EVIDENCE_ANSWER:
         return "evidence_abstention", "The answer used the exact insufficient-evidence contract."
 
-    result = policy_behavior_judge(
+    result = cast(PolicyBehaviorResult, policy_behavior_judge(
         inputs={
             "question": inputs.get("question", ""),
             "context_fixture": inputs.get("context_fixture", ""),
         },
         outputs={"answer": answer},
-    )
+    ))
 
     behavior = result.get("behavior")
     allowed_behaviors = {"answer", "limited_answer", "safety_refusal", "evidence_abstention"}
@@ -109,7 +109,7 @@ def evaluate_policy_response_accuracy(inputs: dict, outputs: dict, reference_out
 def run_policy_response_accuracy() -> None:
     """Run the policy-response accuracy dataset sequentially."""
     client = Client()
-    local = local_evals_enabled()
+    upload_results = eval_upload_enabled()
     results = client.evaluate(
         safety.generate_safety_answer,
         data=DATASET_NAME,
@@ -119,10 +119,10 @@ def run_policy_response_accuracy() -> None:
         description=DESCRIPTION,
         max_concurrency=1,
         blocking=True,
-        upload_results=not local,
+        upload_results=upload_results,
     )
 
-    if local:
+    if not upload_results:
         completed_results = list(results)
         print_local_score(completed_results, "policy_response_accuracy")
 

@@ -12,11 +12,6 @@ on:
         type: choice
         options: [priority, full]
         default: full
-      upload:
-        description: "Upload results to LangSmith"
-        type: boolean
-        default: false
-
 permissions:
   # Needed to commit the results history back to master.
   contents: write
@@ -33,6 +28,9 @@ env:
   # catches incomplete runs and evaluator crashes rather than score drift.
   ENFORCE_THRESHOLDS: "true"
   EMBEDDING_CACHE_VERSION: "v2"
+  # One upload switch for individual evals and regression suites. If this
+  # repository variable is absent, uploads stay off.
+  EVAL_UPLOAD_TO_LANGSMITH: ${{ vars.EVAL_UPLOAD_TO_LANGSMITH || 'false' }}
   # Selects evals.runtime from application.yaml for both ingestion and evals.
   ARXIV_RAG_RUNTIME: "eval"
 
@@ -99,13 +97,6 @@ jobs:
         continue-on-error: true
         env:
           SUITE: ${{ inputs.suite || 'priority' }}
-          # Uploads are off by default to protect the LangSmith quota. A manual
-          # dispatch can opt in directly. Master uploads can be temporarily
-          # enabled with the EVAL_UPLOAD_TO_LANGSMITH repository variable.
-          REGRESSION_UPLOAD_TO_LANGSMITH: >-
-            ${{ (github.event_name == 'push' &&
-            vars.EVAL_UPLOAD_TO_LANGSMITH == 'true') ||
-            (github.event_name == 'workflow_dispatch' && inputs.upload) }}
         run: |
           uv run python -m "evals.regression.run_${SUITE}" \
             --results-json regression-results.json \

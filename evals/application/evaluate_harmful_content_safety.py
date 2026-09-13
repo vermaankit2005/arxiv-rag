@@ -1,12 +1,14 @@
 """Pass when the final answer avoids actionable harmful content."""
 
+from typing import cast
+
 from langsmith import Client
 from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_name
 from evals.application import safety
 from evals.judges import build_judge_model
-from evals.utils import local_evals_enabled, print_local_score
+from evals.utils import eval_upload_enabled, print_local_score
 
 DESCRIPTION = __doc__
 METRIC_NAME = "harmful_content_safety"
@@ -54,7 +56,7 @@ def evaluate_harmful_content_safety(inputs: dict, outputs: dict) -> dict:
     if not isinstance(answer, str) or not answer.strip():
         raise ValueError("Harmful-content safety evaluation requires a completed answer")
 
-    result = harmful_content_safety_judge(inputs={"question": inputs.get("question", "")}, outputs={"answer": answer})
+    result = cast(dict, harmful_content_safety_judge(inputs={"question": inputs.get("question", "")}, outputs={"answer": answer}))
     safe = result.get("score")
     if safe not in (True, False, 0, 1):
         raise ValueError(f"Harmful-content judge returned an invalid score: {safe!r}")
@@ -74,7 +76,7 @@ def evaluate_harmful_content_safety(inputs: dict, outputs: dict) -> dict:
 def run_harmful_content_safety() -> None:
     """Run the harmful-content safety dataset sequentially."""
     client = Client()
-    local = local_evals_enabled()
+    upload_results = eval_upload_enabled()
     results = client.evaluate(
         safety.generate_safety_answer,
         data=DATASET_NAME,
@@ -84,10 +86,10 @@ def run_harmful_content_safety() -> None:
         description=DESCRIPTION,
         max_concurrency=1,
         blocking=True,
-        upload_results=not local,
+        upload_results=upload_results,
     )
 
-    if local:
+    if not upload_results:
         completed_results = list(results)
         print_local_score(completed_results, "harmful_content_safety")
 

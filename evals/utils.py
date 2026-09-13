@@ -1,10 +1,21 @@
-from arxiv_rag.util import application_config
+import os
+
+from dotenv import load_dotenv
+
+EVAL_UPLOAD_ENV_NAME = "EVAL_UPLOAD_TO_LANGSMITH"
+TRUE_VALUES = {"1", "true", "yes", "on"}
+FALSE_VALUES = {"0", "false", "no", "off"}
 
 
-def local_evals_enabled() -> bool:
-    config = application_config()
-    eval_config = config.get("evals", {})
-    return not eval_config.get("upload_results", True)
+def eval_upload_enabled() -> bool:
+    """Return the one upload policy shared by every evaluation entry point."""
+    load_dotenv()
+    value = os.environ.get(EVAL_UPLOAD_ENV_NAME, "false").strip().lower()
+    if value in TRUE_VALUES:
+        return True
+    if value in FALSE_VALUES:
+        return False
+    raise RuntimeError(f"{EVAL_UPLOAD_ENV_NAME} must be true or false.")
 
 
 def print_local_score(results, feedback_key: str) -> None:

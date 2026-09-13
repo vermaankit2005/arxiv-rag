@@ -13,7 +13,7 @@ from openevals.llm import create_llm_as_judge  # pyright: ignore[reportMissingIm
 from arxiv_rag.model_provider import get_generator_model_name, get_judge_model_name
 from evals.judges import build_judge_model
 from evals.pipeline import context as evaluation_context
-from evals.utils import local_evals_enabled, print_local_score
+from evals.utils import eval_upload_enabled, print_local_score
 
 DESCRIPTION = __doc__
 LANGSMITH_DATASET_NAME = "pipeline_required_fact_coverage_dataset"
@@ -114,7 +114,7 @@ def evaluate_answer_quality(inputs: dict, outputs: dict, reference_outputs: dict
 def run_answer_quality() -> None:
     """Run holistic answer quality against live pipeline answers."""
     client = Client()
-    local = local_evals_enabled()
+    upload_results = eval_upload_enabled()
     results = client.evaluate(
         evaluation_context.generate_pipeline_answer_and_passages_for_evaluation,
         data=LANGSMITH_DATASET_NAME,
@@ -124,10 +124,10 @@ def run_answer_quality() -> None:
         description=DESCRIPTION,
         max_concurrency=1,
         blocking=True,
-        upload_results=not local,
+        upload_results=upload_results,
     )
 
-    if local:
+    if not upload_results:
         completed_results = list(results)
         print_local_score(completed_results, "answer_quality")
 
