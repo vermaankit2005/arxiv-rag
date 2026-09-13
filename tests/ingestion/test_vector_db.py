@@ -60,7 +60,7 @@ def test_vector_store_factory_hides_the_configured_backend(monkeypatch):
         return expected_store
 
     monkeypatch.setattr(vector_db_ingest, "get_embeddings", lambda: embeddings)
-    monkeypatch.setattr(vector_db_ingest, "application_config", lambda: {"loading": {"active": {"vector_store": "CHROMA"}}})
+    monkeypatch.setattr(vector_db_ingest, "application_config", lambda: {"runtime": {"vector_store": "CHROMA"}})
     monkeypatch.setattr(vector_db_ingest, "get_chroma_store", open_store)
 
     store = vector_db_ingest.get_vector_store(create_if_missing=True, staging=True)

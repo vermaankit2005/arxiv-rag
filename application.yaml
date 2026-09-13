@@ -11,14 +11,13 @@ embeddings:
 
 
 evals:
-  local: true
-  # Eval processes always overlay these values onto loading.active.
+  upload_results: false
+  # Eval processes always overlay these values onto the application runtime.
   runtime:
     html_corpus: SAMPLE
     vector_store: CHROMA
 
 
-loading:
-  active:
-    html_corpus: SAMPLE # PROD or SAMPLE
-    vector_store: CHROMA # WEAVIATE or CHROMA
+runtime:
+  html_corpus: SAMPLE # PROD or SAMPLE
+  vector_store: CHROMA # WEAVIATE or CHROMA

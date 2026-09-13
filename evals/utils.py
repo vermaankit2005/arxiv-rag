@@ -4,7 +4,7 @@ from arxiv_rag.util import application_config
 def local_evals_enabled() -> bool:
     config = application_config()
     eval_config = config.get("evals", {})
-    return eval_config.get("local", False)
+    return not eval_config.get("upload_results", True)
 
 
 def print_local_score(results, feedback_key: str) -> None:

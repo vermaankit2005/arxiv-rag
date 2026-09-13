@@ -7,7 +7,7 @@ from arxiv_rag.util import application_config
 
 def get_vector_store(create_if_missing: bool = False, staging: bool = False, collection_name: str | None = None) -> VectorStore:
     """Return the configured store without exposing its backend to callers."""
-    if application_config()["loading"]["active"]["vector_store"] != "WEAVIATE":
+    if application_config()["runtime"]["vector_store"] != "WEAVIATE":
         return get_chroma_store(
             embeddings=get_embeddings(),
             create_if_missing=create_if_missing,

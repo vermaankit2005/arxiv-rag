@@ -6,6 +6,7 @@ import yaml
 from dotenv import load_dotenv
 
 APPLICATION_FILE = Path(__file__).parents[2] / "application.yaml"
+
 RUNTIME_ENV_NAME = "ARXIV_RAG_RUNTIME"
 EVAL_RUNTIME_NAME = "eval"
 EVAL_HTML_CORPUS = "SAMPLE"
@@ -17,16 +18,14 @@ def _apply_eval_runtime(config: dict[str, Any]) -> None:
         runtime = config["evals"]["runtime"]
         html_corpus = runtime["html_corpus"]
         vector_store = runtime["vector_store"]
+
     except (KeyError, TypeError) as error:
         raise RuntimeError("Eval runtime configuration is missing from application.yaml.") from error
 
     if html_corpus != EVAL_HTML_CORPUS or vector_store != EVAL_VECTOR_STORE:
         raise RuntimeError("Eval runtime must use html_corpus=SAMPLE and vector_store=CHROMA.")
 
-    try:
-        config["loading"]["active"] = dict(runtime)
-    except (KeyError, TypeError) as error:
-        raise RuntimeError("Loading configuration is missing from application.yaml.") from error
+    config["runtime"] = dict(runtime)
 
 
 def application_config() -> dict[str, Any]:

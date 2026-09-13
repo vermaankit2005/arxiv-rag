@@ -1,5 +1,5 @@
 import json
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from pathlib import Path
 
 from arxiv_rag.util import application_config
@@ -11,7 +11,7 @@ class DocumentLoader(ABC):
     @abstractmethod
     def get_docs_name(self) -> list[str]:
         """Load documents from a source."""
-        pass
+        return []
 
 
 # For now, I am reading the sample HTML files from a local directory.
@@ -39,17 +39,21 @@ class ArxivCorpusHtmlLoader(DocumentLoader):
     def get_docs_name(self) -> list[str]:
         documents_name = []
 
-        with open(self.CORPUS_JSON_PATH, "r") as file:
-            data = json.load(file)
-            for item in data:
-                documents_name.append(item["arxiv_id"])
+        try:
+            with self.CORPUS_JSON_PATH.open(encoding="utf-8") as file:
+                data = json.load(file)
+        except (OSError, json.JSONDecodeError) as error:
+            raise RuntimeError(f"Could not load corpus manifest: {self.CORPUS_JSON_PATH}") from error
+
+        for item in data:
+            documents_name.append(item["arxiv_id"])
 
         return documents_name
 
 
 def get_loader() -> DocumentLoader:
     """Get the appropriate document loader based on the environment."""
-    if application_config()["loading"]["active"]["html_corpus"] != "PROD":
+    if application_config()["runtime"]["html_corpus"] != "PROD":
         return ArxivSampleHTMLLoader()
 
     return ArxivCorpusHtmlLoader()

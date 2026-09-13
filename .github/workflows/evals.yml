@@ -1,29 +1,10 @@
 name: Evaluations
 
 # Semantic regression runs against the frozen 12-paper corpus.
-# Pull requests and merges to master run the priority suite. The full inventory
-# is manual.
+# Automatic pull-request and master runs are temporarily disabled. Run the
+# priority or full inventory manually when needed.
 
 on:
-  pull_request:
-    paths:
-      - "src/**"
-      - "evals/**"
-      # This job commits its own results back. Never react to that commit.
-      - "!evals/results/**"
-      - "data/raw/sampled_html/**"
-      - "uv.lock"
-      - ".github/workflows/evals.yml"
-  push:
-    branches: [master]
-    paths:
-      - "src/**"
-      - "evals/**"
-      # This job commits its own results back. Never react to that commit.
-      - "!evals/results/**"
-      - "data/raw/sampled_html/**"
-      - "uv.lock"
-      - ".github/workflows/evals.yml"
   workflow_dispatch:
     inputs:
       suite:
