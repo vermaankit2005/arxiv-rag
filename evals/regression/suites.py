@@ -122,29 +122,28 @@ def priority_specs() -> list[dict]:
 
 def full_specs() -> list[dict]:
     """Return every active evaluation against its full frozen dataset."""
-    from evals.generation import context as generation_context
-    from evals.generation import evaluate_generation_completeness as completeness
-    from evals.generation import evaluate_generation_correctness as correctness
-    from evals.generation import (
-        evaluate_generation_evidence_behavior as generation_evidence,
-    )
-    from evals.generation import evaluate_generation_fact_citation as citation
-    from evals.generation import evaluate_generation_groundedness as groundedness
-    from evals.generation import evaluate_generation_naturalness as naturalness
     from evals.application import evaluate_harmful_content_safety as harmful
     from evals.application import evaluate_policy_response_accuracy as policy
     from evals.application import evaluate_prompt_injection_resistance as injection
     from evals.application import evaluate_sensitive_data_protection as sensitive
     from evals.application import safety
+    from evals.generation import context as generation_context
+    from evals.generation import evaluate_generation_completeness as completeness
+    from evals.generation import evaluate_generation_correctness as correctness
+    from evals.generation import evaluate_generation_evidence_behavior as generation_evidence
+    from evals.generation import evaluate_generation_fact_citation as citation
+    from evals.generation import evaluate_generation_groundedness as groundedness
+    from evals.generation import evaluate_generation_naturalness as naturalness
     from evals.loading import evaluate_html_content_retention as retention
-    from evals.loading import (
-        evaluate_passage_anchor_validity_and_probe_recall as passage_recall,
-    )
+    from evals.loading import evaluate_passage_anchor_validity_and_probe_recall as passage_recall
     from evals.pipeline import context as pipeline_context
     from evals.pipeline import evaluate_e2e_answer_quality as pipeline_quality
     from evals.pipeline import evaluate_e2e_evidence_behavior as pipeline_evidence
     from evals.pipeline import evaluate_e2e_fact_citation as pipeline_fact_citation
     from evals.pipeline import evaluate_e2e_required_fact_coverage as pipeline_coverage
+    from evals.retriever import evaluate_reranker_passage_evidence_recall as reranker_recall
+    from evals.retriever import evaluate_reranker_passage_mean_reciprocal_rank as reranker_mrr
+    from evals.retriever import evaluate_reranker_passage_precision as reranker_precision
     from evals.retriever import evaluate_retriever_document_precision as precision
     from evals.retriever import evaluate_retriever_evidence_recall as recall
     from evals.retriever import evaluate_retriever_mean_reciprocal_rank as mrr
@@ -193,6 +192,30 @@ def full_specs() -> list[dict]:
             precision.fetch_docs_for_evaluation,
             precision.evaluate_document_precision,
             ("document_precision_at_8",),
+            24,
+        ),
+        _spec(
+            "reranker_passage_evidence_recall",
+            reranker_recall,
+            reranker_recall.fetch_passages_for_evaluation,
+            reranker_recall.evaluate_passage_evidence_recall,
+            ("passage_evidence_recall_at_15",),
+            24,
+        ),
+        _spec(
+            "reranker_passage_mrr",
+            reranker_mrr,
+            reranker_mrr.fetch_passages_for_evaluation,
+            reranker_mrr.evaluate_passage_mrr,
+            ("passage_mrr_at_15",),
+            24,
+        ),
+        _spec(
+            "reranker_passage_precision",
+            reranker_precision,
+            reranker_precision.fetch_passages_for_evaluation,
+            reranker_precision.evaluate_passage_precision,
+            ("passage_precision_at_15",),
             24,
         ),
         _spec(

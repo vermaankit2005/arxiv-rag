@@ -19,14 +19,18 @@ EXPERIMENT_METADATA = {
     "vector_db": "chroma",
 }
 
-def fetch_docs_for_evaluation(inputs: dict) -> dict | None:
+def fetch_docs_for_evaluation(inputs: dict) -> dict:
     # Opened here, not at import, so listing the suites never needs a database.
-    retrieved_doc_list = get_vector_store().similarity_search_with_score(
-        inputs["question"], k=retrieval.DEFAULT_TOP_K
-    )
+    vector_store = get_vector_store()
+    try:
+        retrieved_doc_list = vector_store.similarity_search_with_score(
+            inputs["question"], k=retrieval.DEFAULT_TOP_K
+        )
+    finally:
+        vector_store.close()
 
     if not retrieved_doc_list:
-        return None
+        return {"documents": []}
 
     documents = []
 
@@ -90,6 +94,7 @@ def run_document_precision() -> None:
         metadata=EXPERIMENT_METADATA,
         experiment_prefix=EXPERIMENT_PREFIX,
         description=DESCRIPTION,
+        max_concurrency=1,
         blocking=True,
         upload_results=not local,
     )

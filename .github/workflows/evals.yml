@@ -67,15 +67,18 @@ jobs:
       # Written as a file because the Cloudflare Access variable names contain
       # hyphens, which shells cannot export. python-dotenv reads them fine.
       - name: Write .env from secrets
+        env:
+          OLLAMA_CF_SECRET: ${{ secrets.OLLAMA_CF_ACCESS_CLIENT_SECRET }}
         run: |
           cat > .env <<ENV
           OLLAMA_BASE_URL=${{ secrets.OLLAMA_BASE_URL }}
           CF_ACCESS_CLIENT_ID=${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET=${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           OLLAMA_CF_ACCESS_CLIENT_ID=${{ secrets.OLLAMA_CF_ACCESS_CLIENT_ID }}
-          OLLAMA_CF_ACCESS_CLIENT_SECRET=${{ secrets.OLLAMA_CF_ACCESS_CLIENT_SECRET }}
+          OLLAMA_CF_ACCESS_CLIENT_SECRET=$OLLAMA_CF_SECRET
           GENERATOR_MODEL=${{ secrets.GENERATOR_MODEL }}
           JUDGE_MODEL=${{ secrets.JUDGE_MODEL }}
+          COHERE_API_KEY=${{ secrets.COHERE_API_KEY }}
           LANGSMITH_TRACING=false
           LANGSMITH_ENDPOINT=${{ secrets.LANGSMITH_ENDPOINT }}
           LANGSMITH_API_KEY=${{ secrets.LANGSMITH_API_KEY }}
