@@ -15,7 +15,6 @@ evals:
     html_corpus: SAMPLE
     vector_store: CHROMA
 
-
 runtime:
-  html_corpus: SAMPLE # PROD or SAMPLE
-  vector_store: CHROMA # WEAVIATE or CHROMA
+  html_corpus: PROD # PROD or SAMPLE
+  vector_store: WEAVIATE # WEAVIATE or CHROMA

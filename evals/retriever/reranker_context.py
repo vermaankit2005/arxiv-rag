@@ -14,9 +14,11 @@ def fetch_reranked_passages(inputs: dict) -> dict:
 
     passages = []
     for passage_id, text in built_context.passages_by_id.items():
+
         citation = built_context.context.citations[passage_id]
         arxiv_id = citation.label.partition(" — ")[0]
         url_prefix = f"https://arxiv.org/html/{arxiv_id}"
+
         if not citation.url.startswith(url_prefix):
             raise RuntimeError("Reranked passage citation metadata is invalid.")
 

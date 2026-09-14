@@ -23,6 +23,7 @@ class SourcePassage:
 
 @dataclass(frozen=True)
 class Citation:
+    # f"{arxiv_id} — {section_bread_crumbs}"
     label: str
     url: str
 
@@ -122,16 +123,18 @@ def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltCo
 
             url = f"https://arxiv.org/html/{arxiv_id}{source_passage.location}"
 
+            # Build a citation here.
             citation_id = f"P{len(citations) + 1}"
             citations[citation_id] = Citation(label=f"{arxiv_id} — {section_bread_crumbs}", url=url)
 
-            passages_text_by_id[citation_id] = source_passage.text
-
+            # Build a context block here attaching the citation we build above.
             context_blocks.append(
                 f"[{citation_id}]\n"
                 f"Section: {section_bread_crumbs}\n"
                 f"Text: {source_passage.text}"
             )
+
+            passages_text_by_id[citation_id] = source_passage.text
 
     if results and valid_documents == 0:
         raise RuntimeError("Retrieved evidence is invalid.")
@@ -141,20 +144,10 @@ def build_context_with_details(results: list[tuple[Document, float]]) -> BuiltCo
         citations=citations,
     )
 
-    if not citations:
-        log.warning("no citable passages found in %d retrieved documents", len(results))
-    else:
-        log.info("built context: %d passages from %d documents", len(citations), len(results))
-
     return BuiltContext(
         context=retrieval_context,
         passages_by_id=passages_text_by_id,
     )
-
-
-def build_context(results: list[tuple[Document, float]]) -> RetrievalContext:
-    """Expand ranked Documents into citable passages, without the passage text."""
-    return build_context_with_details(results).context
 
 
 def _select_passages(built_context: BuiltContext, passage_ids: list[str]) -> BuiltContext:
@@ -165,7 +158,7 @@ def _select_passages(built_context: BuiltContext, passage_ids: list[str]) -> Bui
     for passage_id in passage_ids:
         passage = built_context.passages_by_id[passage_id]
         citation = built_context.context.citations[passage_id]
-        section = citation.label.partition(" — ")[2] or citation.label
+        section = citation.label.partition(" — ")[2] or citation.label #
 
         passages_by_id[passage_id] = passage
         citations[passage_id] = citation
@@ -212,8 +205,11 @@ class PaperRetriever:
 
         log.info("retrieved %d documents (top_k=%d)", len(results), self._top_k)
 
+        # Building the context to be provided to the reranker.
         built_context = build_context_with_details(results)
+
         ranked_passage_ids = self._reranker(built_context.passages_by_id, question)
+
         return _select_passages(built_context, ranked_passage_ids)
 
     def close(self) -> None:

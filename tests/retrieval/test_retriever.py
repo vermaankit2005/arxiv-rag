@@ -1,11 +1,11 @@
 import json
 
-from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
 import pytest
+from langchain_core.documents import Document  # pyright: ignore[reportMissingImports]
 
 from arxiv_rag import retrieval
-from arxiv_rag.retrieval import retriever as retriever_module
 from arxiv_rag.ingestion.vector_store import VectorStore
+from arxiv_rag.retrieval import retriever as retriever_module
 
 
 class RecordingStore(VectorStore):
@@ -111,7 +111,7 @@ def test_build_context_pairs_each_passage_with_its_exact_anchor():
         ]
     )
 
-    context = retrieval.build_context([(document, 0.5)])
+    context = retrieval.build_context_with_details([(document, 0.5)]).context
 
     assert "[P1]" in context.text
     assert "Text: The model achieved 28.4 BLEU." in context.text
@@ -142,9 +142,9 @@ def test_build_context_details_keeps_passage_ids_aligned_with_context():
 def test_build_context_deduplicates_exact_overlap():
     passage = _passage("Shared overlap passage.", "#S3.p2", ["Architecture"])
 
-    context = retrieval.build_context(
+    context = retrieval.build_context_with_details(
         [(_document([passage]), 0.4), (_document([passage]), 0.5)]
-    )
+    ).context
 
     assert context.text.count("Text: Shared overlap passage.") == 1
     assert list(context.citations) == ["P1"]
@@ -154,7 +154,7 @@ def test_build_context_keeps_different_parts_from_the_same_anchor():
     first = _document([_passage("First part of a large table.", "#A5.T9.2")])
     second = _document([_passage("Second part of the same table.", "#A5.T9.2")])
 
-    context = retrieval.build_context([(first, 0.4), (second, 0.5)])
+    context = retrieval.build_context_with_details([(first, 0.4), (second, 0.5)]).context
 
     assert "Text: First part of a large table." in context.text
     assert "Text: Second part of the same table." in context.text
@@ -169,7 +169,7 @@ def test_build_context_skips_a_malformed_document_and_keeps_valid_evidence():
     )
     valid = _document([_passage("The model achieved 28.4 BLEU.")])
 
-    context = retrieval.build_context([(malformed, 0.4), (valid, 0.5)])
+    context = retrieval.build_context_with_details([(malformed, 0.4), (valid, 0.5)]).context
 
     assert "The model achieved 28.4 BLEU." in context.text
     assert list(context.citations) == ["P1"]
@@ -180,7 +180,7 @@ def test_build_context_stops_when_all_documents_are_malformed():
     empty_passage = _document([_passage("", location="")])
 
     try:
-        retrieval.build_context([(missing_arxiv_id, 0.4), (empty_passage, 0.5)])
+        retrieval.build_context_with_details([(missing_arxiv_id, 0.4), (empty_passage, 0.5)])
     except RuntimeError as error:
         assert str(error) == "Retrieved evidence is invalid."
     else:
@@ -220,10 +220,10 @@ def test_traceable_retrieve_still_returns_built_context():
     assert not isinstance(built, dict)
 
 
-def test_traceable_build_context_still_returns_retrieval_context():
+def test_traceable_build_context_still_returns_built_context():
     document = _document([_passage("The model achieved 28.4 BLEU.")])
-    context = retrieval.build_context([(document, 0.5)])
+    built = retrieval.build_context_with_details([(document, 0.5)])
 
-    assert context.text.startswith("[P1]")
-    assert list(context.citations) == ["P1"]
-    assert not hasattr(context, "context")
+    assert built.context.text.startswith("[P1]")
+    assert list(built.context.citations) == ["P1"]
+    assert built.passages_by_id == {"P1": "The model achieved 28.4 BLEU."}
