@@ -189,7 +189,10 @@ class PaperRetriever:
 
     @traceable(
         name="retrieve",
-        process_outputs=lambda outputs: {"num_passages": len(outputs.passages_by_id)},
+        process_outputs=lambda outputs: {
+            "context": outputs.context.text,
+            "citation": [f"{value.label} > {value.url}" for value in outputs.context.citations.values()],
+        },
     )
     def retrieve(self, question: str) -> BuiltContext:
         """Return final reranked evidence for a non-empty question."""

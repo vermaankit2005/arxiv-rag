@@ -110,9 +110,26 @@ def build_results(suite: str, started_at: datetime, uploaded: bool, passed: bool
     }
 
 
+def _result_file_data(results: dict) -> dict:
+    metrics = []
+    for record in results["metrics"]:
+        metric = {
+            "metric": record["metric"],
+            "scores": record["scores"],
+            "average": record["average"],
+            "threshold": record["threshold"],
+            "status": record["status"],
+        }
+        if record["error"]:
+            metric["error"] = record["error"]
+        metrics.append(metric)
+
+    return {"suite": results["suite"], "status": results["status"], "metrics": metrics}
+
+
 def _write_json(path: Path, results: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(results, indent=2), encoding="utf-8")
+    path.write_text(json.dumps(_result_file_data(results), indent=2), encoding="utf-8")
     print(f"\nWrote results to {path}")
 
 

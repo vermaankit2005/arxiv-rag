@@ -2,11 +2,9 @@ import uuid
 from collections.abc import Iterator
 
 from arxiv_rag.generation import AnswerMode
-from arxiv_rag.generation.models import AnswerChunk, AnswerComplete, AnsweredQuestion
+from arxiv_rag.generation.models import AnswerChunk, AnswerComplete, AnsweredQuestion, AnswerEvent
 from arxiv_rag.graph.workflow_graph import stream_workflow_graph
 from arxiv_rag.retrieval import RetrievalContext
-
-AnswerEvent = AnswerChunk | AnswerComplete
 
 
 def answer_question_stream(question: str, thread_id: str | None = None,

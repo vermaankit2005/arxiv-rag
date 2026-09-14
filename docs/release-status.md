@@ -70,8 +70,8 @@ recorded rather than hidden.
   `EVAL_UPLOAD_TO_LANGSMITH` as its only upload switch.
 - GitHub evaluation runs read that switch from the repository variable with the
   same name; an absent or `false` value keeps uploads off.
-- Manual and master eval runs commit their complete JSON result to
-  `evals/results/`; every run also exposes a GitHub Actions summary and artifact.
+- Manual and master eval runs commit a compact JSON result, including individual
+  scores, to `evals/results/`; every run also exposes a GitHub Actions summary and artifact.
 
 ## Deferred beyond v1.0
 
