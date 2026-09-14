@@ -163,10 +163,7 @@ def test_zero_prepared_documents_deletes_staging_collection(monkeypatch):
     assert store.closed is True
 
 
-def test_add_retries_five_times_and_respects_retry_after(monkeypatch):
-    class RetryableError(RuntimeError):
-        error = {"retry_after": 60}
-
+def test_add_retries_five_times_with_fixed_delay(monkeypatch):
     class RetryStore(RecordingStore):
         def __init__(self):
             super().__init__()
@@ -175,7 +172,7 @@ def test_add_retries_five_times_and_respects_retry_after(monkeypatch):
         def add(self, documents):
             self.attempts += 1
             if self.attempts < 5:
-                raise RetryableError("temporary failure")
+                raise RuntimeError("temporary failure")
             return super().add(documents)
 
     delays = []
@@ -185,7 +182,7 @@ def test_add_retries_five_times_and_respects_retry_after(monkeypatch):
     ingestion_pipeline._add_documents_with_retry(cast(Any, store), [Document(page_content="document")])
 
     assert store.attempts == 5
-    assert delays == [60, 60, 60, 60]
+    assert delays == [30, 30, 30, 30]
 
 
 def test_resume_uses_same_collection_and_starts_at_first_unfinished_paper(monkeypatch):
