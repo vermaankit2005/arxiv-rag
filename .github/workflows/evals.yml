@@ -97,18 +97,27 @@ jobs:
         continue-on-error: true
         env:
           SUITE: ${{ inputs.suite || 'priority' }}
-        run: |
-          uv run python -m "evals.regression.run_${SUITE}" \
-            --results-json regression-results.json \
-            --results-dir evals/results
+        run: uv run python -m "evals.regression.run_${SUITE}"
 
-      - name: Write job summary
+      - name: Find results file
+        id: result
         if: always()
         run: |
-          if [ -f regression-results.json ]; then
-            uv run python -m evals.regression.summary regression-results.json \
-              --output "$GITHUB_STEP_SUMMARY"
-          else
+          RESULT_FILE="$(
+            git status --porcelain evals/results |
+              cut -c4- |
+              head -n 1
+          )"
+          echo "path=$RESULT_FILE" >> "$GITHUB_OUTPUT"
+
+      # Completed runs write their summary directly. Keep this fallback for a
+      # crash that happens before the runner can create a results file.
+      - name: Report missing results
+        if: always()
+        env:
+          RESULT_FILE: ${{ steps.result.outputs.path }}
+        run: |
+          if [ -z "$RESULT_FILE" ]; then
             echo "## 💥 No results file." >> "$GITHUB_STEP_SUMMARY"
           fi
 
@@ -142,7 +151,7 @@ jobs:
             regression-results-${{ inputs.suite || 'priority' }}-${{
               github.run_id
             }}
-          path: regression-results.json
+          path: ${{ steps.result.outputs.path }}
           if-no-files-found: warn
 
       - name: Report suite status

@@ -35,6 +35,7 @@ def evaluate_passage_evidence_recall(outputs: dict, reference_outputs: dict) -> 
     for evidence_unit in evidence_units:
         unit_matched = False
         for accepted_evidence in evidence_unit.get("accepted_evidence", []):
+
             for passage in outputs.get("passages", []):
                 if (
                     accepted_evidence.get("arxiv_id") == passage.get("arxiv_id")

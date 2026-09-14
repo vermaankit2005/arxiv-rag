@@ -1,7 +1,6 @@
-"""Turn a regression results JSON file into a Markdown table for CI."""
+"""Render regression results as Markdown for local runs and CI."""
 
-import argparse
-import json
+import os
 import sys
 from pathlib import Path
 
@@ -58,23 +57,15 @@ def build_summary(results: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Write a Markdown regression summary.")
-    parser.add_argument("results_json", type=Path, help="Results file from a suite run.")
-    parser.add_argument("--output", type=Path, default=None, help="Append the table here.")
-    arguments = parser.parse_args()
-
-    results = json.loads(arguments.results_json.read_text(encoding="utf-8"))
+def write_summary(results: dict) -> None:
+    """Print the summary locally and add it to the GitHub job summary when available."""
     summary = build_summary(results)
 
-    if arguments.output is None:
-        # The status icons are not printable on a Windows console codepage.
-        sys.stdout.buffer.write(summary.encode("utf-8"))
-    else:
-        with arguments.output.open("a", encoding="utf-8") as output_file:
+    # Writing bytes keeps the status icons printable on a Windows console codepage.
+    sys.stdout.flush()
+    sys.stdout.buffer.write(summary.encode("utf-8"))
+
+    github_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if github_summary:
+        with Path(github_summary).open("a", encoding="utf-8") as output_file:
             output_file.write(summary)
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
